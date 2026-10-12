@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Privacy lock: this page may not load or send anything over the network. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intervention attendance</title>
+<style>
+:root{
+  --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
+  --ink:#1C2433; --muted:#566074; --faint:#8790A0;
+  --instr:#C9DAF8; --support:#FFF2CC; --bar:#24324D;
+  --ok:#1D6F47; --ok-bg:#DFF1E7;
+  --late:#8F4B00; --late-bg:#FBE8D2;
+  --bad:#A8231A; --bad-bg:#FADFDB;
+  --soft:#6E5800; --soft-bg:#FBF0BF;
+  --drop:#57409A; --drop-bg:#E9E3F7;
+  --fin:#11636C; --fin-bg:#D8EFF1;
+  --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
+    --ink:#E5E9F1; --muted:#A4AEBF; --faint:#7A8597;
+    --instr:#2C3D61; --support:#4A4123; --bar:#A9C2F5;
+    --ok:#74D3A2; --ok-bg:#163428; --late:#F2B36B; --late-bg:#3D2A12;
+    --bad:#F28B82; --bad-bg:#40201D; --soft:#E8D27A; --soft-bg:#3A3315;
+    --drop:#C3B1F2; --drop-bg:#2C2445; --fin:#7FD3DB; --fin-bg:#14363A;
+    --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Header */
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding:18px 0 12px}
+.brand h1{font-size:1.6rem;line-height:1.2}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+.folder{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.folder .where{color:var(--muted);font-size:.88rem;margin-right:4px}
+.folder .where b{color:var(--ink);font-weight:600}
+.btn{border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:.9rem}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.small{padding:3px 9px;font-size:.8rem;font-weight:600}
+.btn:disabled{opacity:.5;cursor:default}
+nav.tabs{display:flex;gap:26px}
+nav.tabs button{background:none;border:0;padding:10px 0 11px;cursor:pointer;color:var(--muted);font-weight:600;border-bottom:3px solid transparent}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bar)}
+.savebar{font-size:.84rem;color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
+.savebar.warn{color:var(--late)}
+.tabrow{display:flex;flex-wrap:wrap;gap:10px}
+
+main.wrap{padding:22px 20px 60px}
+.notice{border:1px solid var(--line);border-left:4px solid var(--late);background:var(--surface);padding:10px 14px;border-radius:6px;margin:0 0 14px;font-size:.92rem}
+.notice.info{border-left-color:var(--bar)}
+.notice ul{margin:6px 0 0;padding-left:20px}
+
+/* Onboarding */
+.start{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:26px 28px;max-width:760px}
+.start h2{font-size:1.45rem;margin-bottom:6px}
+.start ol{padding-left:22px;margin:14px 0 18px}
+.start li{margin:8px 0}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+
+/* Toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 12px;cursor:pointer;font-size:.88rem;color:var(--muted);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--bar);color:var(--btn-ink)}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 10px;min-width:220px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-left:auto}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:10px;border-radius:2px}
+.sw.i{background:var(--instr)} .sw.s{background:var(--support)} .sw.p{background:var(--bar);height:6px}
+
+/* Day */
+details.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:14px}
+details.day > summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px}
+details.day > summary::-webkit-details-marker{display:none}
+details.day > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);align-self:center;margin-right:2px;transition:transform .15s}
+details.day[open] > summary::before{transform:rotate(45deg)}
+.day h2{font-size:1.35rem}
+.day .sub{color:var(--muted);font-size:.88rem}
+.counts{display:flex;flex-wrap:wrap;gap:6px;width:100%;padding-left:20px}
+.count{font-size:.8rem;font-weight:600;border-radius:999px;padding:2px 10px}
+.day-body{padding:0 20px 18px}
+
+/* Status colors */
+.k-full{background:var(--ok-bg);color:var(--ok)}
+.k-fin{background:var(--fin-bg);color:var(--fin)}
+.k-late{background:var(--late-bg);color:var(--late)}
+.k-missed,.k-early{background:var(--bad-bg);color:var(--bad)}
+.k-soft{background:var(--soft-bg);color:var(--soft)}
+.k-drop{background:var(--drop-bg);color:var(--drop)}
+.k-absent{background:var(--bad);color:var(--surface)}
+.k-extra{background:var(--grid);color:var(--muted)}
+
+/* Table */
+.grid-head,.row{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:0 14px;align-items:center}
+.grid-head{font-size:.78rem;color:var(--muted);padding:6px 0 6px;border-bottom:1px solid var(--line);font-weight:600}
+.row{padding:8px 0;border-bottom:1px solid var(--grid)}
+.row:last-child{border-bottom:0}
+.who b{font-weight:600}
+.who .meta{display:block;font-size:.78rem;color:var(--muted);line-height:1.35}
+.time{font-size:.86rem}
+.time.none{color:var(--faint)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chip{font-size:.78rem;font-weight:600;border-radius:5px;padding:2px 8px;white-space:nowrap}
+.linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:.78rem}
+.linkish:hover{color:var(--ink)}
+
+/* Timeline: the class block drawn like a strip of graph paper */
+.axis{position:relative;height:16px}
+.axis span{position:absolute;transform:translateX(-50%);font-size:.74rem;color:var(--muted);white-space:nowrap}
+.tl{position:relative;height:22px;border-radius:4px;background:var(--paper);border:1px solid var(--grid);overflow:hidden}
+.tl .band{position:absolute;top:0;bottom:0}
+.tl .band.instruction{background:var(--instr)}
+.tl .band.support{background:var(--support)}
+.tl .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.9}
+.tl .tick.half{opacity:.45}
+.tl .bar{position:absolute;top:7px;height:8px;border-radius:2px;background:var(--bar)}
+
+.subhead{font-family:var(--serif);font-size:1.05rem;margin:20px 0 6px}
+.mini{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:6px 14px;align-items:center;padding:7px 0;border-bottom:1px solid var(--grid)}
+.mini:last-child{border-bottom:0}
+.mini > :nth-child(3){grid-column:3 / -1}
+.mini .act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mini select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;max-width:210px;font-size:.84rem}
+.files{font-size:.8rem;color:var(--faint);margin-top:12px}
+
+/* Schedule tab */
+.two{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1.2fr);gap:22px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.panel h2{font-size:1.2rem;margin-bottom:6px}
+textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:10px;font-size:.85rem;line-height:1.4;resize:vertical}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px}
+.dcol h3{font-size:1.02rem;border-bottom:2px solid var(--ink);padding-bottom:3px;margin-bottom:8px}
+.sec{border-radius:6px;padding:7px 9px;margin-bottom:8px;font-size:.84rem}
+.sec.instruction{background:var(--instr)} .sec.support{background:var(--support)}
+.sec b{display:block;font-weight:600}
+.sec details summary{cursor:pointer;color:var(--muted);font-size:.8rem}
+.sec ul{margin:4px 0 0;padding-left:16px}
+.actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+
+/* Settings */
+.set{display:grid;grid-template-columns:auto 80px;gap:10px 14px;align-items:center;max-width:560px}
+.set input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;width:80px}
+.list{margin:6px 0 0;padding:0;list-style:none}
+.list li{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-size:.9rem}
+.list li span{flex:1}
+.stack > * + *{margin-top:18px}
+
+@media (max-width: 820px){
+  .grid-head{display:none}
+  .row{grid-template-columns:1fr auto auto;gap:6px 12px;padding:12px 0}
+  .row .who{grid-column:1 / -1}
+  .row .tlc{grid-column:1 / -1}
+  .row .time::before{content:attr(data-label) " ";color:var(--muted);font-size:.78rem}
+  .row .chips{grid-column:1 / -1}
+  .mini{grid-template-columns:1fr}
+  .mini > :nth-child(3){grid-column:auto}
+  .two{grid-template-columns:1fr}
+  .legend{margin-left:0}
+  .counts{padding-left:0}
+}
+@media print{
+  header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice{display:none !important}
+  body{background:#fff}
+  details.day{break-inside:avoid-page;border-color:#bbb}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Intervention attendance</h1>
+        <p>Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>
+      </div>
+      <div class="folder" id="folderBar"></div>
+    </div>
+    <div class="tabrow">
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" data-tab="reports" aria-selected="true">Reports</button>
+        <button role="tab" data-tab="schedule" aria-selected="false">Schedule</button>
+        <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+      </nav>
+      <div class="savebar" id="saveBar" aria-live="polite"></div>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div id="status" aria-live="polite"></div>
+  <section id="tab-reports"></section>
+  <section id="tab-schedule" hidden></section>
+  <section id="tab-settings" hidden></section>
+</main>
+<input type="file" id="folderInput" webkitdirectory multiple hidden>
+
+<script>
+'use strict';
+/* ------------------------------------------------------------------
+   Everything below runs locally. There are no network requests, and the
+   Content-Security-Policy above blocks them even if one were attempted.
+   Data written: one file, attendance-tracker-data.json, inside the folder
+   you choose (schedule, settings, linked Zoom names, "finished work" marks).
+   ------------------------------------------------------------------ */
+const DATA_FILE = 'attendance-tracker-data.json';
+const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const HAS_FSA = typeof window.showDirectoryPicker === 'function';
+const SEVERITY = {absent:6, missed:5, early:5, late:4, drop:3, soft:2, fin:1, full:0};
+const COUNT_ORDER = [
+  ['full','present full time'], ['fin','finished work early'], ['late','late'], ['missed','missed instruction'],
+  ['early','left early'], ['soft','left support early'], ['drop','dropped off'], ['absent','absent']
+];
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const mins = ms => Math.round(ms / 60000);
+const fmt = t => t == null ? '—' : new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+const fmtMin = m => { let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${pad(mi)} ${ap}`; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtRange = (a, b) => { const A = fmtMin(a), B = fmtMin(b); return (A.slice(-2) === B.slice(-2) ? A.slice(0, -3) : A) + '–' + B; };
+
+function defaultData(){
+  return { version: 1, scheduleText: '', settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60 },
+           aliases: {}, ignored: [], excused: {} };
+}
+function withDefaults(d){
+  const base = defaultData();
+  return { ...base, ...d, settings: { ...base.settings, ...(d && d.settings) },
+           aliases: { ...(d && d.aliases) }, ignored: [...((d && d.ignored) || [])], excused: { ...(d && d.excused) } };
+}
+
+const state = {
+  data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
+  folderName: '', loaded: false, dirty: false, saving: false,
+  tab: 'reports', filter: 'all', query: '', draft: null, openDays: new Set(), status: null
+};
+
+/* ---------------- Text helpers ---------------- */
+function normKey(s){
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[.'’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function lev(a, b){
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({length: n + 1}, (_, j) => j);
+  for (let i = 1; i <= m; i++){
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+
+/* ---------------- Schedule (pasted from the spreadsheet) ---------------- */
+function toMin(h, mi, ap){
+  if (ap === 'p' && h < 12) h += 12;
+  else if (ap === 'a' && h === 12) h = 0;
+  else if (!ap && h >= 1 && h <= 6) h += 12;   // school-day guess: "2" means 2 PM
+  return h * 60 + mi;
+}
+function parseSectionHeader(cell){
+  const low = cell.toLowerCase();
+  let type = null;
+  if (/instruct|lesson|teach/.test(low)) type = 'instruction';
+  else if (/support|help|tutor|work time|office hour/.test(low)) type = 'support';
+  if (!type) return null;
+  const m = cell.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?(?:\s*(?:-|–|—|to)\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?)?/i);
+  if (!m) return null;
+  const ap1 = m[3] ? m[3][0].toLowerCase() : null, ap2 = m[6] ? m[6][0].toLowerCase() : null;
+  const startMin = toMin(+m[1], +(m[2] || 0), ap1 || ap2);
+  let endMin = m[4] ? toMin(+m[4], +(m[5] || 0), ap2 || ap1) : null;
+  if (endMin !== null && endMin <= startMin) endMin = null;
+  return { type, label: cell, startMin, endMin, students: [] };
+}
+function parseSchedule(text){
+  const out = { days: {}, roster: [], nameOf: {}, warnings: [], lookalikes: [] };
+  if (!text || !text.trim()) return out;
+  const rows = text.replace(/\r/g, '').split('\n').map(r => r.split('\t').map(c => c.trim()));
+  const colDay = {}, colSec = {}, stray = [];
+  const dayFor = c => { if (colDay[c]) return colDay[c]; let best = null, bc = -1;
+    for (const k in colDay){ const kc = +k; if (kc <= c && kc > bc){ bc = kc; best = colDay[k]; } } return best; };
+  rows.forEach(row => row.forEach((cell, c) => {
+    if (!cell) return;
+    const d = DAYS.indexOf(cell.toLowerCase().replace(/[^a-z]/g, ''));
+    if (d >= 0){ colDay[c] = DAYS[d]; colSec[c] = null; out.days[DAYS[d]] = out.days[DAYS[d]] || []; return; }
+    const sec = parseSectionHeader(cell);
+    if (sec){
+      const day = dayFor(c);
+      if (!day){ out.warnings.push(`“${cell}” doesn’t have a day name (like Monday) above it, so it was skipped.`); colSec[c] = null; return; }
+      out.days[day].push(sec); colSec[c] = sec; return;
+    }
+    const s = colSec[c];
+    if (s){ const name = cell.replace(/\s+/g, ' '); if (!s.students.some(n => normKey(n) === normKey(name))) s.students.push(name); }
+    else stray.push(cell);
+  }));
+  if (stray.length) out.warnings.push(`Skipped ${stray.length} cell${stray.length > 1 ? 's' : ''} that weren’t under a section heading (for example “${stray[0]}”).`);
+  for (const day of Object.keys(out.days)) for (const s of out.days[day]) for (const n of s.students){
+    const k = normKey(n); if (k && !out.nameOf[k]){ out.nameOf[k] = n; out.roster.push({ key: k, name: n }); }
+  }
+  out.roster.sort((a, b) => a.name.localeCompare(b.name));
+  const R = out.roster;
+  for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++){
+    const a = R[i].key, b = R[j].key;
+    if (Math.abs(a.length - b.length) > 2) continue;
+    const d = lev(a, b);
+    const ta = a.split(' '), tb = b.split(' ');
+    if (d === 1 || (d === 2 && (ta[0] === tb[0] || ta[ta.length - 1] === tb[tb.length - 1]))) out.lookalikes.push([R[i].name, R[j].name]);
+  }
+  return out;
+}
+
+/* ---------------- Zoom participant export ---------------- */
+function parseCSV(text){
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ row.push(cell); cell = ''; }
+    else if (c === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+function parseZoomTime(s){
+  if (!s) return null; s = String(s).trim(); if (!s) return null;
+  let y, mo, d, h, mi, se, ap, m;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[\s,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
+    mo = +m[1]; d = +m[2]; y = +m[3]; if (y < 100) y += 2000; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
+  } else if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
+    y = +m[1]; mo = +m[2]; d = +m[3]; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
+  } else { const t = Date.parse(s); return isNaN(t) ? null : new Date(t); }
+  if (ap){ ap = ap.toLowerCase(); if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0; }
+  return new Date(y, mo - 1, d, h, mi, se);
+}
+function parseZoomFile(name, text){
+  const rows = parseCSV(String(text).replace(/^\uFEFF/, ''));
+  const hi = rows.findIndex(r => r.some(c => /join/i.test(c)) && r.some(c => /leave/i.test(c)));
+  if (hi < 0){
+    const looksUnique = rows.some(r => r.some(c => /duration/i.test(c)) && r.some(c => /name/i.test(c)));
+    return { error: looksUnique
+      ? 'This file has no join or leave times. It was probably exported with “Show unique users” checked. Export it again with that box unchecked.'
+      : 'This doesn’t look like a Zoom participant report (no “Join Time” column).' };
+  }
+  const h = rows[hi].map(c => c.trim().toLowerCase());
+  let nameIdx = h.findIndex(c => c.startsWith('name') || c.includes('participant'));
+  if (nameIdx < 0) nameIdx = 0;
+  const joinIdx = h.findIndex(c => c.includes('join'));
+  const leaveIdx = h.findIndex(c => c.includes('leave'));
+  const waitIdx = h.findIndex(c => c.includes('waiting'));
+  let emailIdx = h.findIndex((c, i) => c.includes('email') && i > nameIdx);
+  if (emailIdx < 0) emailIdx = h.findIndex(c => c.includes('email'));
+  const out = [];
+  for (const r of rows.slice(hi + 1)){
+    const nm = (r[nameIdx] || '').trim();
+    const join = parseZoomTime(r[joinIdx]), leave = parseZoomTime(r[leaveIdx]);
+    if (!nm || !join || !leave || leave <= join) continue;
+    if (waitIdx >= 0 && /^y/i.test((r[waitIdx] || '').trim())) continue; // time in the waiting room isn't class time
+    out.push({ name: nm, email: emailIdx >= 0 ? (r[emailIdx] || '').trim() : '', join, leave });
+  }
+  if (!out.length) return { error: 'No participant rows with join and leave times were found in this file.' };
+  return { rows: out };
+}
+
+/* ---------------- Matching Zoom names to students ---------------- */
+function zoomCandidates(raw){
+  const s = String(raw || '').trim();
+  const m = s.match(/^(.*?)\s*\(([^()]+)\)\s*$/);   // "Current name (Original name)"
+  const parts = m ? [m[1], m[2]] : [s];
+  return parts.map(x => x.replace(/['’]s\s+(i?phone|ipad|android|galaxy|chromebook|macbook(\s+(air|pro))?|mac|laptop|computer|pc|tablet|device)\b.*$/i, '').trim()).filter(Boolean);
+}
+function buildMatcher(roster, aliases){
+  const E = roster.map(r => { const toks = r.key.split(' '); return { key: r.key, name: r.name, toks, first: toks[0], last: toks[toks.length - 1], rest: toks.slice(1) }; });
+  const byKey = new Map(E.map(e => [e.key, e]));
+  const steps = [
+    t => E.filter(e => e.key === t.join(' ')),
+    t => t.length > 1 ? E.filter(e => e.toks.length > 1 && t.includes(e.first) && t.includes(e.last)) : [],
+    t => t.length > 1 ? E.filter(e => t[0] === e.first && t.slice(1).every(x => e.rest.includes(x))) : [],
+    t => t.length > 1 ? E.filter(e => t[0] === e.first && t.slice(1).every(x => x.length === 1) && e.rest.some(x => x[0] === t[1])) : [],
+    t => E.filter(e => e.toks.join('') === t.join('')),
+    t => t.length === 1 ? E.filter(e => e.first === t[0]) : []
+  ];
+  return (raw, email) => {
+    const cands = [...new Set([normKey(raw), ...zoomCandidates(raw).map(normKey)])].filter(Boolean);
+    for (const k of cands){ const a = aliases[k]; if (a && byKey.has(a)) return byKey.get(a); }
+    const toks = cands.map(k => k.split(' '));
+    for (const step of steps) for (const t of toks){ const r = step(t); if (r.length === 1) return r[0]; }
+    if (email){
+      const local = normKey(String(email).split('@')[0]).replace(/[^a-z]/g, '');
+      if (local.length >= 4){
+        const r = E.filter(e => { const rj = e.rest.join(''); return e.last.length >= 3 &&
+          (local.includes(rj || e.last) || local.includes(e.last)) && (local.includes(e.first) || local.startsWith(e.first[0])); });
+        if (r.length === 1) return r[0];
+      }
+    }
+    return null;
+  };
+}
+
+/* ---------------- Attendance math ---------------- */
+function mergeIntervals(list){
+  const s = list.map(x => [x[0], x[1]]).sort((a, b) => a[0] - b[0]); const out = [];
+  for (const iv of s){ const last = out[out.length - 1]; if (last && iv[0] <= last[1]) last[1] = Math.max(last[1], iv[1]); else out.push(iv); }
+  return out;
+}
+const overlap = (list, A, B) => list.reduce((t, [a, b]) => t + Math.max(0, Math.min(b, B) - Math.max(a, A)), 0);
+
+function evaluate(intervals, sections, at, S){
+  const secs = sections.map(s => ({ type: s.type, a: at(s.startMin), b: at(s.endMin) })).sort((x, y) => x.a - y.a);
+  const req = mergeIntervals(secs.map(s => [s.a, s.b]));
+  const winStart = req[0][0], winEnd = req[req.length - 1][1];
+  const merged = mergeIntervals(intervals);
+  const presentMs = req.reduce((t, [A, B]) => t + overlap(merged, A, B), 0);
+  const reqMs = req.reduce((t, [a, b]) => t + b - a, 0);
+  const out = { secs, merged, flags: [], firstJoin: null, lastLeave: null, presentMin: mins(presentMs), reqMin: mins(reqMs) };
+  if (presentMs < 60000){ out.flags.push({ k: 'absent', label: 'Absent' }); return out; }
+  const rel = merged.filter(([a, b]) => b > winStart && a < winEnd);
+  out.firstJoin = rel[0][0]; out.lastLeave = rel[rel.length - 1][1];
+  const G = S.lateGrace * 60000, L = S.leaveGrace * 60000, D = S.gapMin * 60000;
+  const instr = secs.filter(s => s.type === 'instruction'), supp = secs.filter(s => s.type === 'support');
+  const instrPresent = instr.reduce((t, s) => t + overlap(merged, s.a, s.b), 0);
+  if (instr.length && instrPresent < 5 * 60000) out.flags.push({ k: 'missed', label: 'Missed instruction' });
+  else if (out.firstJoin > winStart + G) out.flags.push({ k: 'late', label: `Late ${mins(out.firstJoin - winStart)} min` });
+  if (out.lastLeave < winEnd - L){
+    const m = mins(winEnd - out.lastLeave);
+    const inSupport = supp.some(s => out.lastLeave >= s.a && out.lastLeave < s.b);
+    const suppPresent = supp.reduce((t, s) => t + overlap(merged, s.a, s.b), 0);
+    if (inSupport && suppPresent >= 5 * 60000) out.flags.push({ k: 'soft', label: `Left support ${m} min early`, min: m });
+    else if (inSupport && instr.length) out.flags.push({ k: 'early', label: 'Skipped support hour' });
+    else out.flags.push({ k: 'early', label: `Left ${m} min early` });
+  }
+  const spanA = Math.max(out.firstJoin, winStart), spanB = Math.min(out.lastLeave, winEnd);
+  const reqInSpan = req.reduce((t, [A, B]) => t + Math.max(0, Math.min(B, spanB) - Math.max(A, spanA)), 0);
+  const gap = reqInSpan - presentMs;
+  if (gap > D) out.flags.push({ k: 'drop', label: `Out ${mins(gap)} min mid-class` });
+  if (!out.flags.length) out.flags.push({ k: 'full', label: 'Present full time' });
+  return out;
+}
+
+function analyze(){
+  const S = state.data.settings;
+  const sched = parseSchedule(state.data.scheduleText);
+  const matcher = buildMatcher(sched.roster, state.data.aliases);
+  const ignored = new Set(state.data.ignored);
+  const fileErrors = [], byDate = new Map();
+  for (const f of state.files){
+    const z = parseZoomFile(f.name, f.text);
+    if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
+    for (const r of z.rows){
+      const dk = `${r.join.getFullYear()}-${pad(r.join.getMonth() + 1)}-${pad(r.join.getDate())}`;
+      if (!byDate.has(dk)) byDate.set(dk, { dk, files: new Set(), rows: [] });
+      const g = byDate.get(dk); g.files.add(f.name); g.rows.push(r);
+    }
+  }
+  const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk)).map(g => analyzeDay(g, sched, matcher, ignored, S));
+  return { sched, days, fileErrors };
+}
+
+function analyzeDay(g, sched, matcher, ignored, S){
+  const [y, mo, d] = g.dk.split('-').map(Number);
+  const date = new Date(y, mo - 1, d), base = date.getTime();
+  const at = m => base + m * 60000;
+  const dayName = DAYS[date.getDay()];
+  const secs = (sched.days[dayName] || []).map(s => ({ ...s, endMin: s.endMin ?? s.startMin + S.sectionLen }));
+  const plan = new Map();
+  for (const s of secs) for (const n of s.students){
+    const k = normKey(n); if (!k) continue;
+    if (!plan.has(k)) plan.set(k, { key: k, name: sched.nameOf[k] || n, sections: [] });
+    plan.get(k).sections.push(s);
+  }
+  const seen = new Map(), unmatched = new Map();
+  for (const r of g.rows){
+    const rk = normKey(r.name);
+    if (ignored.has(rk)) continue;
+    const iv = [r.join.getTime(), r.leave.getTime()];
+    const m = matcher(r.name, r.email);
+    if (m){
+      if (!seen.has(m.key)) seen.set(m.key, { key: m.key, name: m.name, intervals: [], zoom: new Set() });
+      const e = seen.get(m.key); e.intervals.push(iv); e.zoom.add(r.name);
+    } else {
+      if (!unmatched.has(rk)) unmatched.set(rk, { rk, raw: r.name, email: r.email, intervals: [] });
+      unmatched.get(rk).intervals.push(iv);
+    }
+  }
+  let axisStart, axisEnd;
+  if (secs.length){
+    axisStart = at(Math.min(...secs.map(s => s.startMin)) - 10);
+    axisEnd = at(Math.max(...secs.map(s => s.endMin)) + 10);
+  } else {
+    const all = g.rows.map(r => [r.join.getTime(), r.leave.getTime()]);
+    axisStart = Math.min(...all.map(x => x[0])) - 5 * 60000;
+    axisEnd = Math.max(...all.map(x => x[1])) + 5 * 60000;
+  }
+  const students = [...plan.values()].map(p => {
+    const e = seen.get(p.key);
+    const res = evaluate(e ? e.intervals : [], p.sections, at, S);
+    const xkey = `${g.dk}|${p.key}`;
+    const soft = res.flags.find(f => f.k === 'soft');
+    if (soft && state.data.excused[xkey]){ soft.k = 'fin'; soft.label = `Finished work, left ${soft.min} min early`; }
+    const sev = Math.max(...res.flags.map(f => SEVERITY[f.k]));
+    const kinds = new Set(p.sections.map(s => s.type));
+    const schedLabel = kinds.has('instruction') && kinds.has('support') ? 'Instruction + support'
+      : kinds.has('instruction') ? 'Instruction' : 'Support hour only';
+    const zoomNames = e ? [...e.zoom].filter(z => normKey(z) !== p.key) : [];
+    return { ...p, ...res, xkey, sev, schedLabel, zoomNames, hasSoft: !!soft };
+  }).sort((a, b) => b.sev - a.sev || a.name.localeCompare(b.name));
+  const extras = [...seen.values()].filter(e => !plan.has(e.key)).map(e => ({ ...e, merged: mergeIntervals(e.intervals) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const unm = [...unmatched.values()].map(u => ({ ...u, merged: mergeIntervals(u.intervals) })).sort((a, b) => a.raw.localeCompare(b.raw));
+  const ticks = [];
+  for (let t = Math.ceil(axisStart / 1800000) * 1800000; t <= axisEnd; t += 1800000) ticks.push(t);
+  return { dk: g.dk, date, dayName, files: [...g.files].sort(), secs, students, extras, unmatched: unm, axisStart, axisEnd, ticks, roster: sched.roster };
+}
+
+/* ---------------- Rendering ---------------- */
+function timeline(day, merged, secs){
+  const span = day.axisEnd - day.axisStart, pct = t => ((t - day.axisStart) / span * 100).toFixed(3);
+  let h = '';
+  for (const s of secs || []) h += `<span class="band ${s.type}" style="left:${pct(s.a)}%;width:${(pct(s.b) - pct(s.a)).toFixed(3)}%"></span>`;
+  for (const t of day.ticks) h += `<span class="tick${new Date(t).getMinutes() ? ' half' : ''}" style="left:${pct(t)}%"></span>`;
+  const label = [];
+  for (const [a, b] of merged){
+    const A = Math.max(a, day.axisStart), B = Math.min(b, day.axisEnd); label.push(`${fmt(a)} to ${fmt(b)}`);
+    if (B <= A) continue;
+    h += `<span class="bar" title="In Zoom ${esc(fmt(a))}–${esc(fmt(b))}" style="left:${pct(A)}%;width:${Math.max(0.5, pct(B) - pct(A)).toFixed(3)}%"></span>`;
+  }
+  return `<div class="tl" role="img" aria-label="${esc(label.length ? 'In Zoom ' + label.join(', ') : 'Not in Zoom')}">${h}</div>`;
+}
+function axis(day){
+  const span = day.axisEnd - day.axisStart;
+  return `<div class="axis" aria-hidden="true">${day.ticks.filter(t => !new Date(t).getMinutes())
+    .map(t => `<span style="left:${((t - day.axisStart) / span * 100).toFixed(2)}%">${esc(fmt(t).replace(/:00/, ''))}</span>`).join('')}</div>`;
+}
+function rangeText(merged){ return merged.map(([a, b]) => `${fmt(a)}–${fmt(b)}`).join(', '); }
+
+function renderReports(){
+  const el = $('#tab-reports');
+  const A = analyze();
+  state.lastAnalysis = A;
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  let h = '';
+  if (!A.sched.roster.length) h += `<div class="notice">Add your class schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> so each student can be checked against the hours they’re expected.</div>`;
+  if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
+  if (!A.days.length){
+    el.innerHTML = h + `<div class="start"><h2>No Zoom reports in this folder yet</h2><p class="muted">Save a participant report from Zoom into <b>${esc(state.folderName || 'your folder')}</b>, then click Refresh.</p>${zoomHelp()}</div>`;
+    return;
+  }
+  h += `<div class="toolbar">
+    <div class="seg" role="group" aria-label="Show">
+      <button data-filter="all" aria-pressed="${state.filter === 'all'}">Everyone</button>
+      <button data-filter="flag" aria-pressed="${state.filter === 'flag'}">Needs a look</button>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <div class="legend"><span><i class="sw i"></i>Instruction hour</span><span><i class="sw s"></i>Support hour</span><span><i class="sw p"></i>In Zoom</span></div>
+  </div>`;
+  if (!state.openDays.size && A.days[0]) state.openDays.add(A.days[0].dk);
+  for (const day of A.days) h += renderDay(day);
+  el.innerHTML = h;
+}
+
+function renderDay(day){
+  const q = normKey(state.query);
+  const counts = {}; for (const s of day.students) for (const f of s.flags) counts[f.k] = (counts[f.k] || 0) + 1;
+  const title = day.date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  const sub = day.secs.length
+    ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
+    : `No ${cap(day.dayName)} schedule`;
+  let rows = day.students.filter(s => (state.filter === 'all' || s.sev >= 2) && (!q || s.key.includes(q)));
+  let h = `<details class="day" data-dk="${day.dk}"${state.openDays.has(day.dk) ? ' open' : ''}>
+    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span>
+      <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
+      ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
+    </summary><div class="day-body">`;
+  if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
+  if (day.students.length){
+    h += `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
+    if (!rows.length) h += `<p class="muted small" style="padding:10px 0">${state.filter === 'flag' ? 'Everyone was present the full time.' : 'No students match that search.'}</p>`;
+    for (const s of rows){
+      const meta = [s.schedLabel];
+      if (s.flags[0].k !== 'absent') meta.push(`${s.presentMin} of ${s.reqMin} min`);
+      h += `<div class="row">
+        <div class="who"><b>${esc(s.name)}</b><span class="meta">${esc(meta.join(', '))}</span>
+          ${s.zoomNames.length ? `<span class="meta">In Zoom as ${s.zoomNames.map(z => `“${esc(z)}”`).join(', ')}</span>` : ''}</div>
+        <div class="tlc">${timeline(day, s.merged, s.secs)}</div>
+        <div class="time${s.firstJoin ? '' : ' none'}" data-label="Joined">${esc(fmt(s.firstJoin))}</div>
+        <div class="time${s.lastLeave ? '' : ' none'}" data-label="Left">${esc(fmt(s.lastLeave))}</div>
+        <div class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}
+          ${s.hasSoft ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}</div>
+      </div>`;
+    }
+  }
+  const extras = day.extras.filter(e => !q || e.key.includes(q));
+  if (extras.length){
+    h += `<h3 class="subhead">${day.secs.length ? `Joined but not on the ${cap(day.dayName)} schedule` : 'Joined'}</h3>`;
+    for (const e of extras) h += `<div class="mini"><div class="who"><b>${esc(e.name)}</b></div><div>${timeline(day, e.merged)}</div><div class="small muted">${esc(rangeText(e.merged))}</div></div>`;
+  }
+  if (day.unmatched.length){
+    const opts = day.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+    h += `<h3 class="subhead">Zoom names that didn’t match a student</h3>
+      <p class="small muted" style="margin:0 0 4px">Link a name once and it’s matched automatically from then on. Ignore names that aren’t students, like your own.</p>`;
+    for (const u of day.unmatched) h += `<div class="mini" data-rk="${esc(u.rk)}">
+      <div class="who"><b>${esc(u.raw)}</b>${u.email ? `<span class="meta">${esc(u.email)}</span>` : ''}</div>
+      <div>${timeline(day, u.merged)}</div>
+      <div class="act"><span class="small muted">${esc(rangeText(u.merged))}</span>
+        ${opts ? `<select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select>
+        <button class="btn small" data-link>Link</button>` : ''}
+        <button class="btn small ghost" data-ignore>Ignore</button></div></div>`;
+  }
+  h += `<div class="files">From ${day.files.map(esc).join(', ')}</div></div></details>`;
+  return h;
+}
+
+function zoomHelp(){
+  return `<details class="small"><summary><b>How to get the report from Zoom</b></summary>
+    <ol><li>Sign in at zoom.us in your browser and open <b>Reports</b>, then <b>Usage</b>.</li>
+    <li>Find the class and click the number in the <b>Participants</b> column.</li>
+    <li>Leave <b>Show unique users</b> unchecked so drop-offs and rejoins are kept.</li>
+    <li>Click <b>Export</b> and save the CSV into your attendance folder.</li></ol></details>`;
+}
+function startScreen(){
+  return `<div class="start"><h2>Open your attendance folder</h2>
+    <p class="muted">Each time you open the folder, every Zoom report in it is turned into a day-by-day attendance report.</p>
+    <ol><li>Make a folder on this computer and put this file in it.</li>
+      <li>Save Zoom participant reports (CSV files) into the same folder.</li>
+      <li>Click <b>Open attendance folder</b> above and choose that folder.</li>
+      <li>Paste your weekly schedule on the <b>Schedule</b> tab. It’s saved in the folder for next time.</li></ol>
+    ${zoomHelp()}
+    ${HAS_FSA ? '' : '<p class="small muted">Tip: in Chrome or Edge this page can remember your folder and save changes to it directly. In this browser, you’ll choose the folder each time and download the data file when you change something.</p>'}
+  </div>`;
+}
+
+function renderSchedule(){
+  const el = $('#tab-schedule');
+  const text = state.draft ?? state.data.scheduleText;
+  const P = parseSchedule(text);
+  const order = DAYS.filter(d => P.days[d]);
+  const S = state.data.settings;
+  let prev = '';
+  if (!order.length) prev = `<p class="muted">Paste your schedule on the left to see a preview here.</p>`;
+  else {
+    const supportOnly = new Set();
+    for (const d of order){ const ins = new Set(P.days[d].filter(s => s.type === 'instruction').flatMap(s => s.students.map(normKey)));
+      P.days[d].filter(s => s.type === 'support').forEach(s => s.students.forEach(n => { if (!ins.has(normKey(n))) supportOnly.add(`${d}|${normKey(n)}`); })); }
+    prev = `<p class="small muted">${P.roster.length} students found. ${supportOnly.size} extra support-hour slot${supportOnly.size === 1 ? '' : 's'} (students in a support hour without instruction that day).</p><div class="days">`;
+    for (const d of order){
+      prev += `<div class="dcol"><h3>${cap(d)}</h3>`;
+      if (!P.days[d].length) prev += `<p class="small muted">No sections found under ${cap(d)}.</p>`;
+      for (const s of P.days[d]){
+        const end = s.endMin ?? s.startMin + S.sectionLen;
+        prev += `<div class="sec ${s.type}"><b>${s.type === 'instruction' ? 'Instruction' : 'Support hour'}, ${fmtRange(s.startMin, end)}</b>
+          <details><summary>${s.students.length} student${s.students.length === 1 ? '' : 's'}</summary><ul>${s.students.map(n => `<li>${esc(n)}</li>`).join('')}</ul></details></div>`;
+      }
+      prev += `</div>`;
+    }
+    prev += `</div>`;
+  }
+  const warn = [...P.warnings];
+  if (P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, make the spelling match in your sheet: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
+  const changed = state.draft !== null && state.draft !== state.data.scheduleText;
+  el.innerHTML = `<div class="two">
+    <div class="panel"><h2>Paste your schedule</h2>
+      <p class="small muted">In your spreadsheet, select everything from the first day name (Monday) down to the last student in the bottom support list, across all the days. Copy it and paste it here. Day names, headings like “Instruction - 2pm” or “Support hour - 3pm”, and the names under them are read the same way they’re laid out in the sheet.</p>
+      <textarea id="schedText" spellcheck="false" placeholder="Paste from your spreadsheet">${esc(text)}</textarea>
+      <div class="actions"><button class="btn" id="saveSched"${changed ? '' : ' disabled'}>Save schedule</button>
+        ${changed ? '<button class="btn ghost" id="revertSched">Discard changes</button>' : ''}
+        <span class="small muted">${changed ? 'Not saved yet' : (state.data.scheduleText ? 'Saved' : '')}</span></div>
+    </div>
+    <div class="panel"><h2>What the page found</h2>
+      ${warn.length ? `<div class="notice"><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+      ${prev}
+      <p class="small muted" style="margin-top:12px">Students listed in both instruction and support on a day are expected for both hours. Students listed only in a support hour are expected for that hour only.</p>
+    </div></div>`;
+}
+
+function renderSettings(){
+  const S = state.data.settings;
+  const sched = parseSchedule(state.data.scheduleText);
+  const aliasList = Object.entries(state.data.aliases);
+  $('#tab-settings').innerHTML = `<div class="stack" style="max-width:760px">
+    <div class="panel"><h2>Timing</h2>
+      <div class="set">
+        <label for="s-late">Count a student late if they join more than this many minutes after the start</label><input id="s-late" type="number" min="0" max="60" data-set="lateGrace" value="${S.lateGrace}">
+        <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${S.leaveGrace}">
+        <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${S.gapMin}">
+        <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${S.sectionLen}">
+      </div></div>
+    <div class="panel"><h2>Linked Zoom names</h2>
+      ${aliasList.length ? `<ul class="list">${aliasList.map(([z, k]) => `<li><span>“${esc(z)}” is ${esc(sched.nameOf[k] || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet. Link names from the “didn’t match” list on a report.</p>'}
+    </div>
+    <div class="panel"><h2>Ignored Zoom names</h2>
+      ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
+    </div>
+    <div class="panel"><h2>Your data</h2>
+      <p class="small">The schedule, these settings, linked names, and “finished work” marks are saved in <b>${DATA_FILE}</b> inside your attendance folder. Zoom reports are only read, never changed.</p>
+      <div class="actions"><button class="btn ghost" id="dlData">Download data file</button></div>
+      <p class="small muted">For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
+    </div></div>`;
+}
+
+function renderFolderBar(){
+  const b = $('#folderBar');
+  let h = '';
+  if (state.loaded){
+    h = `<span class="where">Folder: <b>${esc(state.folderName || 'selected')}</b>, ${state.files.length} Zoom report${state.files.length === 1 ? '' : 's'}</span>
+      <button class="btn ghost" id="refresh">Refresh</button><button class="btn ghost" id="pick">Change folder</button>`;
+  } else if (state.savedHandle){
+    h = `<button class="btn" id="reopen">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
+  } else h = `<button class="btn" id="pick">Open attendance folder</button>`;
+  b.innerHTML = h;
+}
+function renderSaveState(){
+  const el = $('#saveBar');
+  if (state.saving){ el.className = 'savebar'; el.textContent = 'Saving…'; return; }
+  if (!state.dirty){ el.className = 'savebar'; el.innerHTML = state.loaded && state.canWrite ? 'All changes saved to the folder' : ''; return; }
+  el.className = 'savebar warn';
+  el.innerHTML = state.dirHandle && !state.canWrite
+    ? `Changes not saved. <button class="btn small" id="grantSave">Allow saving to folder</button> <button class="btn small ghost" id="dlData2">Download data file</button>`
+    : `Changes not saved to the folder. <button class="btn small" id="dlData2">Download data file</button> <span class="small">and put it in your attendance folder</span>`;
+}
+function renderStatus(){
+  const el = $('#status');
+  el.innerHTML = state.status ? `<div class="notice ${state.status.type === 'info' ? 'info' : ''}">${esc(state.status.text)}</div>` : '';
+}
+function render(){
+  renderFolderBar(); renderSaveState(); renderStatus();
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
+  for (const t of ['reports', 'schedule', 'settings']) $('#tab-' + t).hidden = state.tab !== t;
+  if (state.tab === 'reports') renderReports();
+  if (state.tab === 'schedule') renderSchedule();
+  if (state.tab === 'settings') renderSettings();
+}
+function setStatus(text, type){ state.status = text ? { text, type } : null; renderStatus(); }
+
+/* ---------------- Folder access and saving ---------------- */
+function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('intervention-attendance', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k){ try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e){ return null; } }
+async function idbSet(k, v){ try { const db = await idb(); await new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e){} }
+
+async function pickFolder(){
+  if (!HAS_FSA){ $('#folderInput').value = ''; $('#folderInput').click(); return; }
+  try {
+    const h = await window.showDirectoryPicker({ id: 'attendance', mode: 'readwrite' });
+    state.dirHandle = h; state.savedHandle = h; await idbSet('dir', h);
+    await loadFromHandle();
+  } catch (e){ if (e && e.name !== 'AbortError') setStatus('The folder couldn’t be opened: ' + e.message); }
+}
+async function reopen(){
+  const h = state.dirHandle || state.savedHandle; if (!h) return pickFolder();
+  try {
+    let p = await h.queryPermission({ mode: 'readwrite' });
+    if (p !== 'granted') p = await h.requestPermission({ mode: 'readwrite' });
+    if (p !== 'granted'){
+      const r = await h.requestPermission({ mode: 'read' });
+      if (r !== 'granted'){ setStatus('Access to the folder wasn’t allowed. Click “Open attendance folder” to try again.'); return; }
+    }
+    state.dirHandle = h; await loadFromHandle();
+  } catch (e){ setStatus('The saved folder couldn’t be opened. Choose it again. (' + e.message + ')'); state.savedHandle = null; renderFolderBar(); }
+}
+async function loadFromHandle(){
+  const h = state.dirHandle, files = []; let dataText = null;
+  for await (const [name, entry] of h.entries()){
+    if (entry.kind !== 'file') continue;
+    const low = name.toLowerCase();
+    if (low === DATA_FILE) dataText = await (await entry.getFile()).text();
+    else if (low.endsWith('.csv')) files.push({ name, text: await (await entry.getFile()).text() });
+  }
+  state.canWrite = (await h.queryPermission({ mode: 'readwrite' })) === 'granted';
+  ingest(files, dataText, h.name);
+}
+async function loadFromInput(list){
+  const files = []; let dataText = null, folder = '';
+  for (const f of list){
+    const low = f.name.toLowerCase();
+    if (!folder && f.webkitRelativePath) folder = f.webkitRelativePath.split('/')[0];
+    if (low === DATA_FILE) dataText = await f.text();
+    else if (low.endsWith('.csv')) files.push({ name: f.name, text: await f.text() });
+  }
+  state.canWrite = false;
+  ingest(files, dataText, folder);
+}
+function ingest(files, dataText, folderName){
+  let msg = null;
+  if (dataText){ try { state.data = withDefaults(JSON.parse(dataText)); } catch (e){ msg = `${DATA_FILE} couldn’t be read, so the schedule and settings weren’t loaded.`; } }
+  else if (!state.loaded) state.data = state.data || defaultData();
+  state.files = files.sort((a, b) => a.name.localeCompare(b.name));
+  state.folderName = folderName; state.loaded = true; state.dirty = false; state.draft = null; state.openDays.clear();
+  state.status = msg ? { text: msg } : null;
+  render();
+}
+let saveTimer = null;
+function changed(){ state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState(); }
+async function save(){
+  if (!(state.dirHandle && state.canWrite)){ renderSaveState(); return; }
+  state.saving = true; renderSaveState();
+  try {
+    const fh = await state.dirHandle.getFileHandle(DATA_FILE, { create: true });
+    const w = await fh.createWritable(); await w.write(JSON.stringify(state.data, null, 2)); await w.close();
+    state.dirty = false;
+  } catch (e){ state.canWrite = false; }
+  state.saving = false; renderSaveState();
+}
+function downloadData(){
+  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = DATA_FILE;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------------- Events ---------------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.tab){ state.tab = t.dataset.tab; render(); return; }
+  if (t.dataset.goto){ state.tab = t.dataset.goto; render(); return; }
+  if (t.id === 'pick') return pickFolder();
+  if (t.id === 'reopen') return reopen();
+  if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
+  if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
+  if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
+  if (t.dataset.filter){ state.filter = t.dataset.filter; renderReports(); return; }
+  if (t.dataset.excuse){ const k = t.dataset.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderReports(); return; }
+  if (t.hasAttribute('data-link')){ const row = t.closest('[data-rk]'); const v = row.querySelector('select').value;
+    if (!v){ row.querySelector('select').focus(); return; } state.data.aliases[row.dataset.rk] = v; changed(); renderReports(); return; }
+  if (t.hasAttribute('data-ignore')){ const rk = t.closest('[data-rk]').dataset.rk; if (!state.data.ignored.includes(rk)) state.data.ignored.push(rk); changed(); renderReports(); return; }
+  if (t.dataset.unlink){ delete state.data.aliases[t.dataset.unlink]; changed(); renderSettings(); return; }
+  if (t.dataset.unignore){ state.data.ignored = state.data.ignored.filter(z => z !== t.dataset.unignore); changed(); renderSettings(); return; }
+  if (t.id === 'saveSched'){ state.data.scheduleText = state.draft ?? state.data.scheduleText; state.draft = null; changed(); renderSchedule(); return; }
+  if (t.id === 'revertSched'){ state.draft = null; renderSchedule(); return; }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'search'){ state.query = e.target.value; const pos = e.target.selectionStart; renderReports(); const s = $('#search'); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
+  if (e.target.id === 'schedText'){ state.draft = e.target.value; clearTimeout(state.schedTimer);
+    state.schedTimer = setTimeout(() => { const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop; renderSchedule(); const n = $('#schedText'); n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top; }, 250); }
+});
+document.addEventListener('change', e => {
+  const k = e.target.dataset && e.target.dataset.set;
+  if (k){ const v = Math.max(0, Math.round(+e.target.value)); if (!isNaN(v)){ state.data.settings[k] = v; changed(); } }
+});
+document.addEventListener('toggle', e => {
+  const d = e.target; if (d.classList && d.classList.contains('day')){ if (d.open) state.openDays.add(d.dataset.dk); else state.openDays.delete(d.dataset.dk); }
+}, true);
+$('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
+window.addEventListener('beforeprint', () => document.querySelectorAll('details.day').forEach(d => d.open = true));
+window.addEventListener('beforeunload', e => { if (state.dirty && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
+
+(async function init(){
+  render();
+  if (!HAS_FSA) return;
+  const h = await idbGet('dir');
+  if (!h) return;
+  state.savedHandle = h; renderFolderBar();
+  try { if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted'){ state.dirHandle = h; await loadFromHandle(); } } catch (e){}
+})();
+</script>
+</body>
+</html>
