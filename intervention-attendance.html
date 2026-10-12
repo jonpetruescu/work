@@ -106,6 +106,50 @@ details.day[open] > summary::before{transform:rotate(45deg)}
 .k-drop{background:var(--drop-bg);color:var(--drop)}
 .k-absent{background:var(--bad);color:var(--surface)}
 .k-extra{background:var(--grid);color:var(--muted)}
+.k-exc{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* Date range + day actions */
+.range{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.range label{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.range input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
+.daybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.daybar .rate{font-size:.86rem;color:var(--muted);margin-right:auto}
+.note-txt{display:block;font-size:.8rem;color:var(--ink);font-style:italic;line-height:1.35;margin-top:2px}
+input.note{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:.82rem;width:100%;margin-top:4px}
+
+/* Students tab */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.tile .n{font-family:var(--serif);font-size:1.7rem;font-weight:600;line-height:1.1}
+.tile .l{font-size:.82rem;color:var(--muted)}
+.tile.warn .n{color:var(--bad)}
+.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table.sum{width:100%;border-collapse:collapse;font-size:.88rem}
+table.sum th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sum td{padding:9px 10px;border-bottom:1px solid var(--grid);vertical-align:middle}
+table.sum tr.detail td{background:var(--paper);padding:10px 16px 14px}
+table.sum .num{text-align:right;white-space:nowrap}
+table.sum .zero{color:var(--faint)}
+th button.sort{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+th button.sort[aria-pressed="true"]{color:var(--ink)}
+.who-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer;font-weight:600;color:var(--ink)}
+.who-btn::before{content:"▸ ";color:var(--faint);font-size:.8em}
+.who-btn[aria-expanded="true"]::before{content:"▾ "}
+.meter{display:flex;align-items:center;gap:8px;min-width:130px}
+.meter .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden;min-width:50px}
+.meter .fill{display:block;height:100%;background:var(--ok)}
+.meter.low .fill{background:var(--bad)}
+.meter b{font-weight:600;min-width:38px;text-align:right}
+.meter.low b{color:var(--bad)}
+.strip{display:flex;flex-wrap:wrap;gap:3px;max-width:260px}
+.dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+.d-full{background:var(--ok)} .d-fin{background:var(--fin)} .d-late{background:var(--late)}
+.d-missed,.d-early{background:var(--bad-bg);box-shadow:inset 0 0 0 2px var(--bad)}
+.d-soft{background:var(--soft)} .d-drop{background:var(--drop)} .d-absent{background:var(--bad)}
+.d-exc{background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)}
+.hist{width:100%;border-collapse:collapse;font-size:.84rem}
+.hist td,.hist th{padding:5px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+.hist th{font-size:.74rem;color:var(--muted);font-weight:600}
 
 /* Table */
 .grid-head,.row{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:0 14px;align-items:center}
@@ -174,9 +218,12 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
   .two{grid-template-columns:1fr}
   .legend{margin-left:0}
   .counts{padding-left:0}
+  .search{min-width:0;flex:1}
+  .strip{max-width:160px}
 }
 @media print{
-  header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice{display:none !important}
+  header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice, .daybar button, .who-btn::before{display:none !important}
+  .tablewrap{overflow:visible;border:0}
   body{background:#fff}
   details.day{break-inside:avoid-page;border-color:#bbb}
 }
@@ -196,6 +243,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
     <div class="tabrow">
       <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" data-tab="reports" aria-selected="true">Reports</button>
+        <button role="tab" data-tab="students" aria-selected="false">Students</button>
         <button role="tab" data-tab="schedule" aria-selected="false">Schedule</button>
         <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
       </nav>
@@ -206,6 +254,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 <main class="wrap">
   <div id="status" aria-live="polite"></div>
   <section id="tab-reports"></section>
+  <section id="tab-students" hidden></section>
   <section id="tab-schedule" hidden></section>
   <section id="tab-settings" hidden></section>
 </main>
@@ -217,15 +266,16 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
    Everything below runs locally. There are no network requests, and the
    Content-Security-Policy above blocks them even if one were attempted.
    Data written: one file, attendance-tracker-data.json, inside the folder
-   you choose (schedule, settings, linked Zoom names, "finished work" marks).
+   you choose (schedule, settings, linked Zoom names, "finished work" and
+   excused-absence marks, and notes).
    ------------------------------------------------------------------ */
 const DATA_FILE = 'attendance-tracker-data.json';
 const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 const HAS_FSA = typeof window.showDirectoryPicker === 'function';
-const SEVERITY = {absent:6, missed:5, early:5, late:4, drop:3, soft:2, fin:1, full:0};
+const SEVERITY = {absent:6, missed:5, early:5, late:4, drop:3, soft:2, fin:1, exc:1, full:0};
 const COUNT_ORDER = [
   ['full','present full time'], ['fin','finished work early'], ['late','late'], ['missed','missed instruction'],
-  ['early','left early'], ['soft','left support early'], ['drop','dropped off'], ['absent','absent']
+  ['early','left early'], ['soft','left support early'], ['drop','dropped off'], ['absent','absent'], ['exc','excused']
 ];
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -236,21 +286,27 @@ const fmt = t => t == null ? '—' : new Date(t).toLocaleTimeString([], {hour:'n
 const fmtMin = m => { let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${pad(mi)} ${ap}`; };
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const fmtRange = (a, b) => { const A = fmtMin(a), B = fmtMin(b); return (A.slice(-2) === B.slice(-2) ? A.slice(0, -3) : A) + '–' + B; };
+const dkOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pct = (n, d) => d ? Math.round(n / d * 100) : null;
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 function defaultData(){
-  return { version: 1, scheduleText: '', settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60 },
-           aliases: {}, ignored: [], excused: {} };
+  return { version: 2, scheduleText: '', settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, concernRate: 80 },
+           aliases: {}, ignored: [], excused: {}, excusedAbsent: {}, notes: {} };
 }
 function withDefaults(d){
   const base = defaultData();
   return { ...base, ...d, settings: { ...base.settings, ...(d && d.settings) },
-           aliases: { ...(d && d.aliases) }, ignored: [...((d && d.ignored) || [])], excused: { ...(d && d.excused) } };
+           aliases: { ...(d && d.aliases) }, ignored: [...((d && d.ignored) || [])], excused: { ...(d && d.excused) },
+           excusedAbsent: { ...(d && d.excusedAbsent) }, notes: { ...(d && d.notes) } };
 }
 
 const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false,
-  tab: 'reports', filter: 'all', query: '', draft: null, openDays: new Set(), status: null
+  tab: 'reports', filter: 'all', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
+  range: { preset: 'all', from: '', to: '' }, noteEdit: null,
+  sort: 'concern', openStudents: new Set()
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -463,10 +519,10 @@ function analyze(){
   const ignored = new Set(state.data.ignored);
   const fileErrors = [], byDate = new Map();
   for (const f of state.files){
-    const z = parseZoomFile(f.name, f.text);
+    const z = f.parsed || (f.parsed = parseZoomFile(f.name, f.text));
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
     for (const r of z.rows){
-      const dk = `${r.join.getFullYear()}-${pad(r.join.getMonth() + 1)}-${pad(r.join.getDate())}`;
+      const dk = dkOf(r.join);
       if (!byDate.has(dk)) byDate.set(dk, { dk, files: new Set(), rows: [] });
       const g = byDate.get(dk); g.files.add(f.name); g.rows.push(r);
     }
@@ -516,12 +572,14 @@ function analyzeDay(g, sched, matcher, ignored, S){
     const xkey = `${g.dk}|${p.key}`;
     const soft = res.flags.find(f => f.k === 'soft');
     if (soft && state.data.excused[xkey]){ soft.k = 'fin'; soft.label = `Finished work, left ${soft.min} min early`; }
+    const isAbsent = res.flags[0].k === 'absent';
+    if (isAbsent && state.data.excusedAbsent[xkey]) res.flags[0] = { k: 'exc', label: 'Excused absence' };
     const sev = Math.max(...res.flags.map(f => SEVERITY[f.k]));
     const kinds = new Set(p.sections.map(s => s.type));
     const schedLabel = kinds.has('instruction') && kinds.has('support') ? 'Instruction + support'
       : kinds.has('instruction') ? 'Instruction' : 'Support hour only';
     const zoomNames = e ? [...e.zoom].filter(z => normKey(z) !== p.key) : [];
-    return { ...p, ...res, xkey, sev, schedLabel, zoomNames, hasSoft: !!soft };
+    return { ...p, ...res, xkey, sev, schedLabel, zoomNames, hasSoft: !!soft, isAbsent, note: state.data.notes[xkey] || '' };
   }).sort((a, b) => b.sev - a.sev || a.name.localeCompare(b.name));
   const extras = [...seen.values()].filter(e => !plan.has(e.key)).map(e => ({ ...e, merged: mergeIntervals(e.intervals) }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -564,17 +622,57 @@ function renderReports(){
     el.innerHTML = h + `<div class="start"><h2>No Zoom reports in this folder yet</h2><p class="muted">Save a participant report from Zoom into <b>${esc(state.folderName || 'your folder')}</b>, then click Refresh.</p>${zoomHelp()}</div>`;
     return;
   }
-  h += `<div class="toolbar">
+  const days = daysInRange(A.days);
+  h += `<div class="toolbar">${rangeBar()}
     <div class="seg" role="group" aria-label="Show">
       <button data-filter="all" aria-pressed="${state.filter === 'all'}">Everyone</button>
       <button data-filter="flag" aria-pressed="${state.filter === 'flag'}">Needs a look</button>
     </div>
     <input class="search" id="search" type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <button class="btn small ghost" id="openAll">Expand all</button><button class="btn small ghost" id="closeAll">Collapse all</button>
+    <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button>
     <div class="legend"><span><i class="sw i"></i>Instruction hour</span><span><i class="sw s"></i>Support hour</span><span><i class="sw p"></i>In Zoom</span></div>
   </div>`;
-  if (!state.openDays.size && A.days[0]) state.openDays.add(A.days[0].dk);
-  for (const day of A.days) h += renderDay(day);
+  if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. ${A.days.length} report day${A.days.length === 1 ? ' is' : 's are'} outside the range. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
+  if (!state.autoOpened){ state.openDays.add(days[0].dk); state.autoOpened = true; }
+  for (const day of days) h += renderDay(day);
   el.innerHTML = h;
+  if (state.noteEdit){ const n = el.querySelector('input.note'); if (n){ n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }
+}
+
+/* ---------------- Date range (shared by Reports and Students) ---------------- */
+function rangeBounds(){
+  const r = state.range;
+  if (r.preset === 'all') return { from: '', to: '' };
+  if (r.preset === 'custom') return { from: r.from, to: r.to };
+  const d = new Date(); d.setDate(d.getDate() - (+r.preset - 1));
+  return { from: dkOf(d), to: '' };
+}
+function daysInRange(days){
+  const { from, to } = rangeBounds();
+  return days.filter(d => (!from || d.dk >= from) && (!to || d.dk <= to));
+}
+function rangeBar(){
+  const p = state.range.preset, b = rangeBounds();
+  return `<div class="range" role="group" aria-label="Dates">
+    <div class="seg"><button data-range="all" aria-pressed="${p === 'all'}">All dates</button>
+      <button data-range="14" aria-pressed="${p === '14'}">Past 2 weeks</button>
+      <button data-range="30" aria-pressed="${p === '30'}">Past 30 days</button></div>
+    <label>From <input type="date" id="rFrom" value="${esc(b.from)}"></label>
+    <label>to <input type="date" id="rTo" value="${esc(b.to)}"></label></div>`;
+}
+function rangeLabel(){
+  const { from, to } = rangeBounds();
+  return !from && !to ? 'all dates' : `${from || 'start'} to ${to || 'latest'}`;
+}
+
+function followUpText(day){
+  const title = day.date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  const flagged = day.students.filter(s => s.sev >= 2);
+  const lines = [`${title}: ${plural(flagged.length, 'student')} to follow up with`];
+  for (const s of flagged) lines.push(`- ${s.name}: ${s.flags.filter(f => SEVERITY[f.k] >= 2).map(f => f.label).join('; ')}${s.note ? ` (note: ${s.note})` : ''}`);
+  if (!flagged.length) lines.push('Everyone scheduled was present the full time.');
+  return lines.join('\n');
 }
 
 function renderDay(day){
@@ -584,6 +682,8 @@ function renderDay(day){
   const sub = day.secs.length
     ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
     : `No ${cap(day.dayName)} schedule`;
+  const expected = day.students.filter(s => s.flags[0].k !== 'exc').length;
+  const came = day.students.filter(s => !s.isAbsent).length;
   let rows = day.students.filter(s => (state.filter === 'all' || s.sev >= 2) && (!q || s.key.includes(q)));
   let h = `<details class="day" data-dk="${day.dk}"${state.openDays.has(day.dk) ? ' open' : ''}>
     <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span>
@@ -592,19 +692,26 @@ function renderDay(day){
     </summary><div class="day-body">`;
   if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
   if (day.students.length){
+    h += `<div class="daybar"><span class="rate">${came} of ${expected} attended (${pct(came, expected) ?? 0}%)</span>
+      <button class="btn small ghost" data-copy="${day.dk}">Copy follow-up list</button></div>`;
     h += `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
     if (!rows.length) h += `<p class="muted small" style="padding:10px 0">${state.filter === 'flag' ? 'Everyone was present the full time.' : 'No students match that search.'}</p>`;
     for (const s of rows){
       const meta = [s.schedLabel];
-      if (s.flags[0].k !== 'absent') meta.push(`${s.presentMin} of ${s.reqMin} min`);
+      if (!s.isAbsent) meta.push(`${s.presentMin} of ${s.reqMin} min`);
+      const editing = state.noteEdit === s.xkey;
       h += `<div class="row">
         <div class="who"><b>${esc(s.name)}</b><span class="meta">${esc(meta.join(', '))}</span>
-          ${s.zoomNames.length ? `<span class="meta">In Zoom as ${s.zoomNames.map(z => `“${esc(z)}”`).join(', ')}</span>` : ''}</div>
+          ${s.zoomNames.length ? `<span class="meta">In Zoom as ${s.zoomNames.map(z => `“${esc(z)}”`).join(', ')}</span>` : ''}
+          ${editing ? `<input class="note" data-note="${esc(s.xkey)}" value="${esc(s.note)}" placeholder="Note, then press Enter" aria-label="Note for ${esc(s.name)}">`
+            : s.note ? `<span class="note-txt">${esc(s.note)}</span>` : ''}</div>
         <div class="tlc">${timeline(day, s.merged, s.secs)}</div>
         <div class="time${s.firstJoin ? '' : ' none'}" data-label="Joined">${esc(fmt(s.firstJoin))}</div>
         <div class="time${s.lastLeave ? '' : ' none'}" data-label="Left">${esc(fmt(s.lastLeave))}</div>
         <div class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}
-          ${s.hasSoft ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}</div>
+          ${s.hasSoft ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}
+          ${s.isAbsent ? `<button class="linkish" data-excabs="${esc(s.xkey)}">${state.data.excusedAbsent[s.xkey] ? 'Undo excused' : 'Mark excused'}</button>` : ''}
+          ${editing ? '' : `<button class="linkish" data-noteedit="${esc(s.xkey)}">${s.note ? 'Edit note' : 'Add note'}</button>`}</div>
       </div>`;
     }
   }
@@ -627,6 +734,150 @@ function renderDay(day){
   }
   h += `<div class="files">From ${day.files.map(esc).join(', ')}</div></div></details>`;
   return h;
+}
+
+/* ---------------- Students: totals across the selected dates ---------------- */
+function studentSummary(days){
+  const map = new Map();
+  for (const day of [...days].reverse()) for (const s of day.students){   // oldest first
+    if (!map.has(s.key)) map.set(s.key, { key: s.key, name: s.name, rec: [] });
+    map.get(s.key).rec.push({ day, s });
+  }
+  const T = state.data.settings.concernRate;
+  return [...map.values()].map(p => {
+    const c = { sessions: 0, excused: 0, attended: 0, absent: 0, late: 0, missed: 0, early: 0, drop: 0, full: 0, pres: 0, req: 0 };
+    for (const { s } of p.rec){
+      const ks = new Set(s.flags.map(f => f.k));
+      c.sessions++;
+      if (ks.has('exc')){ c.excused++; continue; }
+      c.req += s.reqMin; c.pres += s.presentMin;
+      if (ks.has('absent')) c.absent++; else c.attended++;
+      if (ks.has('late')) c.late++;
+      if (ks.has('missed')) c.missed++;
+      if (ks.has('early') || ks.has('soft')) c.early++;
+      if (ks.has('drop')) c.drop++;
+      if (ks.has('full') || ks.has('fin')) c.full++;
+    }
+    let streak = 0;
+    for (let i = p.rec.length - 1; i >= 0; i--){ const k = p.rec[i].s.flags[0].k; if (k === 'exc') continue; if (k === 'absent') streak++; else break; }
+    const rate = pct(c.attended, c.sessions - c.excused), dose = pct(c.pres, c.req);
+    const concern = (rate !== null && rate < T) || (dose !== null && dose < T) || streak >= 2;
+    return { ...p, ...c, rate, dose, streak, concern };
+  });
+}
+function sortStudents(list){
+  const by = state.sort, n = v => v ?? 101;
+  return list.sort((a, b) =>
+    by === 'name' ? a.name.localeCompare(b.name)
+    : by === 'rate' ? n(a.rate) - n(b.rate) || a.name.localeCompare(b.name)
+    : by === 'dose' ? n(a.dose) - n(b.dose) || a.name.localeCompare(b.name)
+    : by === 'absent' ? b.absent - a.absent || a.name.localeCompare(b.name)
+    : (b.concern - a.concern) || b.streak - a.streak || n(a.rate) - n(b.rate) || n(a.dose) - n(b.dose) || a.name.localeCompare(b.name));
+}
+function meter(v){
+  if (v === null) return '<span class="zero">—</span>';
+  return `<span class="meter${v < state.data.settings.concernRate ? ' low' : ''}"><span class="track"><span class="fill" style="width:${v}%"></span></span><b>${v}%</b></span>`;
+}
+const cnt = n => `<span class="${n ? '' : 'zero'}">${n}</span>`;
+const shortDate = d => d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+
+function renderStudents(){
+  const el = $('#tab-students');
+  const A = analyze();
+  state.lastAnalysis = A;
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  if (!A.days.length || !A.sched.roster.length){
+    el.innerHTML = `<div class="start"><h2>Nothing to total up yet</h2><p class="muted">This tab adds up each student’s attendance across every Zoom report. It needs ${!A.sched.roster.length ? 'your class schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button>' : 'at least one Zoom report in the folder'}.</p></div>`;
+    return;
+  }
+  const days = daysInRange(A.days);
+  const q = normKey(state.query);
+  const all = sortStudents(studentSummary(days));
+  const list = all.filter(s => !q || s.key.includes(q));
+  const T = state.data.settings.concernRate;
+  const rates = all.filter(s => s.rate !== null), doses = all.filter(s => s.dose !== null);
+  const avg = (xs, k) => xs.length ? Math.round(xs.reduce((t, s) => t + s[k], 0) / xs.length) + '%' : '—';
+  const flagged = all.filter(s => s.concern).length;
+  const sortBtn = (k, label) => `<button class="sort" data-sort="${k}" aria-pressed="${state.sort === k}">${label}${state.sort === k ? ' ↓' : ''}</button>`;
+  let h = `<div class="toolbar">${rangeBar()}
+    <input class="search" id="search" type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <button class="btn small ghost" id="exportSummary">Export CSV</button>
+    <button class="btn small ghost" id="printPage">Print</button></div>`;
+  if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
+  h += `<div class="tiles">
+    <div class="tile"><div class="n">${days.length}</div><div class="l">class day${days.length === 1 ? '' : 's'} with reports</div></div>
+    <div class="tile"><div class="n">${all.length}</div><div class="l">students scheduled</div></div>
+    <div class="tile"><div class="n">${avg(rates, 'rate')}</div><div class="l">average days attended</div></div>
+    <div class="tile"><div class="n">${avg(doses, 'dose')}</div><div class="l">average minutes received</div></div>
+    <div class="tile${flagged ? ' warn' : ''}"><div class="n">${flagged}</div><div class="l">below ${T}% or absent 2+ in a row</div></div>
+  </div>`;
+  h += `<div class="tablewrap"><table class="sum"><thead><tr>
+    <th>${sortBtn('concern', 'Student')} <span class="small">· ${sortBtn('name', 'A–Z')}</span></th>
+    <th>${sortBtn('rate', 'Days attended')}</th><th>${sortBtn('dose', 'Minutes received')}</th>
+    <th class="num">Late</th><th class="num">Missed instr.</th><th class="num">Left early</th><th class="num">Out mid-class</th>
+    <th class="num">${sortBtn('absent', 'Absent')}</th><th>Day by day</th></tr></thead><tbody>`;
+  if (!list.length) h += `<tr><td colspan="9" class="muted">No students match that search.</td></tr>`;
+  for (const s of list){
+    const open = state.openStudents.has(s.key);
+    const notes = [];
+    if (s.streak >= 2) notes.push(`<span class="chip k-absent">Absent last ${s.streak}</span>`);
+    if (s.excused) notes.push(`<span class="chip k-exc">${s.excused} excused</span>`);
+    h += `<tr><td><button class="who-btn" data-student="${esc(s.key)}" aria-expanded="${open}">${esc(s.name)}</button>
+        ${notes.length ? `<div class="chips" style="margin-top:3px">${notes.join('')}</div>` : ''}</td>
+      <td>${meter(s.rate)}<span class="small muted">${s.attended} of ${s.sessions - s.excused}</span></td>
+      <td>${meter(s.dose)}<span class="small muted">${s.pres} of ${s.req} min</span></td>
+      <td class="num">${cnt(s.late)}</td><td class="num">${cnt(s.missed)}</td><td class="num">${cnt(s.early)}</td><td class="num">${cnt(s.drop)}</td><td class="num">${cnt(s.absent)}</td>
+      <td><div class="strip">${s.rec.map(({ day, s: r }) => { const f = r.flags.reduce((w, x) => SEVERITY[x.k] > SEVERITY[w.k] ? x : w);
+        const t = `${shortDate(day.date)}: ${r.flags.map(x => x.label).join(', ')}`;
+        return `<span class="dot d-${f.k}" title="${esc(t)}" role="img" aria-label="${esc(t)}"></span>`; }).join('')}</div></td></tr>`;
+    if (open){
+      h += `<tr class="detail"><td colspan="9"><table class="hist"><thead><tr><th>Date</th><th>Status</th><th>Joined</th><th>Left</th><th>Minutes</th><th>Note</th></tr></thead><tbody>
+        ${[...s.rec].reverse().map(({ day, s: r }) => `<tr><td>${esc(shortDate(day.date))}</td>
+          <td><div class="chips">${r.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}</div></td>
+          <td>${esc(fmt(r.firstJoin))}</td><td>${esc(fmt(r.lastLeave))}</td><td>${r.flags[0].k === 'exc' ? '—' : `${r.presentMin} of ${r.reqMin}`}</td>
+          <td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></td></tr>`;
+    }
+  }
+  h += `</tbody></table></div>
+    <p class="small muted" style="margin-top:10px">Excused absences don’t count against a student. “Minutes received” is time in Zoom during the hours the student was scheduled. Change the ${T}% line on the <button class="linkish" data-goto="settings">Settings tab</button>.</p>`;
+  el.innerHTML = h;
+}
+
+/* ---------------- Exports ---------------- */
+function csvCell(v){
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // keep spreadsheets from treating names as formulas
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+const toCSV = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+function downloadFile(name, text, type){
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function stamp(){ const { from, to } = rangeBounds(); return from || to ? `${from || 'start'}_to_${to || 'latest'}` : 'all-dates'; }
+function exportDays(){
+  const days = daysInRange((state.lastAnalysis || analyze()).days);
+  const rows = [['Date', 'Day', 'Student', 'Scheduled for', 'Joined', 'Left', 'Minutes present', 'Minutes scheduled', 'Status', 'Note']];
+  for (const day of [...days].reverse()) for (const s of [...day.students].sort((a, b) => a.name.localeCompare(b.name)))
+    rows.push([day.dk, cap(day.dayName), s.name, s.schedLabel, s.firstJoin ? fmt(s.firstJoin) : '', s.lastLeave ? fmt(s.lastLeave) : '',
+      s.flags[0].k === 'exc' ? '' : s.presentMin, s.reqMin, s.flags.map(f => f.label).join('; '), s.note]);
+  downloadFile(`attendance-by-day_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+function exportSummary(){
+  const days = daysInRange((state.lastAnalysis || analyze()).days);
+  const rows = [['Student', 'Days scheduled', 'Days attended', 'Excused absences', 'Unexcused absences', 'Days attended %',
+    'Minutes present', 'Minutes scheduled', 'Minutes %', 'Late', 'Missed instruction', 'Left early', 'Out mid-class', 'Current absence streak', 'Dates']];
+  for (const s of studentSummary(days).sort((a, b) => a.name.localeCompare(b.name)))
+    rows.push([s.name, s.sessions, s.attended, s.excused, s.absent, s.rate ?? '', s.pres, s.req, s.dose ?? '',
+      s.late, s.missed, s.early, s.drop, s.streak, rangeLabel()]);
+  downloadFile(`attendance-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch (e){
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e2){} ta.remove(); return ok;
+  }
 }
 
 function zoomHelp(){
@@ -702,6 +953,7 @@ function renderSettings(){
         <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${S.leaveGrace}">
         <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${S.gapMin}">
         <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${S.sectionLen}">
+        <label for="s-rate">On the Students tab, flag anyone whose days attended or minutes received fall below this percent</label><input id="s-rate" type="number" min="0" max="100" data-set="concernRate" value="${S.concernRate}">
       </div></div>
     <div class="panel"><h2>Linked Zoom names</h2>
       ${aliasList.length ? `<ul class="list">${aliasList.map(([z, k]) => `<li><span>“${esc(z)}” is ${esc(sched.nameOf[k] || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet. Link names from the “didn’t match” list on a report.</p>'}
@@ -710,7 +962,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule, these settings, linked names, and “finished work” marks are saved in <b>${DATA_FILE}</b> inside your attendance folder. Zoom reports are only read, never changed.</p>
+      <p class="small">The schedule, these settings, linked names, “finished work” and excused-absence marks, and notes are saved in <b>${DATA_FILE}</b> inside your attendance folder. Zoom reports are only read, never changed.</p>
       <div class="actions"><button class="btn ghost" id="dlData">Download data file</button></div>
       <p class="small muted">For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
     </div></div>`;
@@ -743,12 +995,18 @@ function renderStatus(){
 function render(){
   renderFolderBar(); renderSaveState(); renderStatus();
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
-  for (const t of ['reports', 'schedule', 'settings']) $('#tab-' + t).hidden = state.tab !== t;
+  for (const t of ['reports', 'students', 'schedule', 'settings']) $('#tab-' + t).hidden = state.tab !== t;
   if (state.tab === 'reports') renderReports();
+  if (state.tab === 'students') renderStudents();
   if (state.tab === 'schedule') renderSchedule();
   if (state.tab === 'settings') renderSettings();
 }
-function setStatus(text, type){ state.status = text ? { text, type } : null; renderStatus(); }
+function renderCurrent(){ if (state.tab === 'students') renderStudents(); else renderReports(); }
+function setStatus(text, type){
+  state.status = text ? { text, type } : null; renderStatus();
+  clearTimeout(state.statusTimer);
+  if (type === 'info') state.statusTimer = setTimeout(() => { if (state.status && state.status.text === text) setStatus(null); }, 5000);
+}
 
 /* ---------------- Folder access and saving ---------------- */
 function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('intervention-attendance', 1);
@@ -803,7 +1061,7 @@ function ingest(files, dataText, folderName){
   if (dataText){ try { state.data = withDefaults(JSON.parse(dataText)); } catch (e){ msg = `${DATA_FILE} couldn’t be read, so the schedule and settings weren’t loaded.`; } }
   else if (!state.loaded) state.data = state.data || defaultData();
   state.files = files.sort((a, b) => a.name.localeCompare(b.name));
-  state.folderName = folderName; state.loaded = true; state.dirty = false; state.draft = null; state.openDays.clear();
+  state.folderName = folderName; state.loaded = true; state.dirty = false; state.draft = null; state.openDays.clear(); state.autoOpened = false; state.noteEdit = null;
   state.status = msg ? { text: msg } : null;
   render();
 }
@@ -819,11 +1077,7 @@ async function save(){
   } catch (e){ state.canWrite = false; }
   state.saving = false; renderSaveState();
 }
-function downloadData(){
-  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = DATA_FILE;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
+function downloadData(){ downloadFile(DATA_FILE, JSON.stringify(state.data, null, 2), 'application/json'); }
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click', async e => {
@@ -837,6 +1091,19 @@ document.addEventListener('click', async e => {
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
   if (t.dataset.filter){ state.filter = t.dataset.filter; renderReports(); return; }
   if (t.dataset.excuse){ const k = t.dataset.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderReports(); return; }
+  if (t.dataset.excabs){ const k = t.dataset.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderReports(); return; }
+  if (t.dataset.noteedit){ state.noteEdit = t.dataset.noteedit; renderReports(); return; }
+  if (t.dataset.range){ state.range = { preset: t.dataset.range, from: '', to: '' }; renderCurrent(); return; }
+  if (t.id === 'openAll'){ for (const d of daysInRange(state.lastAnalysis.days)) state.openDays.add(d.dk); renderReports(); return; }
+  if (t.id === 'closeAll'){ state.openDays.clear(); renderReports(); return; }
+  if (t.id === 'exportDays') return exportDays();
+  if (t.id === 'exportSummary') return exportSummary();
+  if (t.id === 'printPage') return window.print();
+  if (t.dataset.copy){ const day = state.lastAnalysis.days.find(d => d.dk === t.dataset.copy); if (!day) return;
+    const ok = await copyText(followUpText(day));
+    setStatus(ok ? 'Follow-up list copied. Paste it into an email or message.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
+  if (t.dataset.sort){ state.sort = t.dataset.sort; renderStudents(); return; }
+  if (t.dataset.student){ const k = t.dataset.student; if (state.openStudents.has(k)) state.openStudents.delete(k); else state.openStudents.add(k); renderStudents(); return; }
   if (t.hasAttribute('data-link')){ const row = t.closest('[data-rk]'); const v = row.querySelector('select').value;
     if (!v){ row.querySelector('select').focus(); return; } state.data.aliases[row.dataset.rk] = v; changed(); renderReports(); return; }
   if (t.hasAttribute('data-ignore')){ const rk = t.closest('[data-rk]').dataset.rk; if (!state.data.ignored.includes(rk)) state.data.ignored.push(rk); changed(); renderReports(); return; }
@@ -846,13 +1113,30 @@ document.addEventListener('click', async e => {
   if (t.id === 'revertSched'){ state.draft = null; renderSchedule(); return; }
 });
 document.addEventListener('input', e => {
-  if (e.target.id === 'search'){ state.query = e.target.value; const pos = e.target.selectionStart; renderReports(); const s = $('#search'); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
+  if (e.target.id === 'search'){ state.query = e.target.value; const pos = e.target.selectionStart; renderCurrent(); const s = $('#tab-' + state.tab + ' #search'); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (e.target.id === 'schedText'){ state.draft = e.target.value; clearTimeout(state.schedTimer);
     state.schedTimer = setTimeout(() => { const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop; renderSchedule(); const n = $('#schedText'); n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top; }, 250); }
 });
 document.addEventListener('change', e => {
   const k = e.target.dataset && e.target.dataset.set;
-  if (k){ const v = Math.max(0, Math.round(+e.target.value)); if (!isNaN(v)){ state.data.settings[k] = v; changed(); } }
+  if (k){ let v = Math.max(0, Math.round(+e.target.value)); if (k === 'concernRate') v = Math.min(100, v); if (!isNaN(v)){ state.data.settings[k] = v; changed(); } }
+  if (e.target.id === 'rFrom' || e.target.id === 'rTo'){
+    const f = $('#tab-' + state.tab + ' #rFrom').value, to = $('#tab-' + state.tab + ' #rTo').value;
+    state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; renderCurrent(); }
+  if (e.target.dataset && e.target.dataset.note) commitNote(e.target);
+});
+function commitNote(input, redraw = true){
+  const k = input.dataset.note; if (state.noteEdit !== k) return;
+  const v = input.value.trim();
+  if (v !== (state.data.notes[k] || '')){ if (v) state.data.notes[k] = v; else delete state.data.notes[k]; changed(); }
+  state.noteEdit = null; if (redraw) renderReports();
+}
+// Leaving the note box saves it. When focus moves to another note button, its click redraws the page.
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.dataset.noteedit)); });
+document.addEventListener('keydown', e => {
+  if (!(e.target.dataset && e.target.dataset.note)) return;
+  if (e.key === 'Enter'){ e.preventDefault(); commitNote(e.target); }
+  if (e.key === 'Escape'){ state.noteEdit = null; renderReports(); }
 });
 document.addEventListener('toggle', e => {
   const d = e.target; if (d.classList && d.classList.contains('day')){ if (d.open) state.openDays.add(d.dataset.dk); else state.openDays.delete(d.dataset.dk); }
