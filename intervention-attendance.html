@@ -324,18 +324,74 @@ table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:midd
 .cal td.c-missing{border:1px dashed var(--late);color:var(--late)}
 .cal td.c-off{color:var(--faint)}
 .cal td.c-pending{border:1px solid var(--grid);color:var(--faint)}
-.calbtn{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:50px;cursor:pointer;border-radius:6px}
-.calbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-.calbtn[aria-pressed="true"]{outline:3px solid var(--focus);outline-offset:1px}
-.cal .notedot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:currentColor}
-table.cal th.wkc{width:8.5em;text-align:left;padding-left:8px}
-table.cal td.wkc{font-size:.8rem;font-weight:500;text-align:left;padding:0 0 0 8px;white-space:nowrap}
-.wkbar{display:block;height:6px;border-radius:3px;background:var(--grid);margin:0 8px 4px 0;overflow:hidden}
-.wkbar i{display:block;height:100%;background:var(--bar)}
-.wkmini{display:none}
-.daydetail{border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:8px;padding:12px 14px;margin-top:14px;max-width:760px}
+.daydetail{border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:8px;padding:12px 14px;background:var(--surface)}
 .dd-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:8px}
-.dd-links{margin-left:auto;display:flex;gap:14px}
+.dd-links{margin-left:auto;display:flex;flex-wrap:wrap;gap:4px 14px}
+.dd-min{margin:6px 0 2px}
+
+/* Class-strip calendar (student report) */
+table.scal{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 2px;font-size:.8rem;--gut:16px}
+table.scal.g2on{--gut:34px}
+.scal col.c-lab{width:7%}
+.scal col.c-wd{width:var(--wa)}
+.scal col.c-wk{width:24%}
+.scal th,.scal td{padding:0 2px}
+.scal thead th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:left;vertical-align:bottom;padding-bottom:2px}
+.scal th.lab{font-size:.72rem;font-weight:500;color:var(--muted);text-align:left;white-space:nowrap}
+.colaxis{margin:3px 11px 0 calc(var(--gut) + 5px)}
+.colaxis.wkax{margin:3px calc(4.6em + 4px) 0 14px}
+.rib{position:relative;height:4px;border-radius:2px}
+.rib span{position:absolute;top:0;bottom:0}
+.rib .instruction{background:var(--instr)}
+.rib .support{background:var(--support)}
+.ticks{position:relative;height:13px;font-size:.66rem;font-weight:400;color:var(--faint)}
+.ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.ticks .s{left:0;transform:none}
+.ticks .e{right:0;transform:none}
+.scal tbody td{height:24px}
+.scal.roomy tbody td{height:34px}
+.sbtn,.scell{box-sizing:border-box;display:grid;grid-template-columns:var(--gut) minmax(0,1fr) 6px;column-gap:3px;align-items:center;width:100%;height:24px;padding:0 2px;border-radius:4px}
+.sbtn{cursor:pointer;background:none;border:0;margin:0;font:inherit;color:inherit;text-align:left}
+.scal.roomy .sbtn,.scal.roomy .scell{height:34px}
+.sbtn:hover{background:var(--paper)}
+.sbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.sbtn[aria-pressed="true"]{outline:2px solid var(--focus);outline-offset:1px;background:var(--paper)}
+.gut{display:flex;gap:2px}
+.g{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;font-size:.6rem;font-weight:700;line-height:1;flex:none}
+.g.lc-noclass{color:var(--muted);border:1px dashed var(--line)}
+.g.lc-missing{color:var(--late);border:1px dashed var(--late)}
+.ds{position:relative;display:block;height:10px}
+.scal.roomy .ds{height:14px}
+.ds .tk{position:absolute;top:0;bottom:0;background:var(--line);border-radius:2px;overflow:hidden}
+.ds .tk.pend{opacity:.45}
+.ds .tk i{position:absolute;top:0;bottom:0}
+.ds .tk .bd{position:absolute;top:0;bottom:0;width:1px;background:var(--surface)}
+.nd{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);justify-self:center}
+.fuk{font-size:.7rem}
+.scal tr.mo > *{border-top:1px solid var(--line)}
+.scal tr.chg td{height:auto;padding:6px 2px 1px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--line)}
+.scal tfoot th,.scal tfoot td{font-size:.72rem;font-weight:500;color:var(--muted);height:auto;text-align:center;line-height:1.3;padding-top:4px}
+.scal tfoot th{text-align:left}
+.scal tr.ddrow td{height:auto;padding:4px 2px 10px}
+.wb{display:grid;grid-template-columns:10px minmax(0,1fr) 4.6em;column-gap:4px;align-items:center;font-size:.72rem;color:var(--muted)}
+.wb .fu{font-size:.6rem;color:var(--ink);line-height:1}
+.wb .wt{display:block}
+.wb .tr{position:relative;display:block;height:8px;background:var(--line);border-radius:0 4px 4px 0}
+.wb .tr i{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:0 4px 4px 0}
+.wb b{font-weight:500;color:var(--ink);white-space:nowrap}
+.ddpic{position:relative;margin:4px 0 2px}
+.ddpic .ribl{position:relative;height:16px;font-size:.74rem;color:var(--muted)}
+.ddpic .ribl span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.ddpic .rib{height:6px;margin-bottom:3px}
+.ddpic .ds{height:18px}
+.ddpic .ev{position:relative;height:20px}
+.ddpic .ev span{position:absolute;top:4px;white-space:nowrap;font-size:.74rem}
+.ddpic .ev .a-center{transform:translateX(-50%)}
+.ddpic .ev .a-end{transform:translateX(-100%)}
+.narrowonly{display:none}
+details.daytable{margin-top:10px}
+details.daytable > summary{cursor:pointer;font-size:.86rem;color:var(--muted)}
+details.daytable .hist{margin-top:8px}
 table.cal tfoot th,table.cal tfoot td{font-size:.72rem;font-weight:500;height:auto;color:var(--muted);text-align:center;padding:1px 2px;line-height:1.3}
 table.cal tfoot th{text-align:left;white-space:normal;line-height:1.15}
 
@@ -394,8 +450,6 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   table.cal th.wk{width:4.2em}
   /* Narrow cells: the date sits above the letter instead of beside it. */
   table.cal tbody td{height:58px;padding-top:12px}
-  table.cal tbody td:has(.calbtn){padding-top:0}
-  .calbtn{height:58px;padding-top:14px}
   .cal .dn{top:2px;left:3px}
   .row.slim{grid-template-columns:1fr}
   .settext{grid-template-columns:1fr}
@@ -414,8 +468,20 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   .mkey .kd{display:block;margin-top:2px}
   .mkey .kd .sep{display:none}
   .mfig{gap:6px 24px}
-  table.cal .wkc{display:none}
-  .wkmini{display:block;font-size:.66rem;font-weight:500;margin-top:2px;line-height:1.25}
+  .scal col.c-lab{width:14%}
+  .scal col.c-wd{width:var(--wb)}
+  .scal col.c-wk{width:22%}
+  .scal.wd3{--gut:16px}
+  .scal.wd3 .g2{display:none}
+  .ticks .mid{display:none}
+  .scal.wd3 .ticks,.wkax{display:none}
+  .colaxis{margin-right:4px}
+  .scal.wd3 .wb{grid-template-columns:10px minmax(0,1fr) 0}
+  .scal.wd3 .wb b{display:none}
+  .scal.wd4 col.c-wk{width:0}
+  .scal.wd4 .swk{display:none}
+  .wideonly{display:none}
+  .narrowonly{display:inline}
 }
 @media print{
   :root{
@@ -435,12 +501,19 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
   details.day{break-inside:avoid-page;border-color:#bbb}
-  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i, .ws-track, .ws-blk, .ws-sw, .mbar i, .ksw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .ws-track, .ws-blk, .ws-sw, .mbar i, .ksw, .scal .tk, .scal .tk *, .rib span, .g, .nd, .wb .tr, .wb .tr i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-reports header.top, body.print-reports main{display:none !important}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .rtiles, .mblock, .wsched, .calwrap, .hist tr, .fu li{break-inside:avoid}
+  .rtiles, .mblock, .wsched, .calwrap, .hist tr, .fu li, .scal tr{break-inside:avoid}
+  .scal tbody td{height:18px}
+  .scell{height:18px}
+  .ds{height:9px}
+  .scal.dprint tbody td,.scal.dprint .scell{height:12px}
+  .scal.dprint .ds{height:7px}
+  .scal.dprint{--gut:11px}
+  .scal.dprint .g{width:11px;height:11px;font-size:.5rem}
   .mfig dd{font-size:1.25rem}
   .s-before{background:repeating-linear-gradient(135deg,var(--loss-before) 0 1.5px,#fff 1.5px 3.5px)}
   .s-out{background:repeating-linear-gradient(135deg,var(--loss-out) 0 1.5px,#fff 1.5px 3.5px)}
@@ -452,7 +525,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   table.sum{font-size:.8rem}
   table.sum td.c-name{width:32%}
 }
-@media (forced-colors: active){ .mbar, .ksw, .ws-blk, .ws-sw{forced-color-adjust:none} }
+@media (forced-colors: active){ .mbar, .ksw, .ws-blk, .ws-sw, .ds, .rib, .wb .tr, .g{forced-color-adjust:none} }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 </head>
@@ -606,7 +679,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  calAll: false, selDay: null, supQuery: '', supUnmOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, supQuery: '', supUnmOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -935,13 +1008,6 @@ function axis(day){
   const span = day.axisEnd - day.axisStart;
   return `<div class="axis" aria-hidden="true">${day.ticks.filter(t => !new Date(t).getMinutes())
     .map(t => `<span style="left:${((t - day.axisStart) / span * 100).toFixed(2)}%">${esc(fmt(t).replace(/:00/, ''))}</span>`).join('')}</div>`;
-}
-// A time axis for one date, from minutes after midnight. Lets rows from different days line up.
-function axisFor(dk, startMin, endMin){
-  const d = parseDk(dk), at = m => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, m).getTime();
-  const axisStart = at(startMin - 10), axisEnd = at(endMin + 10), ticks = [];
-  for (let t = Math.ceil(axisStart / 1800000) * 1800000; t <= axisEnd; t += 1800000) ticks.push(t);
-  return { axisStart, axisEnd, ticks };
 }
 function rangeText(merged){ return merged.map(([a, b]) => `${fmt(a)}–${fmt(b)}`).join(', '); }
 
@@ -1545,9 +1611,9 @@ function studentReportHTML(ctx, o){
     if (!o.print) h += followUpSection(ctx, o);
     return h + '</article>';
   }
-  // The calendar is the report: every day at a glance, each week's minutes at the end of its row,
-  // and any day opens underneath it with the full detail.
-  h += `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, o)}${o.print ? '' : dayDetail(ctx)}</section>`;
+  // The calendar is the report: every class as a small bar on its own clock, each week's minutes at the end
+  // of its row, and any day opens under its week with the full picture.
+  h += `<section class="rsec"><h3>Calendar</h3>${stripCalendar(ctx, o)}</section>`;
   if (o.print && o.include.table) h += printDayTable(ctx, o);
   if (!o.print || o.include.log) h += followUpSection(ctx, o);
   if (!o.print) h += familySection(ctx);
@@ -1656,27 +1722,149 @@ function weekTip(w){
   if (w.noReport) parts.push(`${w.noReport} min with no Zoom report.`);
   return parts.join(' ');
 }
-// Each week's minutes, at the end of its calendar row: received of the minutes expected while class met.
-function weekCell(w, cls = 'wkc'){
-  if (!w.counted) return `<td class="${cls}"><span class="muted">${w.notHeld ? 'no class' : w.noReport ? 'no report' : w.excFin ? 'excused' : '—'}</span></td>`;
-  const tip = weekTip(w);
-  return `<td class="${cls}" title="${esc(tip)}"><span class="wkbar" aria-hidden="true"><i style="width:${Math.round(w.received / w.counted * 100)}%"></i></span>
-    <span aria-hidden="true">${w.received}<span class="muted"> of ${w.counted}${w.current && !w.complete ? ' so far' : ''}</span></span><span class="sr">${esc(tip)}</span></td>`;
+/* The class-strip calendar: weeks down, weekdays across. Each class is a small bar on that weekday's own clock,
+   from the start of class (left) to the end (right), colored like the header bars. */
+// One class as a bar: the scheduled time is the track, colored by where each minute went.
+function stripHTML(d, lo, hi){
+  const X = m => (m - lo) / Math.max(1, hi - lo) * 100, f = n => n.toFixed(2);
+  const held = d.status === 'held';
+  const secs = held ? d.rec.secs.map(x => ({ type: x.type, a: clockMinF(x.a), b: clockMinF(x.b) }))
+    : d.plan ? d.plan.secs.map(x => ({ type: x.type, a: x.startMin, b: x.endMin })) : [];
+  const segs = held ? segsOf(d.rec).map(g => ({ k: g.k, a: clockMinF(g.a), b: clockMinF(g.b) })) : [];
+  const sorted = [...secs].sort((x, y) => x.a - y.a);
+  let h = '';
+  for (const [A, B] of mergeIntervals(secs.map(x => [x.a, x.b]))){
+    let inner = '';
+    const mine = segs.filter(g => g.a >= A - 0.01 && g.b <= B + 0.01 && g.k !== 'fin' && g.k !== 'exc' && g.b > g.a);
+    mine.forEach((g, n) => {
+      const w = (g.b - g.a) / (B - A) * 100;
+      inner += `<i class="s-${g.k}" style="left:${f((g.a - A) / (B - A) * 100)}%;width:${n === mine.length - 1 ? f(w) + '%' : `calc(${f(w)}% - 1px)`}"></i>`;
+    });
+    // A thin line where instruction turns into the support hour.
+    for (let n = 1; n < sorted.length; n++) if (sorted[n].type !== sorted[n - 1].type && Math.abs(sorted[n].a - sorted[n - 1].b) < 0.5 && sorted[n].a > A && sorted[n].a < B)
+      inner += `<b class="bd" style="left:${f((sorted[n].a - A) / (B - A) * 100)}%"></b>`;
+    h += `<span class="tk${held ? '' : ' pend'}" style="left:${f(X(A))}%;width:${f(X(B) - X(A))}%">${inner}</span>`;
+  }
+  return `<span class="ds" aria-hidden="true">${h}</span>`;
 }
-
-function calendarHTML(ctx, o){
-  const fam = !!o.family, { weeks, period, dates } = ctx;
+const winOf = d => d.plan ? [d.plan.startMin, d.plan.endMin] : d.rec ? [clockMinF(d.rec.winStart), clockMinF(d.rec.winEnd)] : null;
+const clockLabel = m => fmtMin(m).replace(/ [AP]M$/, '').replace(':00', '');
+// The sentence a screen reader (and the hover title) gives for one day.
+function daySentence(d){
+  if (d.status === 'noclass') return `${longDate(d.dk)}: No class (${NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other'}).`;
+  if (d.status === 'missing') return `${longDate(d.dk)}: No Zoom report.`;
+  const s = d.rec;
+  if (isExcused(s)) return `${longDate(d.dk)}: Excused absence. Not counted.${s.note ? ' Has a note.' : ''}`;
+  if (s.isAbsent) return `${longDate(d.dk)}: Absent. Not in Zoom. 0 of ${s.reqMin} minutes.${s.note ? ' Has a note.' : ''}`;
+  const inWin = s.merged.filter(([a, b]) => b > s.winStart && a < s.winEnd).map(([a, b]) => [Math.max(a, s.winStart), Math.min(b, s.winEnd)]);
+  return `${longDate(d.dk)}: ${s.flags.map(f => f.label).join(', ')}. In Zoom ${rangeText(inWin)}. ${s.presentMin} of ${s.reqMin - finMinOf(s)} minutes.${s.note ? ' Has a note.' : ''}`;
+}
+// Each week's minutes at the end of its row: one neutral bar, as long as the minutes counted that week.
+function weekBar(w, max, fus, o){
+  const fuText = fus && fus.length ? ' Follow-up logged: ' + fus.map(f => `${monDay(f.date)}, ${fuHow(f).toLowerCase()}${f.text ? ': ' + f.text : ''}`).join('; ') : '';
+  const mark = fus && fus.length && (!o.print || o.include.log) ? '◆' : '';
+  if (!w.counted) return `<td class="swk"><span class="wb"><span class="fu" aria-hidden="true">${mark}</span><span class="muted">${w.notHeld ? 'no class' : w.noReport ? 'no report' : w.excFin ? 'excused' : '—'}</span></span>${fuText ? `<span class="sr">${esc(fuText)}</span>` : ''}</td>`;
+  const tip = weekTip(w) + fuText;
+  return `<td class="swk" title="${esc(tip)}"><span class="wb"><span class="fu" aria-hidden="true">${mark}</span>
+    <span class="wt" aria-hidden="true"><span class="tr" style="width:${(w.counted / max * 100).toFixed(2)}%"><i style="width:${(w.received / w.counted * 100).toFixed(2)}%"></i></span></span>
+    <b aria-hidden="true">${w.received}${w.current && !w.complete ? ' so far' : ''}</b></span><span class="sr">${esc(tip)}</span></td>`;
+}
+function stripCalendar(ctx, o){
+  const { weeks, period, dates, A } = ctx;
   const wds = [...new Set(dates.map(d => parseDk(d.dk).getDay()))].sort(byWeekOrder);
   if (!wds.length) return '<p class="muted small">No scheduled days in these dates.</p>';
-  const total = weeks.length, rows = !o.print && !state.calAll && total > 12 ? weeks.slice(-12) : weeks;
+  // Each weekday column has its own clock window (every schedule in these dates), and a width in proportion to it.
+  const cols = wds.map(wd => {
+    const ds = dates.filter(d => parseDk(d.dk).getDay() === wd), wins = ds.map(winOf).filter(Boolean);
+    const lo = Math.min(...wins.map(x => x[0])), hi = Math.max(...wins.map(x => x[1]));
+    const last = [...ds].reverse().find(d => d.plan);
+    return { wd, lo, hi, ribbon: last ? last.plan.secs : [], weight: Math.max(45, hi - lo) };
+  });
+  const W = cols.reduce((t, c) => t + c.weight, 0), showWk = weeks.length > 1;
+  const roomy = !o.print && weeks.length <= 10, dprint = o.print && weeks.length > 22;
+  const g2on = !dprint && wds.length <= 3 && dates.some(d => d.status === 'held' && dayLetters(d.rec).length === 2);
+  const chg = A.versions.map(v => v.from).filter(f => f && f > period.from && f <= period.to && f !== ctx.info.addedOn && planChanged(A, ctx.key, f)).sort();
+  const fusByWk = new Map();
+  for (const f of state.data.followUps[ctx.key] || []) if (f.date >= period.from && f.date <= period.to){
+    const k = weekKey(f.date); if (!fusByWk.has(k)) fusByWk.set(k, []); fusByWk.get(k).push(f);
+  }
+  const selD = !o.print && state.selDay ? dates.find(d => d.dk === state.selDay && ['held', 'noclass', 'missing'].includes(d.status)) : null;
+  const clickable = dates.filter(d => ['held', 'noclass', 'missing'].includes(d.status));
+  const focusDk = selD ? selD.dk : ([...clickable].reverse().find(d => d.status === 'held') || clickable[0] || {}).dk;
+  const max = Math.max(1, ...weeks.map(w => w.counted)), nCols = 1 + wds.length + (showWk ? 1 : 0);
+  // Header: weekday, its schedule as a thin ribbon, and the clock at each end.
+  const head = cols.map(c => {
+    const X = m => ((m - c.lo) / Math.max(1, c.hi - c.lo) * 100).toFixed(2);
+    const mids = []; for (let m = Math.ceil((c.lo + 1) / 60) * 60; m < c.hi; m += 60) mids.push(m);
+    return `<th scope="col" class="wdh">${cap(DAYS[c.wd]).slice(0, 3)}<span class="sr">, ${esc(shortRange(c.lo, c.hi))}</span>
+      <div class="colaxis" aria-hidden="true"><div class="rib">${c.ribbon.map(x => `<span class="${x.type === 'instruction' ? 'instruction' : 'support'}" style="left:${X(x.startMin)}%;width:${(X(x.endMin) - X(x.startMin)).toFixed(2)}%"></span>`).join('')}</div>
+      <div class="ticks"><span class="s">${clockLabel(c.lo)}</span>${mids.map(m => `<span class="mid" style="left:${X(m)}%">${clockLabel(m)}</span>`).join('')}<span class="e">${clockLabel(c.hi)}</span></div></div></th>`;
+  }).join('');
+  const notesOn = !o.print || o.include.notes;
+  let body = '', prevMonth = null, ci = 0, row = 0;
+  for (const w of weeks){
+    while (ci < chg.length && w.wk >= weekKey(chg[ci])){ body += `<tr class="chg"><td colspan="${nCols}">New times from ${esc(shortDate(chg[ci]))}</td></tr>`; ci++; }
+    const month = parseDk(w.wk).getMonth(), first = prevMonth === null, moChange = !first && month !== prevMonth;
+    const label = roomy || first || moChange ? monDay(w.wk) : String(parseDk(w.wk).getDate());
+    prevMonth = month; row++;
+    body += `<tr${moChange && !roomy ? ' class="mo"' : ''}><th scope="row" class="lab"><span class="sr">Week of ${esc(monDay(w.wk))}</span><span aria-hidden="true">${esc(label)}</span></th>`;
+    cols.forEach((c, n) => {
+      const dk = addDays(w.wk, (c.wd + 6) % 7), d = w.dates.find(x => x.dk === dk);
+      if (!d){ body += dk >= period.from && dk <= period.to ? `<td class="c-off"><span class="sr">${esc(shortDate(dk))}: not on the schedule</span></td>` : '<td></td>'; return; }
+      if (d.status === 'pending' || d.status === 'upcoming'){
+        body += `<td><div class="scell" title="${esc(shortDate(dk))}"><span class="gut"></span>${stripHTML(d, c.lo, c.hi)}<span></span><span class="sr">${esc(shortDate(dk))}: not yet</span></div></td>`; return;
+      }
+      let gut = '', inner = '';
+      if (d.status === 'held'){
+        const L = dayLetters(d.rec).slice(0, g2on ? 2 : 1);
+        gut = L.map((k, m) => `<span class="g k-${k}${m ? ' g2' : ''}">${LETTER[k]}</span>`).join('');
+        inner = stripHTML(d, c.lo, c.hi);
+      } else gut = `<span class="g lc-${d.status}">${LETTER[d.status]}</span>`, inner = '<span class="ds"></span>';
+      const dot = d.rec && d.rec.note && notesOn ? '<span class="nd"></span>' : '<span></span>';
+      const sentence = daySentence(d);
+      const kids = `<span class="gut" aria-hidden="true">${gut}</span>${inner}${dot.replace('<span', '<span aria-hidden="true"')}`;
+      body += o.print ? `<td><div class="scell">${kids}<span class="sr">${esc(sentence)}</span></div></td>`
+        : `<td><button class="sbtn" data-selday="${dk}" data-r="${row}" data-c="${n}" aria-pressed="${selD && selD.dk === dk}" tabindex="${dk === focusDk ? 0 : -1}" aria-label="${esc(sentence)}" title="${esc(sentence)}">${kids}</button></td>`;
+    });
+    if (showWk) body += weekBar(w, max, fusByWk.get(w.wk), o);
+    body += '</tr>';
+    if (selD && weekKey(selD.dk) === w.wk) body += `<tr class="ddrow"><td colspan="${nCols}">${dayDetail(ctx)}</td></tr>`;
+  }
+  // Per weekday, over every week: how many classes they came to, and how many of those on time.
+  const came = [], ontime = [];
+  for (const c of cols){
+    const held = dates.filter(d => d.status === 'held' && !isExcused(d.rec) && parseDk(d.dk).getDay() === c.wd), att = held.filter(d => !d.rec.isAbsent);
+    came.push(held.length ? `${att.length} of ${held.length}` : '—');
+    ontime.push(att.length ? `${att.filter(d => !hasFlag(d.rec, 'late') && !hasFlag(d.rec, 'missed')).length} of ${att.length}` : '—');
+  }
+  const frow = (label, xs) => `<tr><th scope="row">${label}</th>${xs.map(x => `<td>${esc(x)}</td>`).join('')}${showWk ? '<td class="swk"></td>' : ''}</tr>`;
+  const glyphs = [];
+  if (dates.some(d => d.status === 'noclass')) glyphs.push(`<span>${letterCell('noclass', '')} no class</span>`);
+  if (dates.some(d => d.status === 'missing')) glyphs.push(`<span>${letterCell('missing', '')} no Zoom report</span>`);
+  if (notesOn && dates.some(d => d.rec && d.rec.note)) glyphs.push('<span><span class="nd"></span> has a note</span>');
+  if (fusByWk.size && (!o.print || o.include.log)) glyphs.push('<span><span class="fuk">◆</span> follow-up logged that week</span>');
+  const cls = ['scal', roomy && 'roomy', dprint && 'dprint', g2on && 'g2on', wds.length >= 3 && 'wd3', wds.length >= 4 && 'wd4', !showWk && 'nowk'].filter(Boolean).join(' ');
+  const held = dates.filter(d => d.status === 'held').length;
+  const caption = o.print ? 'Each bar is one class, from start (left) to end (right), in the same colors as above. Each week: minutes in Zoom, on a track as long as the minutes counted that week.'
+    : 'Each bar is one class, from start (left) to end (right), in the same colors as above. Click a day for details.';
+  return `<table class="${cls}"><caption class="sr">Calendar of ${plural(held, 'class day')}, one row per week.${o.print ? '' : ' Each day is a button; use the arrow keys to move between days.'}</caption>
+    <colgroup><col class="c-lab">${cols.map(c => `<col class="c-wd" style="--wa:${(c.weight / W * (showWk ? 69 : 93)).toFixed(2)}%;--wb:${(c.weight / W * (!showWk || wds.length >= 4 ? 86 : 64)).toFixed(2)}%">`).join('')}${showWk ? '<col class="c-wk">' : ''}</colgroup>
+    <thead><tr><th class="lab"><span class="sr">Week of</span></th>${head}${showWk ? `<th scope="col" class="swk">Each week<div class="colaxis wkax" aria-hidden="true"><div class="ticks"><span class="s">0</span><span class="e">${max} min</span></div></div></th>` : ''}</tr></thead>
+    <tbody>${body}</tbody><tfoot>${frow('Came', came)}${frow('On time', ontime)}</tfoot></table>
+    ${glyphs.length ? `<div class="legend-line" aria-hidden="true">${glyphs.join('')}</div>` : ''}<p class="caption">${caption}</p>
+    ${o.print ? '' : `<details class="daytable"><summary>Show every day as a table</summary>${dayTableHTML(ctx, true)}</details>`}`;
+}
+
+// The family version keeps the simple letter calendar.
+function calendarHTML(ctx){
+  const { weeks, period, dates } = ctx;
+  const wds = [...new Set(dates.map(d => parseDk(d.dk).getDay()))].sort(byWeekOrder);
+  if (!wds.length) return '<p class="muted small">No scheduled days in these dates.</p>';
   const kinds = new Set();
-  // Screen cells are buttons that open the day underneath; printed cells are plain.
-  const cell = (cls, dk, inner, title) => o.print ? `<td class="${cls}" data-dk="${dk}">${inner}<span class="sr">${esc(title)}</span></td>`
-    : `<td class="${cls}" data-dk="${dk}"><button class="calbtn" data-selday="${dk}" aria-pressed="${state.selDay === dk}" title="${esc(title)}">${inner}</button></td>`;
+  const cell = (cls, dk, inner, title) => `<td class="${cls}" data-dk="${dk}">${inner}<span class="sr">${esc(title)}</span></td>`;
   let body = '';
-  for (const w of rows){
-    const mini = !fam && w.counted ? `<span class="wkmini">${w.received} of ${w.counted}</span>` : '';
-    body += `<tr><th class="wk" scope="row">${esc(monDay(w.wk))}${mini}</th>`;
+  for (const w of weeks){
+    body += `<tr><th class="wk" scope="row">${esc(monDay(w.wk))}</th>`;
     for (const wd of wds){
       const dk = addDays(w.wk, (wd + 6) % 7), d = w.dates.find(x => x.dk === dk), num = parseDk(dk).getDate();
       if (d && d.status === 'held'){
@@ -1685,72 +1873,102 @@ function calendarHTML(ctx, o){
         if (!L.length) L = ['full'];
         L = L.slice(0, 2); L.forEach(k => kinds.add(k));
         const mn = isExcused(s) || s.isAbsent ? '' : s.presentMin;
-        const title = `${shortDate(dk)}: ${s.flags.map(x => x.label).join(', ')}${mn !== '' ? ` · ${s.presentMin} of ${s.reqMin - finMinOf(s)} min` : ''}${s.note ? ' · has a note' : ''}`;
-        body += cell(`k-${worst}`, dk, `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${L.map(k => LETTER[k]).join('')}</span><span class="mn" aria-hidden="true">${mn}</span>${s.note ? '<span class="notedot" aria-hidden="true"></span>' : ''}`, title);
+        const title = `${shortDate(dk)}: ${s.flags.map(x => x.label).join(', ')}${mn !== '' ? ` · ${s.presentMin} of ${s.reqMin - finMinOf(s)} min` : ''}`;
+        body += cell(`k-${worst}`, dk, `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${L.map(k => LETTER[k]).join('')}</span><span class="mn" aria-hidden="true">${mn}</span>`, title);
       } else if (d && (d.status === 'noclass' || d.status === 'missing')){
         kinds.add(d.status);
         body += cell(`c-${d.status}`, dk, `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${LETTER[d.status]}</span>`, cellTitle(d));
-      } else if (d) body += `<td class="c-pending" title="${esc(shortDate(dk))}"><span class="dn">${num}</span><span class="sr">${esc(shortDate(dk))}: not yet</span></td>`;
+      } else if (d) body += `<td class="c-pending"><span class="dn">${num}</span><span class="sr">${esc(shortDate(dk))}: not yet</span></td>`;
       else if (dk >= period.from && dk <= period.to) body += `<td class="c-off"><span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${LETTER.off}</span><span class="sr">${esc(shortDate(dk))}: not on the schedule</span></td>`;
       else body += '<td></td>';
     }
-    if (!fam) body += weekCell(w);
     body += '</tr>';
   }
-  // Per-weekday summary rows, over every week in the period.
-  const foot = { came: [], ontime: [] };
-  for (const wd of wds){
+  const came = wds.map(wd => {
     const held = dates.filter(d => d.status === 'held' && !isExcused(d.rec) && parseDk(d.dk).getDay() === wd), att = held.filter(d => !d.rec.isAbsent);
-    foot.came.push(held.length ? `${att.length} of ${held.length}` : '—');
-    foot.ontime.push(att.length ? `${att.filter(d => !hasFlag(d.rec, 'late') && !hasFlag(d.rec, 'missed')).length} of ${att.length}` : '—');
-  }
-  const frow = (label, xs) => `<tr><th scope="row">${label}</th>${xs.map(x => `<td>${esc(x)}</td>`).join('')}${fam ? '' : '<td class="wkc"></td>'}</tr>`;
+    return held.length ? `${att.length} of ${held.length}` : '—';
+  });
   const heldN = dates.filter(d => d.status === 'held').length;
-  const caption = fam ? 'The number is minutes in class.'
-    : `Number = minutes in Zoom during scheduled time. ${o.print ? 'Minutes column: minutes received of the minutes expected while class met that week.' : 'Click a day to see it, add a note or mark it excused.'}`;
-  return `<div class="calwrap" style="max-width:${wds.length * 104 + (fam ? 90 : 230)}px"><table class="cal${fam ? '' : ' withweek'}"><caption class="sr">Calendar of ${plural(heldN, 'class day')}. Letters show what happened each day.</caption>
-    <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}${fam ? '' : '<th scope="col" class="wkc">Minutes</th>'}</tr></thead>
-    <tbody>${body}</tbody><tfoot>${frow('Came', foot.came)}${fam ? '' : frow('On time', foot.ontime)}</tfoot></table></div>
-    ${letterLegend(kinds, fam ? LETTER_FAMILY : LETTER_TEAM)}<p class="caption">${caption}</p>
-    ${!o.print && total > 12 ? `<button class="linkish noprint" data-calall>${state.calAll ? 'Show the latest 12 weeks' : `Show all ${total} weeks`}</button>` : ''}`;
+  return `<div class="calwrap" style="max-width:${wds.length * 104 + 90}px"><table class="cal"><caption class="sr">Calendar of ${plural(heldN, 'class day')}. Letters show what happened each day.</caption>
+    <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}</tr></thead>
+    <tbody>${body}</tbody><tfoot><tr><th scope="row">Came</th>${came.map(x => `<td>${esc(x)}</td>`).join('')}</tr></tfoot></table></div>
+    ${letterLegend(kinds, LETTER_FAMILY)}<p class="caption">The number is minutes in class.</p>`;
 }
 
-// The day picked on the calendar: its Zoom timeline, times, note and actions.
+// The day picked on the calendar, shown under its week: the class drawn large, the times, the note and the actions.
 function dayDetail(ctx){
   const d = state.selDay && ctx.dates.find(x => x.dk === state.selDay);
   if (!d || !['held', 'noclass', 'missing'].includes(d.status)) return '';
+  const nav = ctx.dates.filter(x => ['held', 'noclass', 'missing'].includes(x.status)), i = nav.findIndex(x => x.dk === d.dk);
+  const prev = nav[i - 1], next = nav[i + 1];
+  const navs = `${prev ? `<button class="linkish" data-selday="${prev.dk}" data-selnav="prev" aria-label="Previous class day, ${esc(longDate(prev.dk))}">‹ ${esc(shortDate(prev.dk))}</button>` : ''}${next ? `<button class="linkish" data-selday="${next.dk}" data-selnav="next" aria-label="Next class day, ${esc(longDate(next.dk))}">${esc(shortDate(next.dk))} ›</button>` : ''}`;
   const head = `<b>${esc(longDate(d.dk))}</b>`, close = `<button class="linkish" data-selday="">Close</button>`;
   if (d.status === 'noclass') return `<div class="daydetail" data-dk="${d.dk}"><div class="dd-head">${head}
     <span class="muted">No class: ${esc(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other')}</span>
-    <span class="dd-links"><button class="linkish" data-undonoclass="${d.dk}">Undo</button>${close}</span></div></div>`;
-  if (d.status === 'missing') return `<div class="daydetail" data-dk="${d.dk}"><div class="dd-head">${head}<span class="dd-links">${close}</span></div>
+    <span class="dd-links">${navs}<button class="linkish" data-undonoclass="${d.dk}">Undo</button>${close}</span></div></div>`;
+  if (d.status === 'missing') return `<div class="daydetail" data-dk="${d.dk}"><div class="dd-head">${head}<span class="dd-links">${navs}${close}</span></div>
     <p class="small" style="margin:0">No Zoom report for this day. If class met, save the report into the folder and click Refresh. If not: ${reasonSelect()}
     <button class="btn small ghost" data-noclass="${d.dk}">Mark no class</button></p></div>`;
-  const s = d.rec, sMin = d.plan ? d.plan.startMin : clockOf(s.winStart), eMin = d.plan ? d.plan.endMin : clockOf(s.winEnd), ax = axisFor(d.dk, sMin, eMin);
+  const s = d.rec, fin = finMinOf(s), win = winOf(d), lo = win[0], hi = win[1];
+  const X = t => (clockMinF(t) - lo) / Math.max(1, hi - lo) * 100, Xm = m => (m - lo) / Math.max(1, hi - lo) * 100;
+  // Labels over the schedule ribbon.
+  const ribbon = (d.plan ? d.plan.secs : []).map(x => {
+    const wPct = Xm(x.endMin) - Xm(x.startMin), name = x.type === 'instruction' ? 'Instruction' : 'Support hour';
+    return { x: Xm(x.startMin), w: wPct, type: x.type === 'instruction' ? 'instruction' : 'support', text: wPct < 25 ? shortRange(x.startMin, x.endMin) : `${name} ${shortRange(x.startMin, x.endMin)}` };
+  });
+  // Times worth naming: when they joined late, each time out of Zoom, when they left early. Labels that would collide move to the line below.
+  const segs = segsOf(s), L = [];
+  if (!s.isAbsent && segs.some(g => g.k === 'before')) L.push({ x: X(s.firstJoin), text: 'joined ' + hm(s.firstJoin) });
+  if (!s.isAbsent) for (const g of gapsOf(s)) L.push({ x: X((g.a + g.b) / 2), text: `out ${hm(g.a)}–${hm(g.b)}`, center: true });
+  if (!s.isAbsent && segs.some(g => g.k === 'after' || g.k === 'fin')) L.push({ x: X(s.lastLeave), text: 'left ' + hm(s.lastLeave) });
+  L.forEach(l => { l.align = l.center ? (l.x < 15 ? 'start' : l.x > 85 ? 'end' : 'center') : l.x < 50 ? 'start' : 'end'; });
+  const fits = Wpx => { const kept = new Set(); let lastEnd = -Infinity;
+    for (const l of [...L].sort((a, b) => a.x - b.x)){
+      const w = l.text.length * 6.4 + 6, px = l.x / 100 * Wpx;
+      const a = l.align === 'start' ? px : l.align === 'end' ? px - w : px - w / 2, b = a + w;
+      if (a < 0 || b > Wpx || a < lastEnd + 8) continue;
+      kept.add(l); lastEnd = b;
+    }
+    return kept; };
+  const keptN = fits(300), keptW = fits(480);
+  const ev = L.filter(l => keptW.has(l)).map(l => `<span class="a-${l.align}${keptN.has(l) ? '' : ' wideonly'}" style="left:${l.x.toFixed(2)}%">${esc(l.text)}</span>`).join('');
+  const extra = L.filter(l => !keptN.has(l)).map(l => `<span class="${keptW.has(l) ? 'narrowonly' : ''}"> · ${esc(l.text)}</span>`).join('');
+  const mline = isExcused(s) ? `Excused, not counted (${s.reqMin} min)`
+    : `${s.presentMin} of ${s.reqMin - fin} min${s.instrReqMin && s.suppReqMin ? ` · instruction ${s.instrMin} of ${s.instrReqMin} · support hour ${s.suppMin} of ${s.suppReqMin - fin}` : ''}${fin ? ` · ${fin} min finished work early, not counted` : ''}`;
+  // The old facts sentence becomes the picture's text for screen readers.
   const facts = [];
   if (s.firstJoin) facts.push(`Joined ${fmt(s.firstJoin)}`, `Left ${fmt(s.lastLeave)}`);
-  if (!isExcused(s)) facts.push(`${s.presentMin} of ${s.reqMin} minutes${s.instrReqMin && s.suppReqMin ? ` (instruction ${s.instrMin} of ${s.instrReqMin}, support ${s.suppMin} of ${s.suppReqMin})` : ''}`);
+  if (!isExcused(s)) facts.push(`${s.presentMin} of ${s.reqMin} minutes`);
   if (!s.isAbsent) for (const g of gapsOf(s)) facts.push(`Out of Zoom ${fmt(g.a)}–${fmt(g.b)}`);
-  if (s.zoomNames.length) facts.push(`In Zoom as ${s.zoomNames.map(z => `“${z}”`).join(', ')}`);
   return `<div class="daydetail" data-dk="${d.dk}">
     <div class="dd-head">${head}<span class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}</span>
-      <span class="dd-links"><button class="linkish" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}">Open on Reports</button>${close}</span></div>
-    ${axis(ax)}${timeline(ax, s.merged, s.secs)}
-    <p class="small" style="margin:8px 0 4px">${esc(facts.join(' · '))}</p>
+      <span class="dd-links">${navs}<button class="linkish" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}">Open on Reports</button>${close}</span></div>
+    <div class="ddpic" role="img" aria-label="${esc(facts.join('. ') || 'Not in Zoom')}">
+      <div class="ribl" aria-hidden="true">${ribbon.map(r => `<span style="left:${(r.x + r.w / 2).toFixed(2)}%">${esc(r.text)}</span>`).join('')}</div>
+      <div class="rib" aria-hidden="true">${ribbon.map(r => `<span class="${r.type}" style="left:${r.x.toFixed(2)}%;width:${r.w.toFixed(2)}%"></span>`).join('')}</div>
+      ${stripHTML(d, lo, hi)}
+      ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
+    <p class="small dd-min">${esc(mline)}${extra}</p>
+    ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
     ${noteBlock(s)}<div class="chips" style="margin-top:6px">${rowActions(s)}</div></div>`;
 }
-function printDayTable(ctx, o){
+// Every class day as a table: printed on request, and on screen under "Show every day as a table".
+function dayTableHTML(ctx, notes){
   const rows = ctx.dates.filter(d => d.status === 'held' || d.status === 'noclass' || d.status === 'missing');
   if (!rows.length) return '';
-  const notes = o.include.notes, blank = notes ? '<td></td>' : '';
-  return `<section class="rsec"><h3>Every class day</h3><table class="hist"><thead><tr><th>Date</th><th>Status</th><th>Joined</th><th>Left</th><th>Instruction</th><th>Support</th>${notes ? '<th>Note</th>' : ''}</tr></thead><tbody>
+  const blank = notes ? '<td></td>' : '';
+  return `<table class="hist"><thead><tr><th>Date</th><th>Status</th><th>Joined</th><th>Left</th><th>Instruction</th><th>Support</th>${notes ? '<th>Note</th>' : ''}</tr></thead><tbody>
     ${rows.map(d => {
       if (d.status !== 'held') return `<tr><td>${esc(shortDate(d.dk))}</td><td>${d.status === 'noclass' ? `No class: ${esc(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other')}` : 'No Zoom report'}</td><td>—</td><td>—</td><td>—</td><td>—</td>${blank}</tr>`;
       const s = d.rec, ex = isExcused(s);
       const part = (got, of) => !of ? '—' : ex ? `— of ${of}` : `${got} of ${of}`;
       return `<tr><td>${esc(shortDate(d.dk))}</td><td>${esc(s.flags.map(f => f.label).join(', '))}</td><td>${esc(fmt(s.firstJoin))}</td><td>${esc(fmt(s.lastLeave))}</td>
         <td>${part(s.instrMin, s.instrReqMin)}</td><td>${part(s.suppMin, s.suppReqMin)}</td>${notes ? `<td>${esc(s.note)}</td>` : ''}</tr>`;
-    }).join('')}</tbody></table></section>`;
+    }).join('')}</tbody></table>`;
+}
+function printDayTable(ctx, o){
+  const t = dayTableHTML(ctx, o.include.notes);
+  return t ? `<section class="rsec"><h3>Every class day</h3>${t}</section>` : '';
 }
 
 /* Follow-up log: what has been done about it */
@@ -1836,7 +2054,7 @@ function familyReportHTML(ctx, o){
       <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
     <div class="notetext" style="margin:0 0 16px">${esc(o.noteText ?? familyText(ctx))}</div>
     ${boxes.length ? `<div class="rtiles">${boxes.join('')}</div>` : ''}
-    ${p ? `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, { ...o, family: true, print: true })}</section>` : ''}</article>`;
+    ${p ? `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx)}</section>` : ''}</article>`;
 }
 
 // How the numbers are counted, on paper only.
@@ -2274,10 +2492,13 @@ const navCanGoBack = () => !!(history.state && history.state.seq > 0);
 function openStudent(key, from){
   navReplace();
   state.tab = 'students'; state.student = key; state.studentFrom = from || null;
-  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.calAll = false; state.selDay = null; state.familyCopied = null; state.returnTo = null; state.highlight = null;
+  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.selDay = null; state.familyCopied = null; state.returnTo = null; state.highlight = null;
   navPush();
   render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
+}
+function focusDayCell(dk){
+  const b = $(`#tab-students .sbtn[data-selday="${dk}"]`); if (b) b.focus({ preventScroll: true });
 }
 function focusStudentLink(key){
   const b = visible(`[data-openstudent="${CSS.escape(key)}"]`);
@@ -2362,11 +2583,15 @@ async function onClick(t){
   }
   if (has('data-selday')){
     // Click a day to open it under the calendar; click it again (or Close) to put it away.
-    const was = state.selDay;
-    state.selDay = d.selday && d.selday !== was ? d.selday : null;
+    const was = state.selDay, navDir = d.selnav;
+    state.selDay = d.selday && (d.selday !== was || navDir) ? d.selday : null;
     state.noteEdit = null; renderStudents();
-    if (state.selDay){ const dd = $('#tab-students .daydetail'); if (dd) dd.scrollIntoView({ block: 'nearest' }); }
-    else if (was){ const b = $(`#tab-students [data-selday="${was}"]`); if (b) b.focus({ preventScroll: true }); }
+    if (state.selDay){
+      const dd = $('#tab-students .daydetail'); if (dd) dd.scrollIntoView({ block: 'nearest' });
+      // Stepping through days keeps focus on the same link (or the other one at either end).
+      if (navDir){ const b = $(`#tab-students .daydetail [data-selnav="${navDir}"]`) || $('#tab-students .daydetail [data-selnav]'); if (b) b.focus({ preventScroll: true }); }
+      else if (t.classList.contains('sbtn')) focusDayCell(state.selDay);
+    } else if (was) focusDayCell(was);
     return;
   }
   if (d.goday){ goDay(d.goday, d.xkey); return; }
@@ -2382,7 +2607,6 @@ async function onClick(t){
     changed(); renderCurrent(); return;
   }
   if (d.undonoclass){ delete state.data.noClass[d.undonoclass]; changed(); renderCurrent(); return; }
-  if (has('data-calall')){ state.calAll = !state.calAll; renderStudents(); return; }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
     setStatus(ok ? 'Summary copied. Paste it into an email or form.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
   if (has('data-exportstudent')) return exportStudent(currentCtx());
@@ -2494,6 +2718,8 @@ function commitNote(input, redraw = true){
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('button'))); });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
+  const hadMenu = !!document.querySelector('details.menu[open]');
+  if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey) return calendarKey(e, t);
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); m.open = false; if (inside) m.querySelector('summary').focus();
   });
@@ -2506,8 +2732,34 @@ document.addEventListener('keydown', e => {
   if (form && t.tagName === 'INPUT'){
     if (e.key === 'Enter'){ e.preventDefault(); const b = form.querySelector('[data-fuadd],[data-fusave]'); if (b) b.click(); }
     if (e.key === 'Escape' && form.dataset.fuid){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); }
+    return;
+  }
+  // Escape inside the open day closes it and puts focus back on that day.
+  if (e.key === 'Escape' && !hadMenu && state.tab === 'students' && state.student && state.selDay && t.closest && t.closest('.daydetail')){
+    const was = state.selDay; state.selDay = null; state.noteEdit = null; renderStudents(); focusDayCell(was);
   }
 });
+// Arrow keys move between days in the calendar (one Tab stop for the whole calendar).
+function calendarKey(e, t){
+  const all = [...document.querySelectorAll('#tab-students .scal .sbtn')], row = t.closest('tr');
+  const inRow = [...row.querySelectorAll('.sbtn')], c = +t.dataset.c, r = +t.dataset.r;
+  let to = null;
+  if (e.key === 'Escape' && state.selDay){ const was = state.selDay; state.selDay = null; renderStudents(); focusDayCell(was); e.preventDefault(); return; }
+  if (e.key === 'ArrowRight') to = inRow[inRow.indexOf(t) + 1];
+  else if (e.key === 'ArrowLeft') to = inRow[inRow.indexOf(t) - 1];
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    const down = e.key === 'ArrowDown', cands = all.filter(b => down ? +b.dataset.r > r : +b.dataset.r < r);
+    const same = cands.filter(b => +b.dataset.c === c);
+    to = down ? (same[0] || null) : (same[same.length - 1] || null);
+  }
+  else if (e.key === 'Home') to = e.ctrlKey ? all[0] : inRow[0];
+  else if (e.key === 'End') to = e.ctrlKey ? all[all.length - 1] : inRow[inRow.length - 1];
+  else return;
+  e.preventDefault();
+  if (!to) return;
+  all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
+  to.focus();
+}
 document.addEventListener('toggle', e => {
   const el = e.target;
   if (el.classList && el.classList.contains('day')){
