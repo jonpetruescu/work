@@ -221,6 +221,24 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
 
+/* Support hour this week (Reports tab) */
+.supweek{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--fin);border-radius:10px;padding:14px 20px;margin-bottom:16px}
+.sw-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:8px}
+.sw-head h2{font-size:1.15rem}
+.sw-head h2:focus{outline:none}
+.swk-t{border-collapse:collapse;width:auto;min-width:min(100%,360px);font-size:.88rem}
+.swk-t td.sw-none{color:var(--faint)}
+.supweek .tablewrap{border:0;background:none}
+.swk-t th,.swk-t td{padding:6px 14px 6px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:middle}
+.swk-t thead th{font-size:.76rem;color:var(--muted);font-weight:600;white-space:nowrap}
+.swk-t thead th span{display:block;font-weight:400}
+.swk-t tbody th{font-weight:600}
+.swk-t .today{background:var(--paper)}
+.swc{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 6px;white-space:nowrap}
+.sw-fix{margin-top:10px;font-size:.88rem}
+.sw-fix ul{list-style:none;margin:4px 0 0;padding:0}
+.sw-fix li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:3px 0}
+
 /* Small dropdown menus (Print…) */
 .menu{position:relative;display:inline-block}
 .menu > summary{list-style:none}
@@ -483,6 +501,8 @@ const COUNT_ORDER = [
 const LETTER = { full:'✓', fin:'F', late:'L', missed:'M', early:'E', soft:'S', drop:'O', absent:'A', exc:'X', noclass:'–', missing:'?', off:'·' };
 const LETTER_TEAM = { full:'whole class', fin:'finished work early', late:'late', missed:'missed instruction', early:'left early',
   soft:'left support hour early', drop:'out of Zoom mid-class', absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report', off:'not on the schedule' };
+const LETTER_SUPPORT = { full:'stayed to the end', fin:'finished work, let go early', soft:'left the support hour early, not marked', early:'left early',
+  absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report' };
 const LETTER_FAMILY = { full:'whole class', fin:'finished work early', late:'late', missed:'missed the teaching part', early:'left early',
   soft:'left help time early', drop:'out of Zoom for part of class', absent:'missed', exc:'excused', noclass:'no class', missing:'no record', off:'' };
 const LETTER_ORDER = ['full','fin','late','missed','early','soft','drop','absent','exc','noclass','missing'];
@@ -578,7 +598,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  calAll: false, selDay: null, schedChange: null, viewVersion: null, lastAnalysis: null
+  calAll: false, selDay: null, supAll: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -932,6 +952,7 @@ function renderReports(){
     return;
   }
   const days = daysInRange(A.days), period = periodOf(A);
+  h += supportWeekCard(A);
   h += `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button>
@@ -945,6 +966,51 @@ function renderReports(){
   for (const c of cards) h += c.day ? renderDay(c.day) : noClassCard(c.dk);
   el.innerHTML = h;
   focusNoteInput(el);
+}
+/* Support hour this week: a quick check during a support hour of who was already let go early this week
+   for finishing their work (the days you marked "Finished work"). It always shows the current week. */
+function supportWeekCard(A){
+  const today = todayDk(), wk = weekKey(today), len = state.data.settings.sectionLen, cols = [], who = new Map();
+  for (let i = 0; i < 7; i++){
+    const dk = addDays(wk, i), secs = (A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || []).filter(x => x.type === 'support' && x.students.length);
+    if (!secs.length) continue;
+    const keys = new Set();
+    for (const x of secs) for (const n of x.students){ const k = normKey(n); if (k){ keys.add(k); if (!who.has(k)) who.set(k, A.nameOf[k] || n); } }
+    const starts = new Set(secs.map(x => x.startMin)), ends = new Set(secs.map(x => x.endMin ?? x.startMin + len));
+    cols.push({ dk, keys, time: starts.size === 1 && ends.size === 1 ? shortRange(secs[0].startMin, secs[0].endMin ?? secs[0].startMin + len) : '' });
+  }
+  if (!cols.length) return '';
+  const todayCol = cols.find(c => c.dk === today);
+  const all = [...who.keys()].sort((a, b) => who.get(a).localeCompare(who.get(b)));
+  const shown = todayCol && !state.supAll ? all.filter(k => todayCol.keys.has(k)) : all;
+  const kinds = new Set(), unmarked = [];
+  const cell = (k, c) => {
+    const dk = c.dk, name = who.get(k), when = shortDate(dk), today_ = dk === today ? ' today' : '';
+    if (!c.keys.has(k)) return `<td class="sw-none${today_}"><span aria-hidden="true">·</span><span class="sr">${esc(name)} has no support hour ${esc(when)}</span></td>`;
+    const rec = (A.dayByDk.get(dk) || { students: [] }).students.find(x => x.key === k);
+    let kind, text = '', sr;
+    if (rec){
+      kind = hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full';
+      if (['fin', 'soft', 'early'].includes(kind) && rec.lastLeave) text = 'left ' + hm(rec.lastLeave);
+      sr = `${when}: ${rec.flags.map(f => f.label).join(', ')}${rec.lastLeave ? `, left Zoom at ${fmt(rec.lastLeave)}` : ''}`;
+      if (kind === 'soft') unmarked.push({ k, name, dk, xkey: rec.xkey, left: rec.lastLeave });
+    } else if (state.data.noClass[dk]){ kind = 'noclass'; sr = `${when}: no class`; }
+    else if (dk < today){ kind = 'missing'; sr = `${when}: no Zoom report in the folder`; }
+    else return `<td class="${today_.trim()}"><span class="muted small">${dk === today ? 'today' : ''}</span><span class="sr">${esc(when)}: ${dk === today ? 'today, no Zoom report yet' : 'later this week'}</span></td>`;
+    kinds.add(kind);
+    return `<td class="${today_.trim()}" title="${esc(sr)}"><span class="swc">${letterCell(kind, '')}${text ? `<span>${esc(text)}</span>` : ''}</span><span class="sr">${esc(sr)}</span></td>`;
+  };
+  const rows = shown.map(k => `<tr><th scope="row">${esc(who.get(k))}</th>${cols.map(c => cell(k, c)).join('')}</tr>`).join('');
+  const toggle = todayCol && all.length > shown.length ? `<button class="linkish" data-supall>Show all ${all.length} students with a support hour this week</button>`
+    : todayCol && state.supAll ? `<button class="linkish" data-supall>Show only today’s support hour</button>` : '';
+  const fix = unmarked.length ? `<div class="sw-fix"><b>Left the support hour early, not marked:</b><ul>${unmarked.map(u =>
+    `<li>${esc(u.name)} · ${esc(shortDate(u.dk))} · left ${esc(fmt(u.left))} <button class="btn small ghost" data-excuse="${esc(u.xkey)}">Mark finished work</button></li>`).join('')}</ul></div>` : '';
+  return `<section class="supweek noprint" aria-labelledby="supweek-h"><div class="sw-head"><h2 id="supweek-h" tabindex="-1">Support hour this week</h2>
+      <span class="muted small">Week of ${esc(monDay(wk))}${todayCol ? ` · showing ${state.supAll ? 'everyone' : `today’s support hour${todayCol.time ? ` (${esc(todayCol.time)})` : ''}`}` : ''}</span>${toggle}</div>
+    ${shown.length ? `<div class="tablewrap"><table class="swk-t"><caption class="sr">Support hours this week. F means you marked the day as finished work: the student left the support hour early with their work done.</caption>
+      <thead><tr><th scope="col">Student</th>${cols.map(c => `<th scope="col" class="${c.dk === today ? 'today' : ''}">${esc(shortDate(c.dk).replace(/,.*/, ''))} ${parseDk(c.dk).getDate()}${c.dk === today ? ' · today' : ''}${c.time ? `<span>${esc(c.time)}</span>` : ''}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody></table></div>${letterLegend(kinds, LETTER_SUPPORT)}` : '<p class="small muted">No one is in today’s support hour on the schedule.</p>'}
+    ${fix}</section>`;
 }
 function noClassCard(dk){
   const r = state.data.noClass[dk] || {};
@@ -2255,7 +2321,9 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
-  if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent(); return; }
+  if (has('data-supall')){ state.supAll = !state.supAll; renderReports(); return; }
+  if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent();
+    if (t.closest('.sw-fix')){ const h = $('#supweek-h'); if (h) h.focus(); } return; }
   if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderCurrent(); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
   if (d.range){ state.range = { preset: d.range, from: '', to: '' }; renderCurrent(); return; }
