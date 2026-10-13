@@ -232,7 +232,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .rbar .r1{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 .rbar .pn{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:.86rem;color:var(--muted);min-width:0}
 .rbar .pn button{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rbar .r3{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rbar .r2{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 .rhead,.rsec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 22px;margin-bottom:14px}
 .eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .rhead h2{font-size:1.75rem;margin:2px 0 6px}
@@ -240,40 +240,16 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .rhead p{margin:2px 0;font-size:.9rem}
 .rsec h3{font-size:1.12rem;margin-bottom:8px}
 .rsec h3 .small{font-family:var(--sans);font-weight:400}
+.rhead .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:12px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--grid)}
+.stat dt{font-size:.78rem;color:var(--muted)}
+.stat dd{margin:0;font-size:1.3rem;font-weight:600;line-height:1.3}
+.stat dd.sub{font-size:.78rem;font-weight:400;color:var(--muted)}
 .rtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
 .rtiles .tile{padding:10px 14px}
 
-/* Minutes each week chart (inline SVG, colors only through classes) */
-.wkhead{margin:0 0 4px;font-size:.92rem}
-.wkchart{margin:4px 0}
-.wkchart svg{display:block;width:100%;height:auto;overflow:visible}
-.wk-grid{stroke:var(--grid);stroke-width:1}
-.wk-full{stroke:var(--muted);stroke-width:1}
-.wk-plan{fill:color-mix(in srgb,var(--bar) 17%,var(--surface))}
-.wk-rec{fill:var(--bar)}
-.wk-txt{fill:var(--muted);font-size:11px;font-family:var(--sans)}
-.wk-val{fill:var(--ink);font-size:11px;font-weight:600;font-family:var(--sans)}
-.wk-fu{fill:var(--muted)}
-.wk-hit{fill:transparent}
-.wkcol{outline:none}
-.wkcol:hover .wk-hit,.wkcol:focus .wk-hit{fill:var(--grid)}
-.wkcol:focus-visible .wk-hit{stroke:var(--focus);stroke-width:2}
-.chartlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);margin:4px 0 2px}
-.chartlegend > span{display:inline-flex;align-items:center;gap:6px}
-.chartlegend i{display:inline-block;width:12px;height:10px;border-radius:2px}
-.chartlegend i.rec{background:var(--bar)}
-.chartlegend i.pl{background:color-mix(in srgb,var(--bar) 17%,var(--surface))}
-.chartlegend i.ln{height:0;border-top:1px solid var(--muted);width:16px;border-radius:0}
 .caption{font-size:.84rem;color:var(--muted);margin:4px 0 0}
-.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--surface);font-size:.8rem;line-height:1.4;padding:6px 9px;border-radius:6px;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
-.tip[hidden]{display:none}
-table.plain{border-collapse:collapse;font-size:.84rem;margin-top:8px;width:100%}
-table.plain th,table.plain td{padding:4px 8px;border-bottom:1px solid var(--grid);text-align:right}
-table.plain th:first-child,table.plain td:first-child{text-align:left}
-table.plain th{font-size:.74rem;color:var(--muted);font-weight:600}
-
 /* Calendar: weeks down, weekdays across */
-.calwrap{max-width:640px}
+.calwrap{max-width:760px}
 table.cal{border-collapse:separate;border-spacing:4px;width:100%;table-layout:fixed}
 table.cal th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:center;padding:2px}
 table.cal th.wk{width:4.6em;text-align:left}
@@ -286,12 +262,20 @@ table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:midd
 .cal td.c-pending{border:1px solid var(--grid);color:var(--faint)}
 .calbtn{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:50px;cursor:pointer;border-radius:6px}
 .calbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.calbtn[aria-pressed="true"]{outline:3px solid var(--focus);outline-offset:1px}
+.cal .notedot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:currentColor}
+table.cal th.wkc{width:8.5em;text-align:left;padding-left:8px}
+table.cal td.wkc{font-size:.8rem;font-weight:500;text-align:left;padding:0 0 0 8px;white-space:nowrap}
+.wkbar{display:block;height:6px;border-radius:3px;background:var(--grid);margin:0 8px 4px 0;overflow:hidden}
+.wkbar i{display:block;height:100%;background:var(--bar)}
+.wkmini{display:none}
+.daydetail{border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:8px;padding:12px 14px;margin-top:14px;max-width:760px}
+.dd-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:8px}
+.dd-links{margin-left:auto;display:flex;gap:14px}
 table.cal tfoot th,table.cal tfoot td{font-size:.72rem;font-weight:500;height:auto;color:var(--muted);text-align:center;padding:1px 2px;line-height:1.3}
 table.cal tfoot th{text-align:left;white-space:normal;line-height:1.15}
 
-/* Every class day, follow-ups, family note */
-details.wkgrp{margin-top:10px}
-details.wkgrp > summary{cursor:pointer;font-weight:600;font-size:.92rem;padding:4px 0}
+/* Follow-ups, family note */
 .fu{list-style:none;margin:0;padding:0}
 .fu li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--grid);font-size:.9rem}
 .fu .when{color:var(--muted);min-width:4.5em}
@@ -351,7 +335,12 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   .cal .dn{top:2px;left:3px}
   .row.slim{grid-template-columns:1fr}
   .settext{grid-template-columns:1fr}
+  .dd-links{margin-left:0}
   .nclist li > span:first-child{min-width:0}
+}
+@media screen and (max-width: 560px){
+  table.cal .wkc{display:none}
+  .wkmini{display:block;font-size:.66rem;font-weight:500;margin-top:2px;line-height:1.25}
 }
 @media print{
   :root{
@@ -370,13 +359,15 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
   details.day{break-inside:avoid-page;border-color:#bbb}
-  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkchart svg *, .chartlegend i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-reports header.top, body.print-reports main{display:none !important}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .rtiles, .wkchart, table.cal tr, .hist tr, .fu li{break-inside:avoid}
-  .wkhead, .chartlegend{break-after:avoid}
+  .rtiles, .stats, .calwrap, .hist tr, .fu li{break-inside:avoid}
+  .rhead .stats{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))}
+  .stat dd{font-size:1.08rem}
+  .stat dd.sub{font-size:.72rem}
   .rhead, .rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0}
   .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
   .name-btn{text-decoration:none}
@@ -415,7 +406,6 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   <section id="tab-settings" hidden></section>
 </main>
 <section id="printArea" aria-hidden="true"></section>
-<div id="tip" class="tip" role="tooltip" hidden></div>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
 
 <script>
@@ -484,7 +474,6 @@ function listJoin(items, max = 4){
   return xs.length < 2 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 }
 const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
-function groupBy(xs, f){ const m = new Map(); for (const x of xs){ const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 function fmtPeriod(p){
   const a = parseDk(p.from), b = parseDk(p.to), o = { weekday: 'short', month: 'short', day: 'numeric' };
   if (a.getFullYear() !== b.getFullYear()) return `${dtf({ ...o, year: 'numeric' }).format(a)} – ${dtf({ ...o, year: 'numeric' }).format(b)}`;
@@ -534,7 +523,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  calAll: false, daysOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null, renderIdx: 0
+  calAll: false, selDay: null, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1338,9 +1327,10 @@ function studentReportHTML(ctx, o){
     if (!o.print) h += followUpSection(ctx, o);
     return h + '</article>';
   }
-  h += summarySection(ctx) + weekSection(ctx, o) + `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, o)}</section>`;
-  if (!o.print) h += dayRowsSection(ctx);
-  else if (o.include.table) h += printDayTable(ctx, o);
+  // The calendar is the report: every day at a glance, each week's minutes at the end of its row,
+  // and any day opens underneath it with the full detail.
+  h += `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, o)}${o.print ? '' : dayDetail(ctx)}</section>`;
+  if (o.print && o.include.table) h += printDayTable(ctx, o);
   if (!o.print || o.include.log) h += followUpSection(ctx, o);
   if (!o.print) h += familySection(ctx);
   return h + footerSection(ctx, o) + '</article>';
@@ -1355,102 +1345,51 @@ function reportBar(ctx, o){
       ${i >= 0 && order.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : ''}
         <span>${i + 1} of ${order.length}</span>
         ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : ''}</nav>` : ''}</div>
-    ${rangeBar()}
-    <div class="r3"><details class="menu"><summary class="btn small">Print…</summary><div class="pop" role="group" aria-label="Print">
+    <div class="r2">${rangeBar()}
+      <details class="menu"><summary class="btn small">Print or share</summary><div class="pop" role="group" aria-label="Print or share">
         <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
-        <div class="inc">Include:${includeBoxes()}</div></div></details>
-      <button class="btn small ghost" data-copysummary>Copy summary</button>
-      <button class="btn small ghost" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Download CSV</button></div></div>`;
+        <button class="item" data-copysummary>Copy summary</button>
+        <button class="item" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Download CSV</button>
+        <div class="inc">Include:${includeBoxes()}</div></div></details></div></div>`;
 }
 
+// Who, when, and the numbers, in one card.
 function reportHeader(ctx){
   const { period, info, p } = ctx, S = state.data.settings;
   const nWeeks = Math.round((parseDk(weekKey(period.to)) - parseDk(weekKey(period.from))) / 6048e5) + 1;
-  return `<header class="rhead"><div class="eyebrow">Intervention attendance report</div>
+  const roster = [info.addedOn && info.addedOn > period.from ? `on the schedule since ${monDay(info.addedOn)}` : '', info.inLatest ? '' : 'not on the current schedule'].filter(Boolean);
+  return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
     <h2 tabindex="-1">${esc(ctx.name)}</h2>
-    <p>Report period: ${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')}</p>
-    <p>Scheduled: ${info.line ? `${esc(info.line)} · ${info.weekMin} minutes a week` : 'not on the schedule at the end of these dates'}${info.changedOn ? ` (changed ${esc(monDay(info.changedOn))})` : ''}</p>
-    ${info.addedOn && info.addedOn > period.from ? `<p>On the schedule since ${esc(monDay(info.addedOn))}, ${parseDk(info.addedOn).getFullYear()}</p>` : ''}
-    ${info.inLatest ? '' : '<p>Not on the current schedule</p>'}
-    <p class="small muted">Based on ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p></header>`;
+    <p>${info.line ? `${esc(info.line)} · ${info.weekMin} minutes a week${info.changedOn ? ` (changed ${esc(monDay(info.changedOn))})` : ''}` : 'Not on the schedule at the end of these dates'}</p>
+    <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
+    ${p ? statsRow(p) : ''}</header>`;
+}
+function statsRow(p){
+  const st = (label, value, sub) => `<div class="stat"><dt>${esc(label)}</dt><dd>${esc(value)}</dd>${sub ? `<dd class="sub">${esc(sub)}</dd>` : ''}</div>`;
+  const items = [
+    st('Days attended', `${p.attended} of ${p.n}`, [p.rate === null ? '' : p.rate + '%', p.excused ? `${p.excused} excused` : ''].filter(Boolean).join(' · ')),
+    st('Minutes received', `${p.pres} of ${p.req}`, [p.dose === null ? '' : p.dose + '%', p.finMin ? `${p.finMin} min finished early` : ''].filter(Boolean).join(' · ')),
+    st('Absent', String(p.absent), p.streak >= 2 ? `last ${p.streak} in a row` : ''),
+    st('Late', String(p.late)), st('Left early', String(p.early + p.soft)), st('Out mid-class', String(p.drop))];
+  if (p.missed) items.push(st('Missed instruction', String(p.missed)));
+  const split = p.iReq && p.sReq ? `<p class="small muted" style="margin:8px 0 0">Instruction ${p.iPres} of ${p.iReq} minutes · Support hour ${p.sPres} of ${p.sReq} minutes</p>` : '';
+  return `<dl class="stats">${items.join('')}</dl>${split}`;
 }
 
-const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
-// The numbers at the top of a report: what happened, with no verdict attached.
-function summarySection(ctx){
-  const { p } = ctx;
-  const tiles = [tile('Days attended', ofN(p.attended, p.n, 'day'), `${p.rate === null ? '—' : p.rate + '%'}${p.excused ? ` · ${p.excused} excused, not counted` : ''}`)];
-  tiles.push(tile('Minutes received', `${p.pres} of ${p.req}`, [p.dose === null ? '' : p.dose + '%',
-    p.iReq && p.sReq ? `instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : '',
-    p.finMin ? `${p.finMin} min finished work early, not counted` : ''].filter(Boolean).join(' · ')));
-  tiles.push(tile('Absent', String(p.absent), p.streak >= 2 ? `the last ${p.streak} class days in a row` : ''));
-  const more = [['Late', p.late], ['Left early', p.early + p.soft], ['Out of Zoom mid-class', p.drop], ['Missed instruction', p.missed]]
-    .map(([l, v]) => `${l} ${v}`).join(' · ');
-  return `<section class="rsec"><div class="rtiles">${tiles.join('')}</div><p class="small muted" style="margin:0">${esc(more)}</p></section>`;
-}
-
-/* Minutes each week: a light column for the minutes expected while class met, the dark column for what the student got. */
-function barPath(cls, x, y, w, h){
-  if (h <= 0.4) return '';
-  const r = Math.min(4, w / 2, h), f = v => v.toFixed(1);
-  return `<path class="${cls}" d="M${f(x)},${f(y + h)}V${f(y + r)}Q${f(x)},${f(y)} ${f(x + r)},${f(y)}H${f(x + w - r)}Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + r)}V${f(y + h)}Z"/>`;
-}
 function weekTip(w){
-  const parts = [`Week of ${monDay(w.wk)}${w.current && !w.complete ? ' (so far)' : ''}: received ${w.received} of ${w.counted} expected minutes.`];
+  const parts = [`Week of ${monDay(w.wk)}${w.current && !w.complete ? ' (so far)' : ''}: ${w.received} of ${w.counted} expected minutes.`];
   if (w.missed) parts.push(`Missed ${w.missed}${w.absentDks.length ? ` (absent ${listJoin(w.absentDks.map(shortDate), 3)})` : ''}.`);
-  if (w.iReq && w.iReq !== w.counted) parts.push(`Instruction ${w.iRec} of ${w.iReq}.`);
-  if (w.excFin) parts.push(`${w.excFin} min excused or finished early.`);
+  if (w.excFin) parts.push(`${w.excFin} min excused or finished early, not counted.`);
   if (w.notHeld) parts.push(`${w.notHeld} min no class.`);
   if (w.noReport) parts.push(`${w.noReport} min with no Zoom report.`);
-  if (w.heldDays) parts.push(`Came ${w.cameDays} of ${plural(w.heldDays, 'day')}.`);
   return parts.join(' ');
 }
-function weekChart(ctx, o, full){
-  const W = ctx.weeks, idx = ++state.renderIdx;
-  const host = $('#tab-students'), avail = host && host.clientWidth ? host.clientWidth - 64 : 640;
-  const width = o.print ? 680 : Math.round(Math.max(300, Math.min(680, avail)));
-  const H = 182, x0 = 40, x1 = width - 6, yTop = 14, yBase = 128;
-  const n = W.length, slot = (x1 - x0) / n, colW = Math.max(6, Math.min(24, slot * .55));
-  const yMax = Math.max(10, Math.ceil(Math.max(full, ...W.map(w => w.counted)) * 1.12 / 10) * 10);
-  const y = v => yBase - v / yMax * (yBase - yTop), f = v => v.toFixed(1);
-  let g = '';
-  for (const v of [...new Set([0, Math.round(full / 2), full])])
-    g += `<line class="${v && v === full ? 'wk-full' : 'wk-grid'}" x1="${x0}" x2="${x1}" y1="${f(y(v))}" y2="${f(y(v))}"/><text class="wk-txt" x="${x0 - 6}" y="${f(y(v) + 4)}" text-anchor="end">${v}</text>`;
-  const every = Math.max(1, Math.ceil(54 / slot)), showL2 = slot >= 66;   // about 54px per date label
-  let lowest = -1;
-  W.forEach((w, i) => { if (w.counted && (lowest < 0 || w.received / w.counted < W[lowest].received / W[lowest].counted)) lowest = i; });
-  const fus = (state.data.followUps[ctx.key] || []).filter(x => x.date >= ctx.period.from && x.date <= ctx.period.to);
-  W.forEach((w, i) => {
-    const hasFu = fus.some(x => weekKey(x.date) === w.wk), cx = x0 + slot * (i + .5), bx = cx - colW / 2, tip = weekTip(w) + (hasFu ? ' Follow-up logged.' : '');
-    g += `<g class="wkcol"${o.print ? '' : ` tabindex="0" data-tip="${esc(tip)}"`} role="img" aria-label="${esc(tip)}">`;
-    g += `<rect class="wk-hit" x="${f(x0 + slot * i + 1)}" y="${yTop - 8}" width="${f(Math.max(1, slot - 2))}" height="${yBase - yTop + 48}" rx="4"/>`;
-    g += barPath('wk-plan', bx, y(w.counted), colW, yBase - y(w.counted)) + barPath('wk-rec', bx, y(w.received), colW, yBase - y(w.received));
-    if (w.counted && (slot >= 24 || i === n - 1 || i === lowest))
-      g += `<text class="wk-val" x="${f(cx)}" y="${f(y(w.received) - 5)}" text-anchor="middle">${w.received}</text>`;
-    if ((i % every === 0 && n - 1 - i >= every) || i === n - 1){   // the last week is always labeled, so skip a label right before it
-      // Labels near the chart's edges are anchored to the edge so they never spill past it.
-      const [lx, anchor] = cx - 20 < x0 - 4 ? [x0 - 4, 'start'] : cx + 20 > width - 2 ? [width - 2, 'end'] : [cx, 'middle'];
-      g += `<text class="wk-txt" x="${f(lx)}" y="${yBase + 17}" text-anchor="${anchor}">${esc(monDay(w.wk))}</text>`;
-      const l2 = w.current && !w.complete ? 'so far' : w.heldDays ? `${w.cameDays} of ${plural(w.heldDays, 'day')}` : w.noReport ? 'no report' : w.notHeld ? 'no class' : w.excFin ? 'excused' : '';
-      if (l2 && (showL2 || !w.heldDays)) g += `<text class="wk-txt" x="${f(lx)}" y="${yBase + 30}" text-anchor="${anchor}">${esc(l2)}</text>`;
-    }
-    if (hasFu) g += `<path class="wk-fu" d="M${f(cx - 5)},${yBase + 48}L${f(cx)},${yBase + 40}L${f(cx + 5)},${yBase + 48}Z"/>`;
-    g += `</g>`;
-  });
-  return `<figure class="wkchart" style="margin:0"><svg viewBox="0 0 ${width} ${H}" role="group" aria-labelledby="wkT-${idx}"><title id="wkT-${idx}">Minutes each week for ${esc(ctx.name)}</title>${g}</svg></figure>`;
-}
-function weekSection(ctx, o){
-  const W = ctx.weeks, full = ctx.info.weekMin || Math.max(0, ...W.map(w => w.counted + w.excFin + w.notHeld + w.noReport));
-  if (!W.some(w => w.counted > 0)) return `<section class="rsec"><h3>Minutes each week</h3><p class="muted small">No class met in these dates.</p></section>`;
-  const comp = W.filter(w => w.complete && w.counted > 0), sr = comp.reduce((t, w) => t + w.received, 0), sc = comp.reduce((t, w) => t + w.counted, 0);
-  const head = comp.length ? `Averaged ${Math.round(sr / comp.length)} of ${Math.round(sc / comp.length)} expected minutes a week (${pct(sr, sc)}%) over ${plural(comp.length, 'full week')}.` : 'No full week yet in these dates.';
-  const anyFu = (state.data.followUps[ctx.key] || []).some(x => x.date >= ctx.period.from && x.date <= ctx.period.to);
-  const legend = `<div class="chartlegend"><span><i class="rec"></i>Minutes received</span><span><i class="pl"></i>Minutes expected when class met</span>
-    <span><i class="ln"></i>Full week: ${full} minutes</span>${anyFu ? '<span>▲ Follow-up logged</span>' : ''}</div>`;
-  const table = `<details class="noprint"><summary class="small">Show as a table</summary><div style="overflow-x:auto"><table class="plain"><thead><tr><th>Week of</th><th>Expected</th><th>Received</th><th>Missed</th><th>Excused or finished early</th><th>No class</th><th>No report</th><th>Days came</th></tr></thead><tbody>
-    ${W.map(w => `<tr><td>${esc(monDay(w.wk))}${w.current && !w.complete ? ' (so far)' : ''}</td><td>${w.counted}</td><td>${w.received}</td><td>${w.missed}</td><td>${w.excFin}</td><td>${w.notHeld}</td><td>${w.noReport}</td><td>${w.heldDays ? `${w.cameDays} of ${w.heldDays}` : '—'}</td></tr>`).join('')}</tbody></table></div></details>`;
-  return `<section class="rsec"><h3>Minutes each week</h3><p class="wkhead">${esc(head)}</p>${legend}${weekChart(ctx, o, full)}
-    ${o.print ? '' : table}</section>`;
+// Each week's minutes, at the end of its calendar row: received of the minutes expected while class met.
+function weekCell(w, cls = 'wkc'){
+  if (!w.counted) return `<td class="${cls}"><span class="muted">${w.notHeld ? 'no class' : w.noReport ? 'no report' : w.excFin ? 'excused' : '—'}</span></td>`;
+  const tip = weekTip(w);
+  return `<td class="${cls}" title="${esc(tip)}"><span class="wkbar" aria-hidden="true"><i style="width:${Math.round(w.received / w.counted * 100)}%"></i></span>
+    <span aria-hidden="true">${w.received}<span class="muted"> of ${w.counted}${w.current && !w.complete ? ' so far' : ''}</span></span><span class="sr">${esc(tip)}</span></td>`;
 }
 
 function calendarHTML(ctx, o){
@@ -1459,9 +1398,13 @@ function calendarHTML(ctx, o){
   if (!wds.length) return '<p class="muted small">No scheduled days in these dates.</p>';
   const total = weeks.length, rows = !o.print && !state.calAll && total > 12 ? weeks.slice(-12) : weeks;
   const kinds = new Set();
+  // Screen cells are buttons that open the day underneath; printed cells are plain.
+  const cell = (cls, dk, inner, title) => o.print ? `<td class="${cls}" data-dk="${dk}">${inner}<span class="sr">${esc(title)}</span></td>`
+    : `<td class="${cls}" data-dk="${dk}"><button class="calbtn" data-selday="${dk}" aria-pressed="${state.selDay === dk}" title="${esc(title)}">${inner}</button></td>`;
   let body = '';
   for (const w of rows){
-    body += `<tr><th class="wk" scope="row">${esc(monDay(w.wk))}</th>`;
+    const mini = !fam && w.counted ? `<span class="wkmini">${w.received} of ${w.counted}</span>` : '';
+    body += `<tr><th class="wk" scope="row">${esc(monDay(w.wk))}${mini}</th>`;
     for (const wd of wds){
       const dk = addDays(w.wk, (wd + 6) % 7), d = w.dates.find(x => x.dk === dk), num = parseDk(dk).getDate();
       if (d && d.status === 'held'){
@@ -1470,18 +1413,16 @@ function calendarHTML(ctx, o){
         if (!L.length) L = ['full'];
         L = L.slice(0, 2); L.forEach(k => kinds.add(k));
         const mn = isExcused(s) || s.isAbsent ? '' : s.presentMin;
-        const title = `${shortDate(dk)}: ${s.flags.map(x => x.label).join(', ')}${mn !== '' ? ` · ${s.presentMin} of ${s.reqMin - finMinOf(s)} min` : ''}`;
-        const inner = `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${L.map(k => LETTER[k]).join('')}</span><span class="mn" aria-hidden="true">${mn}</span>`;
-        body += o.print ? `<td class="k-${worst}" data-dk="${dk}">${inner}<span class="sr">${esc(title)}</span></td>`
-          : `<td class="k-${worst}" data-dk="${dk}"><button class="calbtn" data-goday="${dk}" data-xkey="${esc(s.xkey)}" title="${esc(title)}. See this day on Reports.">${inner}</button></td>`;
+        const title = `${shortDate(dk)}: ${s.flags.map(x => x.label).join(', ')}${mn !== '' ? ` · ${s.presentMin} of ${s.reqMin - finMinOf(s)} min` : ''}${s.note ? ' · has a note' : ''}`;
+        body += cell(`k-${worst}`, dk, `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${L.map(k => LETTER[k]).join('')}</span><span class="mn" aria-hidden="true">${mn}</span>${s.note ? '<span class="notedot" aria-hidden="true"></span>' : ''}`, title);
       } else if (d && (d.status === 'noclass' || d.status === 'missing')){
         kinds.add(d.status);
-        const t = cellTitle(d);
-        body += `<td class="c-${d.status}" data-dk="${dk}" title="${esc(t)}"><span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${LETTER[d.status]}</span><span class="sr">${esc(t)}</span></td>`;
+        body += cell(`c-${d.status}`, dk, `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${LETTER[d.status]}</span>`, cellTitle(d));
       } else if (d) body += `<td class="c-pending" title="${esc(shortDate(dk))}"><span class="dn">${num}</span><span class="sr">${esc(shortDate(dk))}: not yet</span></td>`;
       else if (dk >= period.from && dk <= period.to) body += `<td class="c-off"><span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${LETTER.off}</span><span class="sr">${esc(shortDate(dk))}: not on the schedule</span></td>`;
       else body += '<td></td>';
     }
+    if (!fam) body += weekCell(w);
     body += '</tr>';
   }
   // Per-weekday summary rows, over every week in the period.
@@ -1491,51 +1432,40 @@ function calendarHTML(ctx, o){
     foot.came.push(held.length ? `${att.length} of ${held.length}` : '—');
     foot.ontime.push(att.length ? `${att.filter(d => !hasFlag(d.rec, 'late') && !hasFlag(d.rec, 'missed')).length} of ${att.length}` : '—');
   }
-  const frow = (label, xs) => `<tr><th scope="row">${label}</th>${xs.map(x => `<td>${esc(x)}</td>`).join('')}</tr>`;
+  const frow = (label, xs) => `<tr><th scope="row">${label}</th>${xs.map(x => `<td>${esc(x)}</td>`).join('')}${fam ? '' : '<td class="wkc"></td>'}</tr>`;
   const heldN = dates.filter(d => d.status === 'held').length;
-  return `<div class="calwrap"><table class="cal"><caption class="sr">Calendar of ${plural(heldN, 'class day')}. Letters show what happened each day.</caption>
-    <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}</tr></thead>
+  const caption = fam ? 'The number is minutes in class.'
+    : `Number = minutes in Zoom during scheduled time. ${o.print ? 'Minutes column: minutes received of the minutes expected while class met that week.' : 'Click a day to see it, add a note or mark it excused.'}`;
+  return `<div class="calwrap" style="max-width:${wds.length * 104 + (fam ? 90 : 230)}px"><table class="cal${fam ? '' : ' withweek'}"><caption class="sr">Calendar of ${plural(heldN, 'class day')}. Letters show what happened each day.</caption>
+    <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}${fam ? '' : '<th scope="col" class="wkc">Minutes</th>'}</tr></thead>
     <tbody>${body}</tbody><tfoot>${frow('Came', foot.came)}${fam ? '' : frow('On time', foot.ontime)}</tfoot></table></div>
-    ${letterLegend(kinds, fam ? LETTER_FAMILY : LETTER_TEAM)}<p class="caption">${fam ? 'The number is minutes in class.' : 'Number = minutes in Zoom during scheduled time.'}</p>
+    ${letterLegend(kinds, fam ? LETTER_FAMILY : LETTER_TEAM)}<p class="caption">${caption}</p>
     ${!o.print && total > 12 ? `<button class="linkish noprint" data-calall>${state.calAll ? 'Show the latest 12 weeks' : `Show all ${total} weeks`}</button>` : ''}`;
 }
 
-function dayRowsSection(ctx){
-  const shown = ctx.dates.filter(d => d.status === 'held' || d.status === 'noclass' || d.status === 'missing');
-  if (!shown.length) return '';
-  const groups = groupBy(shown, d => parseDk(d.dk).getDay());
-  // Closed until opened: the calendar above already shows each day at a glance.
-  let h = `<section class="rsec noprint"><details data-daysbox${state.daysOpen ? ' open' : ''}><summary><h3 style="display:inline">Every class day</h3>
-    <span class="small muted">· ${plural(shown.length, 'day')}, newest first, with notes and excused marks</span></summary>`;
-  for (const wd of [...groups.keys()].sort(byWeekOrder)){
-    const ds = groups.get(wd), plans = ds.map(d => d.plan).filter(Boolean), latest = plans[plans.length - 1];
-    const sMin = Math.min(...plans.map(x => x.startMin)), eMin = Math.max(...plans.map(x => x.endMin));
-    const summary = latest ? latest.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support hour'} ${shortRange(s.startMin, s.endMin)}`).join(', ') : '';
-    h += `<details class="wkgrp" open><summary>${wdPlural(wd)}${summary ? ` · ${esc(summary)}` : ''}</summary>
-      <div class="grid-head"><span>Date</span>${axis(axisFor(ds[ds.length - 1].dk, sMin, eMin))}<span>Joined</span><span>Left</span><span>Status</span></div>`;
-    for (const d of [...ds].reverse()) h += dayRow(d, sMin, eMin);
-    h += '</details>';
-  }
-  return h + '</details></section>';
-}
-function dayRow(d, sMin, eMin){
-  const date = `<div class="who"><b>${esc(shortDate(d.dk))}</b></div>`;
-  if (d.status === 'noclass') return `<div class="row slim" data-dk="${d.dk}">${date}<div class="small muted">No class: ${esc(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other')} <button class="linkish" data-undonoclass="${d.dk}">Undo</button></div></div>`;
-  if (d.status === 'missing') return `<div class="row slim" data-dk="${d.dk}">${date}<div class="small"><span class="muted">No Zoom report.</span> ${reasonSelect()} <button class="btn small ghost" data-noclass="${d.dk}">Mark no class</button></div></div>`;
-  const s = d.rec, lines = [];
-  if (isExcused(s)) lines.push('Excused');
-  else lines.push(`${s.presentMin} of ${s.reqMin} min${s.instrReqMin && s.suppReqMin ? ` · instruction ${s.instrMin} of ${s.instrReqMin} · support ${s.suppMin} of ${s.suppReqMin}` : ''}`);
-  const gaps = s.isAbsent ? [] : gapsOf(s);
-  return `<div class="row" data-dk="${d.dk}" data-xkey="${esc(s.xkey)}">
-    <div class="who"><button class="name-btn" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}" title="See this day on Reports">${esc(shortDate(d.dk))}</button>
-      ${lines.map(l => `<span class="meta">${esc(l)}</span>`).join('')}
-      ${s.zoomNames.length ? `<span class="meta">In Zoom as ${s.zoomNames.map(z => `“${esc(z)}”`).join(', ')}</span>` : ''}
-      ${gaps.map(g => `<span class="meta">Out of Zoom ${esc(fmt(g.a))}–${esc(fmt(g.b))}</span>`).join('')}
-      ${noteBlock(s)}</div>
-    <div class="tlc">${timeline(axisFor(d.dk, sMin, eMin), s.merged, s.secs)}</div>
-    <div class="time${s.firstJoin ? '' : ' none'}" data-label="Joined">${esc(fmt(s.firstJoin))}</div>
-    <div class="time${s.lastLeave ? '' : ' none'}" data-label="Left">${esc(fmt(s.lastLeave))}</div>
-    <div class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')} ${rowActions(s)}</div></div>`;
+// The day picked on the calendar: its Zoom timeline, times, note and actions.
+function dayDetail(ctx){
+  const d = state.selDay && ctx.dates.find(x => x.dk === state.selDay);
+  if (!d || !['held', 'noclass', 'missing'].includes(d.status)) return '';
+  const head = `<b>${esc(longDate(d.dk))}</b>`, close = `<button class="linkish" data-selday="">Close</button>`;
+  if (d.status === 'noclass') return `<div class="daydetail" data-dk="${d.dk}"><div class="dd-head">${head}
+    <span class="muted">No class: ${esc(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other')}</span>
+    <span class="dd-links"><button class="linkish" data-undonoclass="${d.dk}">Undo</button>${close}</span></div></div>`;
+  if (d.status === 'missing') return `<div class="daydetail" data-dk="${d.dk}"><div class="dd-head">${head}<span class="dd-links">${close}</span></div>
+    <p class="small" style="margin:0">No Zoom report for this day. If class met, save the report into the folder and click Refresh. If not: ${reasonSelect()}
+    <button class="btn small ghost" data-noclass="${d.dk}">Mark no class</button></p></div>`;
+  const s = d.rec, sMin = d.plan ? d.plan.startMin : clockOf(s.winStart), eMin = d.plan ? d.plan.endMin : clockOf(s.winEnd), ax = axisFor(d.dk, sMin, eMin);
+  const facts = [];
+  if (s.firstJoin) facts.push(`Joined ${fmt(s.firstJoin)}`, `Left ${fmt(s.lastLeave)}`);
+  if (!isExcused(s)) facts.push(`${s.presentMin} of ${s.reqMin} minutes${s.instrReqMin && s.suppReqMin ? ` (instruction ${s.instrMin} of ${s.instrReqMin}, support ${s.suppMin} of ${s.suppReqMin})` : ''}`);
+  if (!s.isAbsent) for (const g of gapsOf(s)) facts.push(`Out of Zoom ${fmt(g.a)}–${fmt(g.b)}`);
+  if (s.zoomNames.length) facts.push(`In Zoom as ${s.zoomNames.map(z => `“${z}”`).join(', ')}`);
+  return `<div class="daydetail" data-dk="${d.dk}">
+    <div class="dd-head">${head}<span class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}</span>
+      <span class="dd-links"><button class="linkish" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}">Open on Reports</button>${close}</span></div>
+    ${axis(ax)}${timeline(ax, s.merged, s.secs)}
+    <p class="small" style="margin:8px 0 4px">${esc(facts.join(' · '))}</p>
+    ${noteBlock(s)}<div class="chips" style="margin-top:6px">${rowActions(s)}</div></div>`;
 }
 function printDayTable(ctx, o){
   const rows = ctx.dates.filter(d => d.status === 'held' || d.status === 'noclass' || d.status === 'missing');
@@ -1625,6 +1555,7 @@ function familySection(ctx){
       ${state.familyCopied === ctx.key ? '<button class="linkish" data-fulognote>Add “Sent attendance note” to the follow-up log</button>' : ''}</div>
     <p class="small muted">Your day notes and follow-up log are never put in this note. Read it before you send it.</p></details></section>`;
 }
+const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
 function familyReportHTML(ctx, o){
   const { p, period } = ctx, S = state.data.settings, boxes = [];
   if (p && p.n) boxes.push(tile('Came to class', ofN(p.attended, p.n, 'day'), ''));
@@ -2071,7 +2002,7 @@ const navCanGoBack = () => !!(history.state && history.state.seq > 0);
 function openStudent(key, from){
   navReplace();
   state.tab = 'students'; state.student = key; state.studentFrom = from || null;
-  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.calAll = false; state.familyCopied = null; state.returnTo = null; state.highlight = null;
+  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.calAll = false; state.selDay = null; state.familyCopied = null; state.returnTo = null; state.highlight = null;
   navPush();
   render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
@@ -2108,7 +2039,7 @@ function readFollowUp(form, raw){
 const visible = sel => [...document.querySelectorAll(sel)].find(el => el.offsetParent !== null);
 // After a redraw, put keyboard focus back on the control that was clicked (or its replacement).
 function focusSelector(t){
-  for (const a of t.attributes) if (a.name.startsWith('data-') && a.name !== 'data-tip') return `${t.tagName.toLowerCase()}[${a.name}="${CSS.escape(a.value)}"]`;
+  for (const a of t.attributes) if (a.name.startsWith('data-')) return `${t.tagName.toLowerCase()}[${a.name}="${CSS.escape(a.value)}"]`;
   return t.id ? `#${CSS.escape(t.id)}` : null;
 }
 
@@ -2153,8 +2084,17 @@ async function onClick(t){
   if (d.openstudent){ openStudent(d.openstudent, d.from); return; }
   if (has('data-studentback')) return studentBack();
   if (d.stepstudent){
-    state.student = d.stepstudent; state.studentFrom = null; state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.familyCopied = null;
+    state.student = d.stepstudent; state.studentFrom = null; state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.familyCopied = null; state.selDay = null;
     navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return;
+  }
+  if (has('data-selday')){
+    // Click a day to open it under the calendar; click it again (or Close) to put it away.
+    const was = state.selDay;
+    state.selDay = d.selday && d.selday !== was ? d.selday : null;
+    state.noteEdit = null; renderStudents();
+    if (state.selDay){ const dd = $('#tab-students .daydetail'); if (dd) dd.scrollIntoView({ block: 'nearest' }); }
+    else if (was){ const b = $(`#tab-students [data-selday="${was}"]`); if (b) b.focus({ preventScroll: true }); }
+    return;
   }
   if (d.goday){ goDay(d.goday, d.xkey); return; }
   if (has('data-returnto')){
@@ -2259,6 +2199,8 @@ document.addEventListener('change', e => {
     if (!ok(f) || !ok(to)) return;
     if (f && to && f > to) [f, to] = [to, f];
     state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; renderCurrent();
+    // Keep the cursor in the date box that was just filled in, so the redraw doesn't lose your place.
+    const box = visible(`.range [data-${'rfrom' in d ? 'rfrom' : 'rto'}]`); if (box) box.focus({ preventScroll: true });
   }
   // Notes are saved on focusout and Enter, not here: "change" fires before focusout, and redrawing here would swallow the click that moved focus.
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
@@ -2298,40 +2240,11 @@ document.addEventListener('toggle', e => {
     if (el.open){ state.openDays.add(el.dataset.dk); fillDayBody(el); } else state.openDays.delete(el.dataset.dk);
   }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
-  if (el.dataset && 'daysbox' in el.dataset) state.daysOpen = el.open;
   if (el.classList && el.classList.contains('menu') && el.open){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
   }
 }, true);
-// The weekly chart is drawn for the width it has; redraw it after a resize or a phone rotation.
-let chartTimer = null;
-window.addEventListener('resize', () => {
-  clearTimeout(chartTimer);
-  chartTimer = setTimeout(() => {
-    const fig = $('#tab-students .wkchart'), host = $('#tab-students');
-    if (!fig || !state.student || !host.clientWidth) return;
-    const want = Math.round(Math.max(300, Math.min(680, host.clientWidth - 64))), svg = fig.querySelector('svg');
-    if (svg && svg.viewBox.baseVal.width === want) return;
-    const ctx = currentCtx(), W = ctx.weeks;
-    fig.outerHTML = weekChart(ctx, {}, ctx.info.weekMin || Math.max(0, ...W.map(w => w.counted + w.excFin + w.notHeld + w.noReport)));
-  }, 150);
-});
-
-// One tooltip for the chart, shown on hover and on keyboard focus. Text goes in with textContent.
-function showTip(el){
-  const tip = $('#tip'); tip.textContent = el.dataset.tip; tip.hidden = false;
-  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
-  tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
-  tip.style.top = (r.top - h - 6 < 8 ? r.bottom + 6 : r.top - h - 6) + 'px';
-}
-const tipOf = t => t && t.closest ? t.closest('[data-tip]') : null;
-document.addEventListener('pointerover', e => { const el = tipOf(e.target); if (el) showTip(el); });
-document.addEventListener('pointerout', e => { const el = tipOf(e.target); if (el && !el.contains(e.relatedTarget)) $('#tip').hidden = true; });
-document.addEventListener('focusin', e => { const el = tipOf(e.target); if (el) showTip(el); });
-document.addEventListener('focusout', e => { if (tipOf(e.target)) $('#tip').hidden = true; });
-window.addEventListener('scroll', () => { $('#tip').hidden = true; }, { passive: true });
-
 window.addEventListener('popstate', e => {
   const s = e.state || {}, leaving = state.student;
   navSeq = s.seq || 0;
