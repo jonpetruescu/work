@@ -244,6 +244,27 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .stat dt{font-size:.78rem;color:var(--muted)}
 .stat dd{margin:0;font-size:1.3rem;font-weight:600;line-height:1.3}
 .stat dd.sub{font-size:.78rem;font-weight:400;color:var(--muted)}
+.stat dd .of{font-size:.8rem;font-weight:500;color:var(--muted)}
+.wsched{margin:14px 0 0;max-width:640px}
+.ws-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.8rem;color:var(--muted);margin-bottom:2px}
+.ws-head b{color:var(--ink);font-weight:600;font-size:.9rem}
+.ws-row{display:grid;grid-template-columns:2.4em minmax(0,1fr) 3.9em;gap:8px;align-items:center;margin-top:4px}
+.ws-axis{margin-top:0}
+.ws-axis .ws-track{height:16px;background:none}
+.ws-axis .ws-track > span{position:absolute;top:0;transform:translateX(-50%);font-size:.72rem;color:var(--muted);white-space:nowrap}
+.ws-day{font-size:.8rem;font-weight:600;color:var(--muted)}
+.ws-min{font-size:.78rem;color:var(--muted);text-align:right;white-space:nowrap}
+.ws-track{position:relative;height:28px;border-radius:4px;background:var(--paper)}
+.ws-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--grid)}
+.ws-blk{position:absolute;top:0;bottom:0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:600;color:var(--ink);white-space:nowrap;container-type:inline-size}
+.ws-blk.instruction,.ws-sw.instruction{background:var(--instr)}
+.ws-blk.support,.ws-sw.support{background:var(--support)}
+.ws-blk .l1,.ws-blk .l0{display:none}
+@container (max-width: 128px){ .ws-blk .l2{display:none} .ws-blk .l1{display:inline} }
+@container (max-width: 90px){ .ws-blk .l1{display:none} .ws-blk .l0{display:inline} }
+.ws-key{display:flex;gap:4px 16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin:6px 0 0 calc(2.4em + 8px)}
+.ws-key > span{display:inline-flex;align-items:center;gap:6px}
+.ws-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:14px;border-radius:3px;font-style:normal;font-size:.62rem;font-weight:700;color:var(--ink)}
 .rtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
 .rtiles .tile{padding:10px 14px}
 
@@ -359,12 +380,12 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
   details.day{break-inside:avoid-page;border-color:#bbb}
-  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i, .ws-track, .ws-blk, .ws-sw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-reports header.top, body.print-reports main{display:none !important}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .rtiles, .stats, .calwrap, .hist tr, .fu li{break-inside:avoid}
+  .rtiles, .stats, .wsched, .calwrap, .hist tr, .fu li{break-inside:avoid}
   .rhead .stats{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))}
   .stat dd{font-size:1.08rem}
   .stat dd.sub{font-size:.72rem}
@@ -1360,12 +1381,41 @@ function reportHeader(ctx){
   const roster = [info.addedOn && info.addedOn > period.from ? `on the schedule since ${monDay(info.addedOn)}` : '', info.inLatest ? '' : 'not on the current schedule'].filter(Boolean);
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
     <h2 tabindex="-1">${esc(ctx.name)}</h2>
-    <p>${info.line ? `${esc(info.line)} · ${info.weekMin} minutes a week${info.changedOn ? ` (changed ${esc(monDay(info.changedOn))})` : ''}` : 'Not on the schedule at the end of these dates'}</p>
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
+    ${scheduleChart(info)}
     ${p ? statsRow(p) : ''}</header>`;
 }
+// The weekly schedule as a picture: one row per class day on a shared clock, with the instruction and
+// support-hour blocks drawn where they fall. Screen readers get the same schedule as a sentence.
+function scheduleChart(info){
+  if (!info.byW.length) return '<p class="small">Not on the schedule at the end of these dates.</p>';
+  const lo = Math.floor(Math.min(...info.byW.map(x => x.plan.startMin)) / 60) * 60;
+  const hi = Math.ceil(Math.max(...info.byW.map(x => x.plan.endMin)) / 60) * 60;
+  const span = Math.max(60, hi - lo), at = m => (m - lo) / span * 100, hours = [];
+  for (let m = lo; m <= hi; m += 60) hours.push(m);
+  const grid = hours.map(m => `<i class="ws-grid" style="left:${at(m).toFixed(2)}%"></i>`).join('');
+  const NAME = { instruction: ['Instruction', 'I'], support: ['Support hour', 'S'] };
+  const types = new Set(info.byW.flatMap(x => x.plan.secs.map(s => s.type === 'instruction' ? 'instruction' : 'support')));
+  const rows = info.byW.map(({ w, plan }) => {
+    // Support first, so instruction draws on top if the two ever overlap. A 1px inset leaves a gap between touching blocks.
+    const blocks = [...plan.secs].sort((a, b) => (a.type === 'instruction') - (b.type === 'instruction')).map(s => {
+      const [long, short] = NAME[s.type] || NAME.support;
+      let range = shortRange(s.startMin, s.endMin);
+      if (!/[AP]M.*[AP]M/.test(range)) range = range.replace(/ [AP]M$/, '');
+      return `<span class="ws-blk ${s.type === 'instruction' ? 'instruction' : 'support'}" title="${esc(`${cap(DAYS[w])}: ${long}, ${shortRange(s.startMin, s.endMin)}`)}"
+        style="left:calc(${at(s.startMin).toFixed(2)}% + 1px);width:calc(${(at(s.endMin) - at(s.startMin)).toFixed(2)}% - 2px)"><span class="l2">${long} ${esc(range)}</span><span class="l1">${long}</span><span class="l0">${short}</span></span>`;
+    }).join('');
+    return `<div class="ws-row"><span class="ws-day">${cap(DAYS[w]).slice(0, 3)}</span><span class="ws-track">${grid}${blocks}</span><span class="ws-min">${plan.minutes} min</span></div>`;
+  }).join('');
+  const axis = `<div class="ws-row ws-axis"><span></span><span class="ws-track">${hours.map(m => `<span style="left:${at(m).toFixed(2)}%">${esc(fmtMin(m).replace(':00', ''))}</span>`).join('')}</span><span></span></div>`;
+  const sentence = `Schedule: ${info.line}. ${info.weekMin} minutes a week.`;
+  return `<div class="wsched"><div class="ws-head"><span>Schedule</span><b>${info.weekMin} minutes a week</b>${info.changedOn ? `<span>· changed ${esc(monDay(info.changedOn))}, earlier days used the old schedule</span>` : ''}</div>
+    <div role="img" aria-label="${esc(sentence)}">${axis}${rows}</div>
+    <div class="ws-key" aria-hidden="true">${types.has('instruction') ? '<span><i class="ws-sw instruction">I</i>Instruction</span>' : ''}${types.has('support') ? '<span><i class="ws-sw support">S</i>Support hour</span>' : ''}</div></div>`;
+}
 function statsRow(p){
-  const st = (label, value, sub) => `<div class="stat"><dt>${esc(label)}</dt><dd>${esc(value)}</dd>${sub ? `<dd class="sub">${esc(sub)}</dd>` : ''}</div>`;
+  const st = (label, value, sub) => { const [n, of] = String(value).split(' of ');
+    return `<div class="stat"><dt>${esc(label)}</dt><dd>${esc(n)}${of ? `<span class="of"> of ${esc(of)}</span>` : ''}</dd>${sub ? `<dd class="sub">${esc(sub)}</dd>` : ''}</div>`; };
   const items = [
     st('Days attended', `${p.attended} of ${p.n}`, [p.rate === null ? '' : p.rate + '%', p.excused ? `${p.excused} excused` : ''].filter(Boolean).join(' · ')),
     st('Minutes received', `${p.pres} of ${p.req}`, [p.dose === null ? '' : p.dose + '%', p.finMin ? `${p.finMin} min finished early` : ''].filter(Boolean).join(' · ')),
