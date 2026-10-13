@@ -57,7 +57,8 @@ header.top{background:var(--surface);border-bottom:1px solid var(--line)}
 .btn.ghost:hover{border-color:var(--muted)}
 .btn.small{padding:3px 9px;font-size:.8rem;font-weight:600}
 .btn:disabled{opacity:.5;cursor:default}
-nav.tabs{display:flex;gap:26px}
+nav.tabs{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+nav.tabs button{flex:none}
 nav.tabs button{background:none;border:0;padding:10px 0 11px;cursor:pointer;color:var(--muted);font-weight:600;border-bottom:3px solid transparent}
 nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bar)}
 .savebar{font-size:.84rem;color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
@@ -221,23 +222,25 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
 
-/* Support hour this week (Reports tab) */
-.supweek{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--fin);border-radius:10px;padding:14px 20px;margin-bottom:16px}
-.sw-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:8px}
-.sw-head h2{font-size:1.15rem}
-.sw-head h2:focus{outline:none}
-.swk-t{border-collapse:collapse;width:auto;min-width:min(100%,360px);font-size:.88rem}
-.swk-t td.sw-none{color:var(--faint)}
-.supweek .tablewrap{border:0;background:none}
-.swk-t th,.swk-t td{padding:6px 14px 6px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:middle}
-.swk-t thead th{font-size:.76rem;color:var(--muted);font-weight:600;white-space:nowrap}
-.swk-t thead th span{display:block;font-weight:400}
-.swk-t tbody th{font-weight:600}
-.swk-t .today{background:var(--paper)}
-.swc{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 6px;white-space:nowrap}
-.sw-fix{margin-top:10px;font-size:.88rem}
-.sw-fix ul{list-style:none;margin:4px 0 0;padding:0}
-.sw-fix li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:3px 0}
+/* Support hour tab */
+.sup{max-width:560px}
+.sup-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:4px 0 12px}
+.sup-head h2{font-size:1.4rem}
+.sup-head h2:focus{outline:none}
+.sup .search{width:100%;max-width:none;font-size:1rem;padding:9px 12px}
+.sup-h{font-size:1.05rem;margin:18px 0 6px}
+.sup-list{list-style:none;margin:0;padding:0}
+.sup-list li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:9px 2px;border-bottom:1px solid var(--grid)}
+.sup-list li b{min-width:9em}
+.sup-when{color:var(--ink)}
+.sup-found li{align-items:baseline}
+.sup-yes{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.sup-no{color:var(--muted)}
+.sup-days{display:flex;flex-wrap:wrap;gap:4px 12px;width:100%;font-size:.8rem;color:var(--muted)}
+.sdc{display:inline-flex;align-items:center;gap:4px}
+.sup-unm{margin-top:18px}
+.sup-unm > summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+.sup-unm li button{margin-left:auto}
 
 /* Small dropdown menus (Print…) */
 .menu{position:relative;display:inline-block}
@@ -400,6 +403,9 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   .nclist li > span:first-child{min-width:0}
 }
 @media screen and (max-width: 560px){
+  nav.tabs{gap:14px}
+  nav.tabs button{font-size:.88rem}
+  .tabx{display:none}
   .mbars{grid-template-columns:1fr;gap:2px}
   .mbars .lab{margin-top:6px}
   .mkey{flex-direction:column;gap:6px}
@@ -464,6 +470,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
       <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" data-tab="reports" aria-selected="true">Reports</button>
         <button role="tab" data-tab="students" aria-selected="false">Students</button>
+        <button role="tab" data-tab="support" aria-selected="false">Support<span class="tabx"> hour</span></button>
         <button role="tab" data-tab="schedule" aria-selected="false">Schedule</button>
         <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
       </nav>
@@ -475,6 +482,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   <div id="status" aria-live="polite"></div>
   <section id="tab-reports"></section>
   <section id="tab-students" hidden></section>
+  <section id="tab-support" hidden></section>
   <section id="tab-schedule" hidden></section>
   <section id="tab-settings" hidden></section>
 </main>
@@ -598,7 +606,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  calAll: false, selDay: null, supAll: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  calAll: false, selDay: null, supQuery: '', supUnmOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -952,7 +960,6 @@ function renderReports(){
     return;
   }
   const days = daysInRange(A.days), period = periodOf(A);
-  h += supportWeekCard(A);
   h += `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button>
@@ -966,51 +973,6 @@ function renderReports(){
   for (const c of cards) h += c.day ? renderDay(c.day) : noClassCard(c.dk);
   el.innerHTML = h;
   focusNoteInput(el);
-}
-/* Support hour this week: a quick check during a support hour of who was already let go early this week
-   for finishing their work (the days you marked "Finished work"). It always shows the current week. */
-function supportWeekCard(A){
-  const today = todayDk(), wk = weekKey(today), len = state.data.settings.sectionLen, cols = [], who = new Map();
-  for (let i = 0; i < 7; i++){
-    const dk = addDays(wk, i), secs = (A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || []).filter(x => x.type === 'support' && x.students.length);
-    if (!secs.length) continue;
-    const keys = new Set();
-    for (const x of secs) for (const n of x.students){ const k = normKey(n); if (k){ keys.add(k); if (!who.has(k)) who.set(k, A.nameOf[k] || n); } }
-    const starts = new Set(secs.map(x => x.startMin)), ends = new Set(secs.map(x => x.endMin ?? x.startMin + len));
-    cols.push({ dk, keys, time: starts.size === 1 && ends.size === 1 ? shortRange(secs[0].startMin, secs[0].endMin ?? secs[0].startMin + len) : '' });
-  }
-  if (!cols.length) return '';
-  const todayCol = cols.find(c => c.dk === today);
-  const all = [...who.keys()].sort((a, b) => who.get(a).localeCompare(who.get(b)));
-  const shown = todayCol && !state.supAll ? all.filter(k => todayCol.keys.has(k)) : all;
-  const kinds = new Set(), unmarked = [];
-  const cell = (k, c) => {
-    const dk = c.dk, name = who.get(k), when = shortDate(dk), today_ = dk === today ? ' today' : '';
-    if (!c.keys.has(k)) return `<td class="sw-none${today_}"><span aria-hidden="true">·</span><span class="sr">${esc(name)} has no support hour ${esc(when)}</span></td>`;
-    const rec = (A.dayByDk.get(dk) || { students: [] }).students.find(x => x.key === k);
-    let kind, text = '', sr;
-    if (rec){
-      kind = hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full';
-      if (['fin', 'soft', 'early'].includes(kind) && rec.lastLeave) text = 'left ' + hm(rec.lastLeave);
-      sr = `${when}: ${rec.flags.map(f => f.label).join(', ')}${rec.lastLeave ? `, left Zoom at ${fmt(rec.lastLeave)}` : ''}`;
-      if (kind === 'soft') unmarked.push({ k, name, dk, xkey: rec.xkey, left: rec.lastLeave });
-    } else if (state.data.noClass[dk]){ kind = 'noclass'; sr = `${when}: no class`; }
-    else if (dk < today){ kind = 'missing'; sr = `${when}: no Zoom report in the folder`; }
-    else return `<td class="${today_.trim()}"><span class="muted small">${dk === today ? 'today' : ''}</span><span class="sr">${esc(when)}: ${dk === today ? 'today, no Zoom report yet' : 'later this week'}</span></td>`;
-    kinds.add(kind);
-    return `<td class="${today_.trim()}" title="${esc(sr)}"><span class="swc">${letterCell(kind, '')}${text ? `<span>${esc(text)}</span>` : ''}</span><span class="sr">${esc(sr)}</span></td>`;
-  };
-  const rows = shown.map(k => `<tr><th scope="row">${esc(who.get(k))}</th>${cols.map(c => cell(k, c)).join('')}</tr>`).join('');
-  const toggle = todayCol && all.length > shown.length ? `<button class="linkish" data-supall>Show all ${all.length} students with a support hour this week</button>`
-    : todayCol && state.supAll ? `<button class="linkish" data-supall>Show only today’s support hour</button>` : '';
-  const fix = unmarked.length ? `<div class="sw-fix"><b>Left the support hour early, not marked:</b><ul>${unmarked.map(u =>
-    `<li>${esc(u.name)} · ${esc(shortDate(u.dk))} · left ${esc(fmt(u.left))} <button class="btn small ghost" data-excuse="${esc(u.xkey)}">Mark finished work</button></li>`).join('')}</ul></div>` : '';
-  return `<section class="supweek noprint" aria-labelledby="supweek-h"><div class="sw-head"><h2 id="supweek-h" tabindex="-1">Support hour this week</h2>
-      <span class="muted small">Week of ${esc(monDay(wk))}${todayCol ? ` · showing ${state.supAll ? 'everyone' : `today’s support hour${todayCol.time ? ` (${esc(todayCol.time)})` : ''}`}` : ''}</span>${toggle}</div>
-    ${shown.length ? `<div class="tablewrap"><table class="swk-t"><caption class="sr">Support hours this week. F means you marked the day as finished work: the student left the support hour early with their work done.</caption>
-      <thead><tr><th scope="col">Student</th>${cols.map(c => `<th scope="col" class="${c.dk === today ? 'today' : ''}">${esc(shortDate(c.dk).replace(/,.*/, ''))} ${parseDk(c.dk).getDate()}${c.dk === today ? ' · today' : ''}${c.time ? `<span>${esc(c.time)}</span>` : ''}</th>`).join('')}</tr></thead>
-      <tbody>${rows}</tbody></table></div>${letterLegend(kinds, LETTER_SUPPORT)}` : '<p class="small muted">No one is in today’s support hour on the schedule.</p>'}
-    ${fix}</section>`;
 }
 function noClassCard(dk){
   const r = state.data.noClass[dk] || {};
@@ -1407,6 +1369,62 @@ function scheduleInfo(A, key, period){
   // Joining the schedule is reported on its own line, so it isn't also called a change.
   if (changedOn && changedOn === firstFrom) changedOn = null;
   return { byW, line, weekMin, changedOn, addedOn: firstFrom || null, inLatest };
+}
+
+/* ---------------- Support hour tab ----------------
+   A quick check during a support hour: who was let go early this week for finishing their work
+   (the days you marked "Finished work"). Always the current week. */
+function supportWeek(A){
+  const today = todayDk(), wk = weekKey(today), days = [], people = new Map();
+  for (let i = 0; i < 7; i++){
+    const dk = addDays(wk, i), secs = (A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || []).filter(x => x.type === 'support' && x.students.length);
+    if (!secs.length) continue;
+    days.push(dk);
+    const rep = A.dayByDk.get(dk);
+    for (const x of secs) for (const n of x.students){
+      const k = normKey(n); if (!k) continue;
+      if (!people.has(k)) people.set(k, { key: k, name: A.nameOf[k] || n, days: [] });
+      const P = people.get(k); if (P.days.some(e => e.dk === dk)) continue;
+      const rec = rep ? rep.students.find(r => r.key === k) : null;
+      const kind = rec ? (hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full')
+        : state.data.noClass[dk] ? 'noclass' : dk < today ? 'missing' : dk === today ? 'today' : 'later';
+      P.days.push({ dk, kind, rec });
+    }
+  }
+  return { today, wk, days, people: [...people.values()].sort((a, b) => a.name.localeCompare(b.name)) };
+}
+const supDay = dk => `${shortDate(dk).replace(/,.*/, '')} ${parseDk(dk).getDate()}`;
+const supLeft = d => d.rec && d.rec.lastLeave ? `left ${hm(d.rec.lastLeave)}` : '';
+function supportResults(W){
+  const q = normKey(state.supQuery || ''), early = p => p.days.filter(d => d.kind === 'fin');
+  const chip = d => `<span class="sdc" title="${esc(shortDate(d.dk))}: ${esc(d.kind === 'today' ? 'today' : d.kind === 'later' ? 'later this week' : LETTER_SUPPORT[d.kind])}">${esc(supDay(d.dk))} ${
+    d.kind === 'today' ? '<span class="muted">today</span>' : d.kind === 'later' ? '<span class="muted">later</span>' : letterCell(d.kind, '')}</span>`;
+  const line = (p, f) => `<li><b>${esc(p.name)}</b><span class="sup-when">${f.map(d => `${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}`).join(' · ')}</span></li>`;
+  if (q){
+    const hits = W.people.filter(p => normKey(p.name).includes(q));
+    if (!hits.length) return `<p class="muted">No one with a support hour this week matches “${esc(state.supQuery)}”.</p>`;
+    return `<ul class="sup-list sup-found">${hits.map(p => { const f = early(p);
+      return `<li><b>${esc(p.name)}</b>${f.length ? `<span class="sup-yes">${letterCell('fin', '')} Let go early this week: ${f.map(d => `${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}`).join(' · ')}</span>`
+        : '<span class="sup-no">Not let go early this week</span>'}<span class="sup-days">${p.days.map(chip).join('')}</span></li>`; }).join('')}</ul>`;
+  }
+  const yes = W.people.filter(p => early(p).length);
+  const unm = W.people.flatMap(p => p.days.filter(d => d.kind === 'soft').map(d => ({ p, d })));
+  return `<h3 class="sup-h">Let go early this week <span class="muted">(finished work)</span></h3>
+    ${yes.length ? `<ul class="sup-list">${yes.map(p => line(p, early(p))).join('')}</ul>` : '<p class="muted">No one has been let go early this week.</p>'}
+    ${unm.length ? `<details class="sup-unm" data-supunm${state.supUnmOpen ? ' open' : ''}><summary>Left the support hour early, not marked (${unm.length})</summary>
+      <ul class="sup-list">${unm.map(({ p, d }) => `<li><b>${esc(p.name)}</b><span class="sup-when">${esc(supDay(d.dk))}, ${esc(supLeft(d))}</span>
+        <button class="btn small ghost" data-excuse="${esc(d.rec.xkey)}">Mark finished work</button></li>`).join('')}</ul></details>` : ''}`;
+}
+function renderSupport(){
+  const el = $('#tab-support'), A = analyze();
+  state.lastAnalysis = A;
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const W = supportWeek(A);
+  if (!W.days.length){ el.innerHTML = `<div class="start"><h2>No support hour this week</h2><p class="muted">Your schedule has no support-hour sections this week.</p></div>`; return; }
+  el.innerHTML = `<div class="sup"><div class="sup-head"><h2 tabindex="-1">Support hour</h2>
+      <span class="muted">Week of ${esc(monDay(W.wk))} · ${esc(W.days.map(supDay).join(', '))}</span></div>
+    <input class="search" data-supsearch type="search" placeholder="Find a student" value="${esc(state.supQuery)}" aria-label="Find a student" autocomplete="off">
+    <div id="sup-results" aria-live="polite">${supportResults(W)}</div></div>`;
 }
 
 /* ---------------- Students tab: the list ---------------- */
@@ -2134,7 +2152,7 @@ function renderStatus(){
   const el = $('#status');
   el.innerHTML = state.status ? `<div class="notice ${state.status.type === 'info' ? 'info' : ''}">${esc(state.status.text)}</div>` : '';
 }
-const RENDER = { reports: () => renderReports(), students: () => renderStudents(), schedule: () => renderSchedule(), settings: () => renderSettings() };
+const RENDER = { reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
 function render(){
   renderFolderBar(); renderSaveState(); renderStatus();
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
@@ -2321,9 +2339,8 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
-  if (has('data-supall')){ state.supAll = !state.supAll; renderReports(); return; }
   if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent();
-    if (t.closest('.sw-fix')){ const h = $('#supweek-h'); if (h) h.focus(); } return; }
+    if (t.closest('.sup-unm')){ const h = $('#tab-support h2'); if (h) h.focus(); } return; }
   if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderCurrent(); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
   if (d.range){ state.range = { preset: d.range, from: '', to: '' }; renderCurrent(); return; }
@@ -2426,6 +2443,7 @@ async function onClick(t){
 }
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset || {};
+  if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
     state.schedTimer = setTimeout(() => { const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop; renderSchedule(); const n = $('#schedText'); n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top; }, 250); }
@@ -2496,6 +2514,7 @@ document.addEventListener('toggle', e => {
     if (el.open){ state.openDays.add(el.dataset.dk); fillDayBody(el); } else state.openDays.delete(el.dataset.dk);
   }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
+  if (el.dataset && 'supunm' in el.dataset) state.supUnmOpen = el.open;
   if (el.classList && el.classList.contains('menu') && el.open){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
