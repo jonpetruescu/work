@@ -241,7 +241,9 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sdc{display:inline-flex;align-items:center;gap:4px}
 .sup-unm{margin-top:18px}
 .sup-unm > summary{cursor:pointer;color:var(--muted);font-size:.9rem}
-[data-supmark]{min-width:10.5em}
+.btn[data-supmark]{min-width:10.5em}
+.sup-cols li{display:grid;grid-template-columns:10em minmax(0,1fr);align-items:center}
+.sup-cols .sup-item{display:flex;justify-content:space-between;margin:2px 0}
 .sup-item{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-right:18px}
 .sup-yes,.sup-soft,.sup-no{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;width:100%}
 .sup-yes{font-weight:600}
@@ -1468,7 +1470,7 @@ const supLeft = d => d.rec && d.rec.lastLeave ? `left ${hm(d.rec.lastLeave)}` : 
 function supItem(d){
   const on = d.kind === 'fin';
   return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span><span class="sup-st muted small"></span>
-    <button class="btn small ghost" data-supmark="${esc(d.rec.xkey)}">${on ? 'Undo' : 'Mark finished work'}</button></span>`;
+    <button class="${on ? 'linkish' : 'btn small ghost'}" data-supmark="${esc(d.rec.xkey)}">${on ? 'Undo' : 'Mark finished work'}</button></span>`;
 }
 function supportResults(W){
   const q = normKey(state.supQuery || ''), of = (p, k) => p.days.filter(d => d.kind === k);
@@ -1488,9 +1490,9 @@ function supportResults(W){
   const yes = W.people.filter(p => of(p, 'fin').length);
   const unm = W.people.flatMap(p => of(p, 'soft').map(d => ({ p, d })));
   return `<h3 class="sup-h">Let go early this week <span class="muted">(finished work)</span></h3>
-    ${yes.length ? `<ul class="sup-list">${yes.map(p => `<li><b>${esc(p.name)}</b>${of(p, 'fin').map(supItem).join('')}</li>`).join('')}</ul>` : '<p class="muted">No one has been let go early this week.</p>'}
+    ${yes.length ? `<ul class="sup-list sup-cols">${yes.map(p => `<li><b>${esc(p.name)}</b><span>${of(p, 'fin').map(supItem).join('')}</span></li>`).join('')}</ul>` : '<p class="muted">No one has been let go early this week.</p>'}
     ${unm.length ? `<details class="sup-unm" data-supunm${state.supUnmOpen ? ' open' : ''}><summary>Left the support hour early, not marked (${unm.length})</summary>
-      <ul class="sup-list">${unm.map(({ p, d }) => `<li><b>${esc(p.name)}</b>${supItem(d)}</li>`).join('')}</ul></details>` : ''}`;
+      <ul class="sup-list sup-cols">${unm.map(({ p, d }) => `<li><b>${esc(p.name)}</b><span>${supItem(d)}</span></li>`).join('')}</ul></details>` : ''}`;
 }
 function renderSupport(){
   const el = $('#tab-support'), A = analyze();
