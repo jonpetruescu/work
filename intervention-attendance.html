@@ -212,7 +212,8 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px;margin-bottom:14px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .noclasscard b{color:var(--ink);font-family:var(--serif);font-size:1.1rem}
 .backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:.9rem}
-.row.hl,.hl{outline:2px solid var(--focus);outline-offset:1px;background:var(--grid);border-radius:4px}
+.hl{outline:2px solid var(--focus);outline-offset:1px;border-radius:4px}
+.row.hl{background:var(--grid)}
 .row.slim{grid-template-columns:minmax(170px,1.25fr) 1fr}
 .saveperiod{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tilebtn{text-align:left;cursor:pointer;font:inherit;color:inherit;display:block;width:100%}
@@ -231,7 +232,7 @@ tr.divider td{background:var(--paper);font-size:.8rem;color:var(--muted);font-we
 .menu{position:relative;display:inline-block}
 .menu > summary{list-style:none}
 .menu > summary::-webkit-details-marker{display:none}
-.menu .pop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:6px;min-width:280px;display:flex;flex-direction:column;gap:2px}
+.menu .pop{position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:6px;min-width:280px;display:flex;flex-direction:column;gap:2px}
 .menu .item{background:none;border:0;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:.88rem;color:var(--ink)}
 .menu .item:hover,.menu .item:focus-visible{background:var(--paper)}
 .menu .inc{border-top:1px solid var(--grid);margin-top:4px;padding:8px 10px 4px;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
@@ -301,8 +302,8 @@ table.cal{border-collapse:separate;border-spacing:4px;width:100%;table-layout:fi
 table.cal th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:center;padding:2px}
 table.cal th.wk{width:4.6em;text-align:left}
 table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:middle;position:relative;padding:0;font-size:.95rem;font-weight:700}
-.cal .dn{position:absolute;top:3px;left:5px;font-size:.64rem;font-weight:500;opacity:.85}
-.cal .mn{display:block;font-size:.68rem;font-weight:500;opacity:.9;margin-top:1px}
+.cal .dn{position:absolute;top:3px;left:5px;font-size:.64rem;font-weight:500}
+.cal .mn{display:block;font-size:.68rem;font-weight:500;margin-top:1px}
 .cal td.c-noclass{border:1px dashed var(--line);color:var(--muted)}
 .cal td.c-missing{border:1px dashed var(--late);color:var(--late)}
 .cal td.c-off{color:var(--faint)}
@@ -310,7 +311,7 @@ table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:midd
 .calbtn{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:50px;cursor:pointer;border-radius:6px}
 .calbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 table.cal tfoot th,table.cal tfoot td{font-size:.72rem;font-weight:500;height:auto;color:var(--muted);text-align:center;padding:1px 2px;line-height:1.3}
-table.cal tfoot th{text-align:left;white-space:nowrap}
+table.cal tfoot th{text-align:left;white-space:normal;line-height:1.15}
 
 /* Every class day, follow-ups, family note */
 details.wkgrp{margin-top:10px}
@@ -370,7 +371,12 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   .rtiles,.tiles{grid-template-columns:1fr 1fr}
   .menu .pop{position:static;margin-top:6px;min-width:0}
   table.cal{border-spacing:3px}
-  table.cal th.wk{width:3.4em}
+  table.cal th.wk{width:4.2em}
+  /* Narrow cells: the date sits above the letter instead of beside it. */
+  table.cal tbody td{height:58px;padding-top:12px}
+  table.cal tbody td:has(.calbtn){padding-top:0}
+  .calbtn{height:58px;padding-top:14px}
+  .cal .dn{top:2px;left:3px}
   .row.slim{grid-template-columns:1fr}
   .settext{grid-template-columns:1fr}
   .nclist li > span:first-child{min-width:0}
@@ -396,10 +402,13 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .status, .rtiles, .facts, .wkchart, table.cal, .hist tr, .fu li{break-inside:avoid}
+  .status, .rtiles, .facts, .wkchart, table.cal tr, .hist tr, .fu li{break-inside:avoid}
+  .wkhead, .chartlegend{break-after:avoid}
   .rhead, .rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0}
   .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
   .name-btn{text-decoration:none}
+  table.sum{font-size:.8rem}
+  table.sum td.c-name{width:32%}
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
@@ -1564,7 +1573,7 @@ function renderStudents(){
   const rates = all.filter(s => s.rate !== null), doses = all.filter(s => s.dose !== null);
   const avg = (xs, k) => xs.length ? Math.round(xs.reduce((t, s) => t + s[k], 0) / xs.length) + '%' : '—';
   const missing = missingDates(A, period).length;
-  h += `<p class="printonly small">Students · ${esc(period.name ? period.name + ' · ' : '')}${esc(fmtPeriod(period))} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>
+  h += `<p class="printonly small">Students · ${esc(period.name ? period.name + ' · ' : '')}${esc(fmtPeriod(period))}${state.studentFilter === 'flag' ? ' · Only students who need a look' : ''}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>
     <div class="tiles">
     <div class="tile"><div class="n">${days.length}</div><div class="l">class day${days.length === 1 ? '' : 's'} with reports</div>${missing ? `<div class="s">${plural(missing, 'scheduled day has', 'scheduled days have')} no Zoom report</div>` : ''}</div>
     <div class="tile"><div class="n">${all.length}</div><div class="l">students with class days in these dates</div></div>
@@ -1772,23 +1781,25 @@ function weekChart(ctx, o, full){
   let g = '';
   for (const v of [...new Set([0, Math.round(full / 2), full])])
     g += `<line class="${v && v === full ? 'wk-full' : 'wk-grid'}" x1="${x0}" x2="${x1}" y1="${f(y(v))}" y2="${f(y(v))}"/><text class="wk-txt" x="${x0 - 6}" y="${f(y(v) + 4)}" text-anchor="end">${v}</text>`;
-  const every = Math.max(1, Math.ceil(46 / slot)), showL2 = slot >= 66;
+  const every = Math.max(1, Math.ceil(54 / slot)), showL2 = slot >= 66;   // about 54px per date label
   let lowest = -1;
   W.forEach((w, i) => { if (w.counted && (lowest < 0 || w.received / w.counted < W[lowest].received / W[lowest].counted)) lowest = i; });
   const fus = (state.data.followUps[ctx.key] || []).filter(x => x.date >= ctx.period.from && x.date <= ctx.period.to);
   W.forEach((w, i) => {
-    const cx = x0 + slot * (i + .5), bx = cx - colW / 2, tip = weekTip(w);
+    const hasFu = fus.some(x => weekKey(x.date) === w.wk), cx = x0 + slot * (i + .5), bx = cx - colW / 2, tip = weekTip(w) + (hasFu ? ' Follow-up logged.' : '');
     g += `<g class="wkcol"${o.print ? '' : ` tabindex="0" data-tip="${esc(tip)}"`} role="img" aria-label="${esc(tip)}">`;
     g += `<rect class="wk-hit" x="${f(x0 + slot * i + 1)}" y="${yTop - 8}" width="${f(Math.max(1, slot - 2))}" height="${yBase - yTop + 48}" rx="4"/>`;
     g += barPath('wk-plan', bx, y(w.counted), colW, yBase - y(w.counted)) + barPath('wk-rec', bx, y(w.received), colW, yBase - y(w.received));
     if (w.counted && (slot >= 24 || i === n - 1 || i === lowest))
       g += `<text class="wk-val" x="${f(cx)}" y="${f(y(w.received) - 5)}" text-anchor="middle">${w.received}</text>`;
-    if (i % every === 0 || i === n - 1){
-      g += `<text class="wk-txt" x="${f(cx)}" y="${yBase + 15}" text-anchor="middle">${esc(monDay(w.wk))}</text>`;
+    if ((i % every === 0 && n - 1 - i >= every) || i === n - 1){   // the last week is always labeled, so skip a label right before it
+      // Labels near the chart's edges are anchored to the edge so they never spill past it.
+      const [lx, anchor] = cx - 20 < x0 - 4 ? [x0 - 4, 'start'] : cx + 20 > width - 2 ? [width - 2, 'end'] : [cx, 'middle'];
+      g += `<text class="wk-txt" x="${f(lx)}" y="${yBase + 17}" text-anchor="${anchor}">${esc(monDay(w.wk))}</text>`;
       const l2 = w.current && !w.complete ? 'so far' : w.heldDays ? `${w.cameDays} of ${plural(w.heldDays, 'day')}` : w.noReport ? 'no report' : w.notHeld ? 'no class' : w.excFin ? 'excused' : '';
-      if (l2 && (showL2 || !w.heldDays)) g += `<text class="wk-txt" x="${f(cx)}" y="${yBase + 28}" text-anchor="middle">${esc(l2)}</text>`;
+      if (l2 && (showL2 || !w.heldDays)) g += `<text class="wk-txt" x="${f(lx)}" y="${yBase + 30}" text-anchor="${anchor}">${esc(l2)}</text>`;
     }
-    if (fus.some(x => weekKey(x.date) === w.wk)) g += `<path class="wk-fu" d="M${f(cx - 5)},${yBase + 46}L${f(cx)},${yBase + 38}L${f(cx + 5)},${yBase + 46}Z"/>`;
+    if (hasFu) g += `<path class="wk-fu" d="M${f(cx - 5)},${yBase + 48}L${f(cx)},${yBase + 40}L${f(cx + 5)},${yBase + 48}Z"/>`;
     g += `</g>`;
   });
   return `<figure class="wkchart" style="margin:0"><svg viewBox="0 0 ${width} ${H}" role="group" aria-labelledby="wkT-${idx}"><title id="wkT-${idx}">Minutes each week for ${esc(ctx.name)}</title>${g}</svg></figure>`;
@@ -1801,8 +1812,8 @@ function weekSection(ctx, o){
   const anyFu = (state.data.followUps[ctx.key] || []).some(x => x.date >= ctx.period.from && x.date <= ctx.period.to);
   const legend = `<div class="chartlegend"><span><i class="rec"></i>Minutes received</span><span><i class="pl"></i>Minutes expected when class met</span>
     <span><i class="ln"></i>Full week: ${full} minutes</span>${anyFu ? '<span>▲ Follow-up logged</span>' : ''}</div>`;
-  const table = `<details class="noprint"><summary class="small">Show as a table</summary><table class="plain"><thead><tr><th>Week of</th><th>Expected</th><th>Received</th><th>Missed</th><th>Excused or finished early</th><th>No class</th><th>No report</th><th>Days came</th></tr></thead><tbody>
-    ${W.map(w => `<tr><td>${esc(monDay(w.wk))}${w.current && !w.complete ? ' (so far)' : ''}</td><td>${w.counted}</td><td>${w.received}</td><td>${w.missed}</td><td>${w.excFin}</td><td>${w.notHeld}</td><td>${w.noReport}</td><td>${w.heldDays ? `${w.cameDays} of ${w.heldDays}` : '—'}</td></tr>`).join('')}</tbody></table></details>`;
+  const table = `<details class="noprint"><summary class="small">Show as a table</summary><div style="overflow-x:auto"><table class="plain"><thead><tr><th>Week of</th><th>Expected</th><th>Received</th><th>Missed</th><th>Excused or finished early</th><th>No class</th><th>No report</th><th>Days came</th></tr></thead><tbody>
+    ${W.map(w => `<tr><td>${esc(monDay(w.wk))}${w.current && !w.complete ? ' (so far)' : ''}</td><td>${w.counted}</td><td>${w.received}</td><td>${w.missed}</td><td>${w.excFin}</td><td>${w.notHeld}</td><td>${w.noReport}</td><td>${w.heldDays ? `${w.cameDays} of ${w.heldDays}` : '—'}</td></tr>`).join('')}</tbody></table></div></details>`;
   return `<section class="rsec"><h3>Minutes each week</h3><p class="wkhead">${esc(head)}</p>${legend}${weekChart(ctx, o, full)}
     <p class="caption">${esc(ctx.desc.trendCaption)}</p>${o.print ? '' : table}</section>`;
 }
@@ -1827,7 +1838,7 @@ function calendarHTML(ctx, o){
         const title = `${shortDate(dk)}: ${s.flags.map(x => x.label).join(', ')}${mn !== '' ? ` · ${s.presentMin} of ${s.reqMin - finMinOf(s)} min` : ''}`;
         const inner = `<span class="dn" aria-hidden="true">${num}</span><span aria-hidden="true">${L.map(k => LETTER[k]).join('')}</span><span class="mn" aria-hidden="true">${mn}</span>`;
         body += o.print ? `<td class="k-${worst}" data-dk="${dk}">${inner}<span class="sr">${esc(title)}</span></td>`
-          : `<td class="k-${worst}" data-dk="${dk}"><button class="calbtn" data-goday="${dk}" data-xkey="${esc(s.xkey)}" title="${esc(title)}" aria-label="${esc(title)}. See this day on Reports.">${inner}</button></td>`;
+          : `<td class="k-${worst}" data-dk="${dk}"><button class="calbtn" data-goday="${dk}" data-xkey="${esc(s.xkey)}" title="${esc(title)}. See this day on Reports.">${inner}</button></td>`;
       } else if (d && (d.status === 'noclass' || d.status === 'missing')){
         kinds.add(d.status);
         const t = cellTitle(d);
@@ -2027,9 +2038,9 @@ function familyReportHTML(ctx, o){
   if (p && !p.few && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${p.pres} of ${p.req} minutes`, ''));
   return `<article class="sreport family"><header class="rhead"><div class="eyebrow">${esc(S.className || '')}</div>
       <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
+    <div class="notetext" style="margin:0 0 16px">${esc(o.noteText ?? familyText(ctx))}</div>
     ${boxes.length ? `<div class="rtiles">${boxes.join('')}</div>` : ''}
-    ${p ? `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, { ...o, family: true, print: true })}</section>` : ''}
-    <div class="notetext">${esc(o.noteText ?? familyText(ctx))}</div></article>`;
+    ${p ? `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, { ...o, family: true, print: true })}</section>` : ''}</article>`;
 }
 
 function footerSection(ctx, o){
@@ -2370,10 +2381,17 @@ function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('int
 async function idbGet(k){ try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e){ return null; } }
 async function idbSet(k, v){ try { const db = await idb(); await new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e){} }
 
+// Asked once the chosen folder is known, and only when it's a different folder: switching would drop changes
+// that never reached the old folder. (Refreshing the same folder keeps them; see ingest.)
+function okToSwitch(folderName){
+  return !(state.loaded && state.dirty && folderName !== state.folderName)
+    || confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download data file” to keep them. Or click OK to open this folder without them.');
+}
 async function pickFolder(){
   if (!HAS_FSA){ $('#folderInput').value = ''; $('#folderInput').click(); return; }
   try {
     const h = await window.showDirectoryPicker({ id: 'attendance', mode: 'readwrite' });
+    if (!okToSwitch(h.name)) return;
     state.dirHandle = h; state.savedHandle = h; await idbSet('dir', h);
     await loadFromHandle();
   } catch (e){ if (e && e.name !== 'AbortError') setStatus('The folder couldn’t be opened: ' + e.message); }
@@ -2409,6 +2427,7 @@ async function loadFromInput(list){
     if (low === DATA_FILE) dataText = await f.text();
     else if (low.endsWith('.csv')) files.push({ name: f.name, text: await f.text() });
   }
+  if (!okToSwitch(folder)) return;
   state.canWrite = false;
   ingest(files, dataText, folder);
 }
@@ -2518,7 +2537,7 @@ function focusSelector(t){
 document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) m.open = false; });
   const t = e.target.closest('button'); if (!t) return;
-  const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')) menu.open = false;
+  const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
   const sel = focusSelector(t);
   await onClick(t);
   // A note box that saved itself when this button took focus is still on screen; redraw to close it.
@@ -2533,11 +2552,7 @@ async function onClick(t){
   const d = t.dataset, has = a => t.hasAttribute(a);
   if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); navReplace(); return; }
   if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
-  if (t.id === 'pick'){
-    if (state.dirty && !(state.dirHandle && state.canWrite)
-      && !confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download data file” to keep them. Or click OK to open another folder without them.')) return;
-    return pickFolder();
-  }
+  if (t.id === 'pick') return pickFolder();
   if (t.id === 'reopen') return reopen();
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
@@ -2590,7 +2605,7 @@ async function onClick(t){
     document.querySelectorAll('#tab-students [data-showdays]').forEach(b => b.setAttribute('aria-pressed', 'false'));
     document.querySelectorAll('#tab-students [data-dk]').forEach(el => el.classList.toggle('hl', on && want.has(el.dataset.dk)));
     t.setAttribute('aria-pressed', String(on));
-    if (on){ const c = $('#tab-students table.cal'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    if (on){ const c = $('#tab-students .hl'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
     return;
   }
   if (has('data-calall')){ state.calAll = !state.calAll; renderStudents(); return; }
@@ -2717,7 +2732,9 @@ function commitNote(input, redraw = true){
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('button'))); });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
-  if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => { m.open = false; });
+  if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
+    const inside = m.contains(document.activeElement); m.open = false; if (inside) m.querySelector('summary').focus();
+  });
   if (d.note){
     if (e.key === 'Enter'){ e.preventDefault(); commitNote(t); }
     if (e.key === 'Escape'){ state.noteEdit = null; renderCurrent(); }
@@ -2740,7 +2757,24 @@ document.addEventListener('toggle', e => {
     if (el.open){ state.openDays.add(el.dataset.dk); fillDayBody(el); } else state.openDays.delete(el.dataset.dk);
   }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
+  if (el.classList && el.classList.contains('menu') && el.open){
+    const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
+    if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
+  }
 }, true);
+// The weekly chart is drawn for the width it has; redraw it after a resize or a phone rotation.
+let chartTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(chartTimer);
+  chartTimer = setTimeout(() => {
+    const fig = $('#tab-students .wkchart'), host = $('#tab-students');
+    if (!fig || !state.student || !host.clientWidth) return;
+    const want = Math.round(Math.max(300, Math.min(680, host.clientWidth - 64))), svg = fig.querySelector('svg');
+    if (svg && svg.viewBox.baseVal.width === want) return;
+    const ctx = currentCtx(), W = ctx.weeks;
+    fig.outerHTML = weekChart(ctx, {}, ctx.info.weekMin || Math.max(0, ...W.map(w => w.counted + w.excFin + w.notHeld + w.noReport)));
+  }, 150);
+});
 
 // One tooltip for the chart, shown on hover and on keyboard focus. Text goes in with textContent.
 function showTip(el){
