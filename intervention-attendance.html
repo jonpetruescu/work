@@ -122,7 +122,6 @@ input.note{border:1px solid var(--line);background:var(--paper);border-radius:6p
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
 .tile .n{font-size:1.6rem;font-weight:600;line-height:1.15;font-variant-numeric:proportional-nums}
 .tile .l{font-size:.82rem;color:var(--muted)}
-.tile.warn .n{color:var(--bad)}
 .tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
 table.sum{width:100%;border-collapse:collapse;font-size:.88rem}
 table.sum th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -131,10 +130,8 @@ table.sum .num{text-align:right;white-space:nowrap}
 table.sum .zero{color:var(--faint)}
 .meter{display:flex;align-items:center;gap:8px;min-width:130px}
 .meter .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden;min-width:50px}
-.meter .fill{display:block;height:100%;background:var(--ok)}
-.meter.low .fill{background:var(--bad)}
+.meter .fill{display:block;height:100%;background:var(--bar)}
 .meter b{font-weight:600;min-width:38px;text-align:right}
-.meter.low b{color:var(--bad)}
 .hist{width:100%;border-collapse:collapse;font-size:.84rem}
 .hist td,.hist th{padding:5px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
 .hist th{font-size:.74rem;color:var(--muted);font-weight:600}
@@ -197,8 +194,6 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 /* Shared bits for student reports */
 .name-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer;font-weight:600;color:var(--ink);font-size:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .name-btn:hover{text-decoration-color:var(--ink)}
-.subnote{display:block;color:var(--muted);font-size:.8rem;line-height:1.35}
-.reasons{display:block;color:var(--bad);font-size:.82rem;line-height:1.35;margin-top:3px}
 .lc{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;font-size:.7rem;font-weight:700;line-height:1;flex:none}
 .lc-noclass{color:var(--muted);border:1px dashed var(--line)}
 .lc-missing{color:var(--late);border:1px dashed var(--late)}
@@ -208,23 +203,16 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .nclist{list-style:none;margin:6px 0 0;padding:0}
 .nclist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:3px 0}
 .nclist li > span:first-child{min-width:8.5em}
-.nclist select,.rsec select,.rsec input[type=date],.rsec input[type=text],.saveperiod input,.sched-step input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:.86rem}
+.nclist select,.rsec select,.rsec input[type=date],.rsec input[type=text],.sched-step input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:.86rem}
 .noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px;margin-bottom:14px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .noclasscard b{color:var(--ink);font-family:var(--serif);font-size:1.1rem}
 .backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:.9rem}
 .hl{outline:2px solid var(--focus);outline-offset:1px;border-radius:4px}
 .row.hl{background:var(--grid)}
 .row.slim{grid-template-columns:minmax(170px,1.25fr) 1fr}
-.saveperiod{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center}
-.tilebtn{text-align:left;cursor:pointer;font:inherit;color:inherit;display:block;width:100%}
-.tilebtn > span{display:block}
-.tilebtn[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--bad)}
 .tile .s{font-size:.8rem;color:var(--muted);line-height:1.35;margin-top:2px}
+.listinfo{font-size:.9rem;color:var(--muted);margin:0 0 10px}
 .cardcounts{display:none}
-tr.flagged td:first-child{box-shadow:inset 4px 0 var(--bad)}
-tr.divider td{background:var(--paper);font-size:.8rem;color:var(--muted);font-weight:600;padding:6px 12px}
-.meter.few .fill{background:var(--faint)}
-.meter.few b{color:var(--muted);font-weight:500}
 .sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
 
@@ -237,8 +225,6 @@ tr.divider td{background:var(--paper);font-size:.8rem;color:var(--muted);font-we
 .menu .item:hover,.menu .item:focus-visible{background:var(--paper)}
 .menu .inc{border-top:1px solid var(--grid);margin-top:4px;padding:8px 10px 4px;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 .inc label{display:inline-flex;gap:6px;align-items:center}
-.incrow{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;font-size:.84rem;color:var(--muted)}
-.incrow label{display:inline-flex;gap:6px;align-items:center}
 
 /* Student report */
 .sreport{max-width:920px}
@@ -254,18 +240,8 @@ tr.divider td{background:var(--paper);font-size:.8rem;color:var(--muted);font-we
 .rhead p{margin:2px 0;font-size:.9rem}
 .rsec h3{font-size:1.12rem;margin-bottom:8px}
 .rsec h3 .small{font-family:var(--sans);font-weight:400}
-.status{border-left:4px solid var(--ok);padding:8px 14px;margin-bottom:12px;background:var(--paper);border-radius:0 6px 6px 0}
-.status.bad{border-left-color:var(--bad)}
-.status.few{border-left-color:var(--faint)}
-.status > b{display:block;font-size:1rem}
-.status ul{margin:4px 0 0;padding-left:20px}
 .rtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
 .rtiles .tile{padding:10px 14px}
-.facts{margin:0;padding-left:20px}
-.facts li{margin:5px 0}
-.facts .lead{list-style:none;margin-left:-20px}
-.checks{margin:4px 0 0;padding-left:20px}
-.checks li{margin:4px 0}
 
 /* Minutes each week chart (inline SVG, colors only through classes) */
 .wkhead{margin:0 0 4px;font-size:.92rem}
@@ -361,10 +337,6 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   table.sum td[data-label]::before{content:attr(data-label);display:block;font-size:.74rem;color:var(--muted);font-weight:600;margin-bottom:2px}
   table.sum .meter{min-width:0}
   .cardcounts{display:block;font-size:.8rem;color:var(--muted);margin-top:4px}
-  tr.flagged td:first-child{box-shadow:none}
-  table.sum tr.flagged{border-left:4px solid var(--bad)}
-  table.sum tr.divider{display:block;border:0;background:none;padding:2px 2px 0;margin:4px 0}
-  table.sum tr.divider td{background:none;padding:0}
   .rbar .pn{margin-left:0;width:100%}
   .rhead,.rsec{padding:14px}
   .rhead h2{font-size:1.45rem}
@@ -395,14 +367,15 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   body{background:#fff}
   header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice, .daybar button, .noprint, .rbar, .backbar, #status{display:none !important}
   .printonly{display:block}
+  span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
   details.day{break-inside:avoid-page;border-color:#bbb}
-  .lc, .chip, .count, .tl, .tl *, .cal td, .status, .tile, .meter .track, .meter .fill, .wkchart svg *, .chartlegend i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkchart svg *, .chartlegend i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-reports header.top, body.print-reports main{display:none !important}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .status, .rtiles, .facts, .wkchart, table.cal tr, .hist tr, .fu li{break-inside:avoid}
+  .rtiles, .wkchart, table.cal tr, .hist tr, .fu li{break-inside:avoid}
   .wkhead, .chartlegend{break-after:avoid}
   .rhead, .rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0}
   .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
@@ -452,8 +425,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
    Content-Security-Policy above blocks them even if one were attempted.
    Data written: one file, attendance-tracker-data.json, inside the folder
    you choose (schedule and its history, settings, linked Zoom names,
-   "finished work", excused-absence and no-class marks, notes, follow-ups
-   and saved date ranges).
+   "finished work", excused-absence and no-class marks, notes and follow-ups).
    ------------------------------------------------------------------ */
 const DATA_FILE = 'attendance-tracker-data.json';
 const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
@@ -463,10 +435,6 @@ const COUNT_ORDER = [
   ['full','present full time'], ['fin','finished work early'], ['late','late'], ['missed','missed instruction'],
   ['early','left early'], ['soft','left support early'], ['drop','dropped off'], ['absent','absent'], ['exc','excused']
 ];
-const FEW_DAYS = 4;            // fewer counted class days than this: show counts, never flag by percent
-const PATTERN_MIN = 2;         // a pattern sentence needs at least this many matching days
-const TREND_DAYS = 8, TREND_WEEKS = 3;
-const WEEKDAY_GAP = 40;        // points between weekdays' attendance before it is mentioned
 const LETTER = { full:'✓', fin:'F', late:'L', missed:'M', early:'E', soft:'S', drop:'O', absent:'A', exc:'X', noclass:'–', missing:'?', off:'·' };
 const LETTER_TEAM = { full:'whole class', fin:'finished work early', late:'late', missed:'missed instruction', early:'left early',
   soft:'left support hour early', drop:'out of Zoom mid-class', absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report', off:'not on the schedule' };
@@ -502,7 +470,6 @@ const longDate = d => dtf({ weekday: 'long', month: 'long', day: 'numeric' }).fo
 const monthDay = d => dtf({ month: 'long', day: 'numeric' }).format(asDate(d));
 const isDk = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(parseDk(v));
 const clockOf = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
-const median = xs => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const wdPlural = w => cap(DAYS[w]) + 's';
 const byWeekOrder = (a, b) => ((a + 6) % 7) - ((b + 6) % 7);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -516,10 +483,6 @@ function listJoin(items, max = 4){
   if (more > 0) return `${xs.join(', ')} and ${more} more`;
   return xs.length < 2 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 }
-// A run of dates: listed when short, a "from … to …" span when long, so the latest date is always named.
-function dateList(dks, max = 4, f = shortDate){
-  return dks.length > max + 1 ? `from ${f(dks[0])} to ${f(dks[dks.length - 1])}` : listJoin(dks.map(f), max);
-}
 const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
 function groupBy(xs, f){ const m = new Map(); for (const x of xs){ const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 function fmtPeriod(p){
@@ -530,14 +493,13 @@ function fmtPeriod(p){
 
 function defaultData(){
   return { version: 3, scheduleText: '', scheduleVersions: [{ from: '', text: '' }],
-    settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, concernRate: 80,
+    settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60,
                 teacherName: '', className: 'our intervention class', contactLine: '' },
     aliases: {}, ignored: [], excused: {}, excusedAbsent: {}, notes: {},
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
-    followUps: {},   // { studentKey: [{ id, date, how, text }] }
-    periods: [] };   // [{ id, name, from, to }]
+    followUps: {} }; // { studentKey: [{ id, date, how, text }] }
 }
-const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], concernRate: [0, 100] };
+const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180] };
 const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 // Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
 function withDefaults(d){
@@ -545,9 +507,7 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, followUps: {},
-    periods: Array.isArray(d.periods) ? d.periods.filter(p => p && isDk(p.from) && isDk(p.to) && p.from <= p.to)
-      .map(p => ({ id: String(p.id || uid()), name: String(p.name || 'Saved dates').slice(0, 40), from: p.from, to: p.to })) : [] };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
@@ -570,11 +530,11 @@ function withDefaults(d){
 const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false,
-  tab: 'reports', filter: 'all', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
-  range: { preset: 'all', from: '', to: '', periodId: '' }, noteEdit: null,
-  sort: 'concern', studentFilter: 'all', student: null, studentFrom: null, returnTo: null, highlight: null,
-  include: { table: true, log: true, notes: false }, familyDraft: {}, familyConcern: {}, fuEdit: null, fuPrefill: null,
-  calAll: false, savingPeriod: false, schedChange: null, viewVersion: null, lastAnalysis: null, renderIdx: 0
+  tab: 'reports', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
+  range: { preset: 'all', from: '', to: '' }, noteEdit: null,
+  sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
+  include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
+  calAll: false, daysOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null, renderIdx: 0
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -821,7 +781,6 @@ function analyze(){
   }
   const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk))
     .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S));
-  markGroupLate(days);
   return { sched, versions, schedFor, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors };
 }
 
@@ -874,30 +833,16 @@ function analyzeDay(g, sched, nameOf, matcher, ignored, S){
       : kinds.has('instruction') ? 'Instruction' : 'Support hour only';
     const zoomNames = e ? [...e.zoom].filter(z => normKey(z) !== p.key) : [];
     const segs = e ? [...e.segs].sort((x, y) => x.a - y.a) : [];
-    return { ...p, ...res, dk: g.dk, xkey, sev, schedLabel, zoomNames, segs, hasSoft: !!soft, isAbsent, groupLate: false,
+    return { ...p, ...res, dk: g.dk, xkey, sev, schedLabel, zoomNames, segs, hasSoft: !!soft, isAbsent,
       note: state.data.notes[xkey] || '' };
-  }).sort((a, b) => b.sev - a.sev || a.name.localeCompare(b.name));
+  }).sort((a, b) => a.name.localeCompare(b.name));
   const extras = [...seen.values()].filter(e => !plan.has(e.key)).map(e => ({ ...e, merged: mergeIntervals(e.intervals) }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const unm = [...unmatched.values()].map(u => ({ ...u, merged: mergeIntervals(u.intervals) })).sort((a, b) => a.raw.localeCompare(b.raw));
   const ticks = [];
   for (let t = Math.ceil(axisStart / 1800000) * 1800000; t <= axisEnd; t += 1800000) ticks.push(t);
   return { dk: g.dk, date, dayName, files: [...g.files].sort(), secs, students, extras, unmatched: unm, axisStart, axisEnd, ticks,
-    roster: sched.roster, groupLate: [] };
-}
-
-// When most of a group joined late, the delay was probably on the class side (a late link, a fire drill),
-// so those days are left out of a student's lateness pattern.
-function markGroupLate(days){
-  for (const day of days){
-    for (const [start, g] of groupBy(day.students, s => s.secs[0].a)){
-      const came = g.filter(s => !s.isAbsent);
-      if (came.length >= 3 && came.filter(s => s.flags.some(f => f.k === 'late')).length * 2 > came.length){
-        g.forEach(s => { s.groupLate = true; });
-        day.groupLate.push(start);
-      }
-    }
-  }
+    roster: sched.roster };
 }
 
 /* ---------------- Rendering ---------------- */
@@ -944,12 +889,7 @@ function renderReports(){
   }
   const days = daysInRange(A.days), period = periodOf(A);
   h += `<div class="toolbar">${rangeBar()}
-    <div class="seg" role="group" aria-label="Show">
-      <button data-filter="all" aria-pressed="${state.filter === 'all'}">Everyone</button>
-      <button data-filter="flag" aria-pressed="${state.filter === 'flag'}">Needs a look</button>
-    </div>
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <button class="btn small ghost" id="openAll">Expand all</button><button class="btn small ghost" id="closeAll">Collapse all</button>
     <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button>
     <div class="legend"><span><i class="sw i"></i>Instruction hour</span><span><i class="sw s"></i>Support hour</span><span><i class="sw p"></i>In Zoom</span></div>
   </div>`;
@@ -989,28 +929,18 @@ function periodOf(A){
   const b = rangeBounds(), today = todayDk();
   const oldest = A.days.length ? A.days[A.days.length - 1].dk : today;
   const from = b.from || oldest, to = b.to || (A.days.length && A.days[0].dk > today ? A.days[0].dk : today);
-  const saved = state.range.periodId && state.data.periods.find(p => p.id === state.range.periodId);
-  return { from, to, calcTo: to < today ? to : today, open: to >= today, name: saved ? saved.name : '' };
+  return { from, to, calcTo: to < today ? to : today, open: to >= today };
 }
 function rangeBar(){
-  const p = state.range.preset, b = rangeBounds(), P = state.data.periods;
+  const p = state.range.preset, b = rangeBounds();
   return `<div class="range" role="group" aria-label="Dates">
     <div class="seg"><button data-range="all" aria-pressed="${p === 'all'}">All dates</button>
       <button data-range="14" aria-pressed="${p === '14'}">Past 2 weeks</button>
       <button data-range="30" aria-pressed="${p === '30'}">Past 30 days</button></div>
     <label>From <input type="date" data-rfrom value="${esc(b.from)}"></label>
-    <label>to <input type="date" data-rto value="${esc(b.to)}"></label>
-    ${P.length ? `<label>Saved dates <select data-periodsel><option value="">Choose…</option>${P.map(x =>
-      `<option value="${esc(x.id)}"${state.range.periodId === x.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : ''}
-    ${state.savingPeriod ? `<span class="saveperiod"><input type="text" data-periodname maxlength="40" placeholder="For example, Cycle 1" aria-label="Name for these dates">
-      <button class="btn small" data-saveperiod>Save</button><button class="btn small ghost" data-cancelperiod>Cancel</button></span>`
-      : `<button class="linkish" data-startperiod>Save these dates…</button>`}</div>`;
+    <label>to <input type="date" data-rto value="${esc(b.to)}"></label></div>`;
 }
-function stamp(){
-  const saved = state.range.periodId && state.data.periods.find(p => p.id === state.range.periodId);
-  if (saved) return normKey(saved.name).replace(/ /g, '-') || 'saved-dates';
-  const { from, to } = rangeBounds(); return from || to ? `${from || 'start'}_to_${to || 'latest'}` : 'all-dates';
-}
+function stamp(){ const { from, to } = rangeBounds(); return from || to ? `${from || 'start'}_to_${to || 'latest'}` : 'all-dates'; }
 
 /* ---------------- Days with no report, and "no class" marks ---------------- */
 function weekdayScheduled(A, dk){
@@ -1046,15 +976,6 @@ function conflictNotices(A, period, key){
     .map(dk => `<div class="notice">${esc(monDay(dk))} is marked “No class” but has a Zoom report. The report is used. <button class="linkish" data-undonoclass="${dk}">Remove the mark</button></div>`).join('');
 }
 
-function followUpText(day){
-  const title = longDate(day.date);
-  const flagged = day.students.filter(s => s.sev >= 2);
-  const lines = [`${title}: ${plural(flagged.length, 'student')} to follow up with`];
-  for (const s of flagged) lines.push(`- ${s.name}: ${s.flags.filter(f => SEVERITY[f.k] >= 2).map(f => f.label).join('; ')}${s.note ? ` (note: ${s.note})` : ''}`);
-  if (!flagged.length) lines.push('Everyone scheduled was present the full time.');
-  return lines.join('\n');
-}
-
 // The action links under a student's status, shared by Reports and the student report.
 function rowActions(s){
   const editing = state.noteEdit === s.xkey;
@@ -1076,13 +997,11 @@ function renderDay(day){
   const sub = day.secs.length
     ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
     : `No ${cap(day.dayName)} schedule`;
-  const groupLate = day.groupLate.map(t => fmt(t).replace(':00', ''));
   const open = state.openDays.has(day.dk);
   return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
     <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span>
       <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
-      ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}
-      ${groupLate.length ? `<span class="count k-extra">Most of the ${esc(listJoin(groupLate))} group joined late</span>` : ''}</span>
+      ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
     </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
 }
 function fillDayBody(el){
@@ -1093,16 +1012,13 @@ function dayBody(day){
   const q = normKey(state.query);
   const expected = day.students.filter(s => s.flags[0].k !== 'exc').length;
   const came = day.students.filter(s => !s.isAbsent).length;
-  const rows = day.students.filter(s => (state.filter === 'all' || s.sev >= 2) && (!q || s.key.includes(q)));
-  const groupLate = day.groupLate.map(t => fmt(t).replace(':00', ''));
+  const rows = day.students.filter(s => !q || s.key.includes(q));
   let h = '';
   if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
-  if (groupLate.length) h += `<p class="muted small">Most of the ${esc(listJoin(groupLate))} group joined late, so the class may have started late. This day isn’t used for anyone’s lateness pattern on their student report.</p>`;
   if (day.students.length){
-    h += `<div class="daybar"><span class="rate">${came} of ${expected} attended (${pct(came, expected) ?? 0}%)</span>
-      <button class="btn small ghost" data-copy="${day.dk}">Copy follow-up list</button></div>`;
+    h += `<div class="daybar"><span class="rate">${came} of ${expected} attended</span></div>`;
     h += `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
-    if (!rows.length) h += `<p class="muted small" style="padding:10px 0">${state.filter === 'flag' ? 'Everyone was present the full time.' : 'No students match that search.'}</p>`;
+    if (!rows.length) h += `<p class="muted small" style="padding:10px 0">No students match that search.</p>`;
     for (const s of rows){
       const meta = [s.schedLabel];
       if (!s.isAbsent) meta.push(`${s.presentMin} of ${s.reqMin} min`);
@@ -1151,7 +1067,6 @@ function finMinOf(s){
   const f = s.flags.find(x => x.k === 'fin');
   return f ? Math.min(f.min || 0, Math.max(0, s.reqMin - s.presentMin), Math.max(0, s.suppReqMin - s.suppMin)) : 0;
 }
-const instrIvOf = s => mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
 
 // A student's scheduled sections on one date, from the schedule version in effect that day
 // (or, with `at`, from the version in effect on another date).
@@ -1201,40 +1116,17 @@ function gapsOf(s){
   return out;
 }
 
-const MISSED_LABEL = { absent: 'absences', late: 'joining late', early: 'leaving class early', support: 'leaving the support hour early', mid: 'time out of Zoom mid-class' };
-// Where the missed minutes went. The parts add up exactly to scheduled minus present.
-function minutesBreakdown(rec, target){
-  const b = { absent: 0, late: 0, early: 0, support: 0, mid: 0 };
-  for (const { s } of rec){
-    if (isExcused(s)) continue;
-    const req = mergeIntervals(s.secs.map(x => [x.a, x.b])), reqMs = sumIv(req);
-    if (s.isAbsent){ b.absent += reqMs; continue; }
-    const presMs = req.reduce((t, [A, B]) => t + overlap(s.merged, A, B), 0);
-    const late = overlap(req, s.winStart, s.firstJoin), early = overlap(req, s.lastLeave, s.winEnd);
-    b.late += late;
-    if (!hasFlag(s, 'fin')) b[hasFlag(s, 'soft') || s.flags.some(f => f.skip) ? 'support' : 'early'] += early;
-    b.mid += Math.max(0, reqMs - presMs - late - early);
-  }
-  for (const k in b) b[k] = mins(b[k]);
-  b.mid = Math.max(0, target - b.absent - b.late - b.early - b.support);
-  return b;
-}
-function topMissed(b, target){
-  return Object.entries(b).filter(([, m]) => m > 0 && m >= target * .1).sort((x, y) => y[1] - x[1]).slice(0, 2)
-    .map(([k, m]) => `${MISSED_LABEL[k]} (${m} min)`).join(' and ');
-}
-
 function studentSummary(days){
   const map = new Map();
   for (const day of [...days].reverse()) for (const s of day.students){   // oldest first
     if (!map.has(s.key)) map.set(s.key, { key: s.key, name: s.name, rec: [] });
     map.get(s.key).rec.push({ day, s });
   }
-  const T = state.data.settings.concernRate;
-  return [...map.values()].map(p => summarize(p, T));
+  return [...map.values()].map(summarize);
 }
-function summarize(p, T){
-  const c = { sessions: 0, excused: 0, attended: 0, absent: 0, late: 0, missed: 0, suppOnly: 0, early: 0, soft: 0, drop: 0, full: 0,
+// Plain counts for one student. The page reports these; it doesn't judge them.
+function summarize(p){
+  const c = { sessions: 0, excused: 0, attended: 0, absent: 0, late: 0, missed: 0, early: 0, soft: 0, drop: 0, full: 0,
     pres: 0, req: 0, finMin: 0, iPres: 0, iReq: 0, sPres: 0, sReq: 0 };
   for (const { s } of p.rec){
     c.sessions++;
@@ -1244,191 +1136,25 @@ function summarize(p, T){
     c.iReq += s.instrReqMin; c.iPres += s.instrMin; c.sReq += s.suppReqMin - fin; c.sPres += s.suppMin;
     if (s.isAbsent) c.absent++; else c.attended++;
     if (hasFlag(s, 'late')) c.late++;
-    if (hasFlag(s, 'missed')){ c.missed++; if (s.suppMin >= 5) c.suppOnly++; }   // suppOnly: missed instruction but was in the support hour
+    if (hasFlag(s, 'missed')) c.missed++;
     if (hasFlag(s, 'early')) c.early++;
     if (hasFlag(s, 'soft')) c.soft++;
     if (hasFlag(s, 'drop')) c.drop++;
     if (isWhole(s)) c.full++;
   }
-  const n = c.sessions - c.excused, few = n < FEW_DAYS;
-  const rate = pct(c.attended, n), dose = pct(c.pres, c.req), instrDose = pct(c.iPres, c.iReq), suppDose = pct(c.sPres, c.sReq);
-  let run = [], longest = { len: 0, dates: [] };
-  for (const { day, s } of p.rec){
-    if (isExcused(s)) continue;
-    if (s.isAbsent){ run.push(day.dk); if (run.length > longest.len) longest = { len: run.length, dates: [...run] }; } else run = [];
-  }
-  const streak = run.length, streakDates = run;
-  const breakdown = minutesBreakdown(p.rec, c.req - c.pres);
-  // The reasons are built from the same tests that decide "needs a look", so the page never contradicts itself.
-  const reasons = [];
-  if (!few && rate !== null && rate < T) reasons.push({ k: 'rate', short: `came ${ofN(c.attended, n, 'day')} (${rate}%)`,
-    long: `Attended ${ofN(c.attended, n, 'class day')} (${rate}%), ${T - rate} under your ${T}% line.` });
-  if (!few && dose !== null && dose < T){
-    const top = topMissed(breakdown, c.req - c.pres);
-    reasons.push({ k: 'dose', short: `minutes ${dose}%`,
-      long: `In Zoom for ${c.pres} of ${c.req} scheduled minutes (${dose}%), ${T - dose} under your ${T}% line.${top ? ` Most of the missed time: ${top}.` : ''}` });
-  }
-  if (streak >= 2) reasons.push({ k: 'streak', short: `absent the last ${streak} class days`,
-    long: `Absent the last ${streak} class days (${dateList(streakDates)}).` });
-  const concern = reasons.length > 0;
-  const near = !concern && !few && Math.min(rate ?? 101, dose ?? 101) < T + 5;
-  return { ...p, ...c, n, few, rate, dose, instrDose, suppDose, streak, streakDates, longest, breakdown, reasons, concern, near };
+  const n = c.sessions - c.excused;
+  let run = [];
+  for (const { day, s } of p.rec){ if (isExcused(s)) continue; if (s.isAbsent) run.push(day.dk); else run = []; }
+  return { ...p, ...c, n, rate: pct(c.attended, n), dose: pct(c.pres, c.req), instrDose: pct(c.iPres, c.iReq), suppDose: pct(c.sPres, c.sReq),
+    streak: run.length, streakDates: run };
 }
-// "Only 3 class days so far" while the period is still running, "in these dates" once it has ended.
-const fewText = (p, open) => !p.n ? 'All class days in these dates were excused' : `Only ${plural(p.n, 'class day')} ${open ? 'so far' : 'in these dates'}`;
 function sortStudents(list){
   const by = state.sort, v = x => x ?? 101, name = (a, b) => a.name.localeCompare(b.name);
   return list.sort((a, b) =>
-    by === 'name' ? name(a, b)
-    : by === 'rate' ? v(a.rate) - v(b.rate) || name(a, b)
+    by === 'rate' ? v(a.rate) - v(b.rate) || name(a, b)
     : by === 'dose' ? v(a.dose) - v(b.dose) || name(a, b)
-    : by === 'instr' ? v(a.instrDose) - v(b.instrDose) || name(a, b)
     : by === 'absent' ? b.absent - a.absent || name(a, b)
-    : (b.concern - a.concern) || b.streak - a.streak || v(a.rate) - v(b.rate) || v(a.dose) - v(b.dose) || name(a, b));
-}
-function sameWeekday(rs){ const w = new Set(rs.map(r => r.day.date.getDay())); return w.size === 1 ? [...w][0] : null; }
-const spanTxt = rs => `${monDay(rs[0].day.dk)} – ${monDay(rs[rs.length - 1].day.dk)}`;
-
-// "What the attendance shows": template sentences only, each tied to the days it describes.
-// `open` is true while the period is still running, so "so far" is only said when more days can come.
-function describeStudent(p, allN, open = true){
-  const R = p.rec.filter(r => !isExcused(r.s)), att = R.filter(r => !r.s.isAbsent);
-  const soFar = small => small && open ? ' so far' : '';
-  const so = soFar(p.few);
-  const lead = [];
-  if (!p.n) lead.push(`All ${plural(p.sessions, 'class day')} in these dates were excused.`);
-  else {
-    const exc = p.excused ? `, not counting ${plural(p.excused, 'excused absence')}` : '';
-    lead.push(p.few ? `Attended ${ofN(p.attended, p.n, 'class day')}${so}${exc}.` : `Attended ${ofN(p.attended, p.n, 'class day')} (${p.rate}%)${exc}.`);
-    const iTxt = `${p.iPres} of ${p.iReq} instruction minutes${p.few ? '' : ` (${p.instrDose}%)`}`;
-    const sTxt = `${p.sPres} of ${p.sReq} support-hour minutes${p.few ? '' : ` (${p.suppDose}%)`}`;
-    if (p.iReq && p.sReq) lead.push(`Received ${iTxt} and ${sTxt}${so}.`);
-    else if (p.iReq) lead.push(`Received ${iTxt}${so}.`);
-    else if (p.sReq) lead.push(`Received ${sTxt}${so}.`);
-    if (p.finMin) lead.push(`${p.finMin} minutes of finished-work time are not counted.`);
-  }
-  const items = [], dks = rs => rs.map(r => r.day.dk);
-  // F: absences in a row
-  if (p.streak >= 2){
-    let k = 0; for (let i = R.length - p.streak - 1; i >= 0 && !R[i].s.isAbsent; i--) k++;
-    items.push({ id: 'F', text: `Absent the last ${p.streak} class days (${dateList(p.streakDates)})${k >= 2 ? ` after attending ${k} in a row` : ''}.`, dks: p.streakDates });
-  } else if (p.longest.len >= 2) items.push({ id: 'F', text: `Absent ${p.longest.len} class days in a row (${dateList(p.longest.dates)}).`, dks: p.longest.dates });
-  else if (p.absent >= 3 && p.absent / p.n >= .3){
-    const ab = R.filter(r => r.s.isAbsent);
-    items.push({ id: 'F', text: `Absent on ${ofN(p.absent, p.n, 'class day')} (${dateList(dks(ab))}).`, dks: dks(ab) });
-  }
-  // T: trend in minutes received
-  const weeks = new Set(R.map(r => weekKey(r.day.dk))).size;
-  let trend = null;
-  if (p.n >= TREND_DAYS && weeks >= TREND_WEEKS){
-    const k = p.n >= 12 ? 6 : 4, recent = R.slice(-k), earlier = R.slice(0, -k);
-    const d = rs => pct(rs.reduce((t, r) => t + r.s.presentMin, 0), rs.reduce((t, r) => t + r.s.reqMin - finMinOf(r.s), 0));
-    const dR = d(recent), dE = d(earlier), thr = Math.ceil(100 / k) + 5;
-    if (dR !== null && dE !== null && Math.abs(dR - dE) >= thr){
-      trend = `Minutes received went ${dR < dE ? 'down' : 'up'} from ${dE}% (${spanTxt(earlier)}) to ${dR}% (${spanTxt(recent)}).`;
-      items.push({ id: 'T', text: trend, dks: dks(recent) });
-    }
-  }
-  const trendCaption = trend || (p.n >= TREND_DAYS && weeks >= TREND_WEEKS ? 'No clear change in minutes received over these dates.'
-    : (allN || 0) > p.n && allN >= TREND_DAYS ? 'Choose a longer date range to see a trend.'
-    : p.n >= TREND_DAYS ? `Too early to call a trend: ${plural(weeks, 'week')} of class${open ? ' so far' : ' in these dates'} (needs ${TREND_WEEKS}).`
-    : `Too early to call a trend: ${plural(p.n, 'class day')}${open ? ' so far' : ' in these dates'} (needs ${TREND_DAYS} over ${TREND_WEEKS} weeks).`);
-  // W: one weekday much worse than another
-  const ws = [...groupBy(R, r => r.day.date.getDay())].filter(([, xs]) => xs.length >= 2)
-    .map(([w, xs]) => ({ w, xs, n: xs.length, a: xs.filter(r => !r.s.isAbsent).length })).map(o => ({ ...o, rate: o.a / o.n }));
-  if (ws.length >= 2){
-    ws.sort((x, y) => y.rate - x.rate);
-    const hi = ws[0], lo = ws[ws.length - 1];
-    if ((hi.rate - lo.rate) * 100 >= WEEKDAY_GAP)
-      items.push({ id: 'W', text: `Attended ${hi.a} of ${hi.n} ${wdPlural(hi.w)} but ${lo.a} of ${lo.n} ${wdPlural(lo.w)}.`, dks: dks(lo.xs.filter(r => r.s.isAbsent)) });
-  }
-  // E: missed instruction. Only called "came for the support hour" when the student really was in the support hour.
-  const suppOnlyR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin >= 5), briefR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin < 5);
-  if (suppOnlyR.length >= PATTERN_MIN)
-    items.push({ id: 'E', text: `Was in Zoom only for the support hour, not instruction, on ${suppOnlyR.length} of ${plural(att.length, 'day')} attended.`, dks: dks(suppOnlyR) });
-  if (briefR.length >= PATTERN_MIN)
-    items.push({ id: 'E2', text: `Was in Zoom for less than 5 minutes of instruction on ${briefR.length} of ${plural(att.length, 'day')} attended.`, dks: dks(briefR) });
-  // C: out of Zoom mid-class
-  const dropR = att.filter(r => hasFlag(r.s, 'drop'));
-  if (dropR.length >= PATTERN_MIN){
-    const oneW = sameWeekday(dropR), baseR = oneW !== null ? att.filter(r => r.day.date.getDay() === oneW) : att;
-    if (dropR.length / baseR.length >= .4){
-      const perDay = dropR.map(r => gapsOf(r.s));
-      let best = null;
-      for (const gs of perDay){ for (const g of gs){
-        const hits = perDay.map(x => x.find(y => Math.abs(y.clock - g.clock) <= 10));
-        if (hits.every(Boolean)){ best = hits; break; } } if (best) break; }
-      const medMin = Math.round(median(dropR.map(r => r.s.flags.find(f => f.k === 'drop').min)));
-      // dropR has at least 2 days, so the base is always plural.
-      let text = `Out of Zoom in the middle of class on ${dropR.length} of ${baseR.length} ${oneW !== null ? wdPlural(oneW) : 'days attended'}${soFar(baseR.length < FEW_DAYS)}${best ? `, usually around ${fmtMin(median(best.map(g => g.clock)))}` : ''}, for about ${medMin} minutes.`;
-      const j = best ? best.filter(g => g.changedName).length : 0;
-      if (j && j * 2 >= best.length) text += ` On ${j} of these days, Zoom shows a different name before and after.`;
-      items.push({ id: 'C', text, dks: dks(dropR), w: oneW });
-    }
-  }
-  // B: leaving early
-  const leftR = att.filter(r => !hasFlag(r.s, 'fin') && (hasFlag(r.s, 'early') || hasFlag(r.s, 'soft')));
-  if (leftR.length >= PATTERN_MIN){
-    const endsInSupport = r => r.s.secs.some(x => x.type === 'support' && r.s.lastLeave >= x.a && r.s.lastLeave < x.b);
-    const allSupp = leftR.every(endsInSupport), allSkip = leftR.every(r => r.s.flags.some(f => f.skip));
-    const oneW = sameWeekday(leftR);
-    let baseR = allSupp ? att.filter(r => r.s.secs.some(x => x.type === 'support')) : att;
-    if (oneW !== null) baseR = baseR.filter(r => r.day.date.getDay() === oneW);
-    if (baseR.length && leftR.length / baseR.length >= .5){
-      const word = oneW !== null ? wdPlural(oneW) : allSupp ? 'days with a support hour' : 'days attended';
-      const sf = soFar(baseR.length < FEW_DAYS);
-      const clock = fmtMin(median(leftR.map(r => clockOf(r.s.lastLeave))));
-      const text = allSkip ? `Was not in Zoom for the support hour on ${leftR.length} of ${baseR.length} ${word}${sf}.`
-        : allSupp ? `Left the support hour early on ${leftR.length} of ${baseR.length} ${word}${sf}, usually around ${clock}.`
-        : `Left before the end of class on ${leftR.length} of ${baseR.length} ${word}${sf}, usually around ${clock}.`;
-      items.push({ id: 'B', text, dks: dks(leftR), w: oneW });
-    }
-  }
-  // A: joining late (days when most of the group was late are left out)
-  const ng = att.filter(r => !r.s.groupLate), lateR = ng.filter(r => hasFlag(r.s, 'late'));
-  if (lateR.length >= PATTERN_MIN){
-    const lateMin = r => r.s.flags.find(f => f.k === 'late').min;
-    const lost = rs => mins(rs.reduce((t, r) => t + overlap(instrIvOf(r.s), r.s.winStart, r.s.firstJoin), 0));
-    const cands = [...groupBy(ng, r => r.day.date.getDay())].map(([w, xs]) => ({ w, xs, late: xs.filter(r => hasFlag(r.s, 'late')) }))
-      .filter(o => o.xs.length >= 2 && o.late.length >= 2 && o.late.length / o.xs.length >= .75).sort((a, b) => b.late.length - a.late.length);
-    let done = false;
-    for (const c of cands){
-      const others = ng.filter(r => r.day.date.getDay() !== c.w), lateO = others.filter(r => hasFlag(r.s, 'late')).length;
-      if (others.length && lateO / others.length > .34) continue;
-      const onTime = others.filter(r => !hasFlag(r.s, 'late') && !hasFlag(r.s, 'missed')).length;
-      const otherWs = [...new Set(others.map(r => r.day.date.getDay()))].sort(byWeekOrder).map(wdPlural);
-      let text = `Joined late on ${c.late.length} of ${c.xs.length} ${wdPlural(c.w)}${soFar(c.xs.length < FEW_DAYS)}, about ${Math.round(median(c.late.map(lateMin)))} minutes after the start.`;
-      if (others.length) text += ` On time on ${onTime} of ${others.length} ${others.length === 1 ? otherWs[0].replace(/s$/, '') : listJoin(otherWs)}.`;
-      const l = lost(c.late); if (l) text += ` About ${l} minutes of instruction missed this way.`;
-      items.push({ id: 'A', text, dks: dks(c.late), w: c.w }); done = true; break;
-    }
-    if (!done && lateR.length / ng.length >= .5)
-      items.push({ id: 'A', text: `Joined late on ${lateR.length} of ${plural(ng.length, 'day')} attended, usually about ${Math.round(median(lateR.map(lateMin)))} minutes after the start.`, dks: dks(lateR), w: null });
-  }
-  // One strength, always last.
-  let strength = null;
-  if (p.n >= 2 && p.absent === 0) strength = `Came to every class day in this period (${p.attended} of ${p.n}).`;
-  else if (p.attended >= 2 && p.full === p.attended) strength = `Stayed for the whole class on every day attended (${p.full} of ${p.attended}).`;
-  else {
-    let run = 0; for (let i = R.length - 1; i >= 0 && isWhole(R[i].s); i--) run++;
-    if (run >= 3) strength = `Was in class the whole time on the last ${run} class days in a row.`;
-    else if (R.length >= 2 && !R[R.length - 1].s.isAbsent && R[R.length - 2].s.isAbsent) strength = `Came back to class on ${shortDate(R[R.length - 1].day.dk)}.`;
-    else if (p.full >= 1) strength = `Was in class the whole time on ${p.full} of ${plural(p.attended, 'day')} attended.`;
-  }
-  const shown = items.slice(0, 3);
-  // When nothing reaches a pattern, still say what happened instead of claiming there was nothing.
-  let empty = null;
-  if (!shown.length && p.n){
-    const parts = [];
-    if (p.late) parts.push(`late on ${plural(p.late, 'day')}`);
-    if (p.early + p.soft) parts.push(`left early on ${plural(p.early + p.soft, 'day')}`);
-    if (p.drop) parts.push(`out of Zoom mid-class on ${plural(p.drop, 'day')}`);
-    if (p.missed) parts.push(`missed instruction on ${plural(p.missed, 'day')}`);
-    const count = p.late + p.early + p.soft + p.drop + p.missed;
-    empty = count > 1 ? `${cap(listJoin(parts, 4))} out of ${plural(att.length, 'day')} attended, with no regular pattern.`
-      : p.n < TREND_DAYS ? `Nothing else stands out yet (${plural(p.n, 'class day')}).` : 'No repeated lateness, leaving early or time out of Zoom.';
-  }
-  return { lead, items: shown, found: items, strength, empty, trendCaption };
+    : name(a, b));
 }
 
 // Weekly totals for the chart and the calendar rows. Upcoming days are left out, so this week is "so far".
@@ -1495,10 +1221,9 @@ function scheduleInfo(A, key, period){
 }
 
 /* ---------------- Students tab: the list ---------------- */
-function meter(v, few){
+function meter(v){
   if (v === null) return '<span class="zero">—</span>';
-  const low = !few && v < state.data.settings.concernRate;
-  return `<span class="meter${few ? ' few' : low ? ' low' : ''}"><span class="track"><span class="fill" style="width:${v}%"></span></span><b>${v}%${few ? '<span class="sr"> so far</span>' : ''}</b></span>`;
+  return `<span class="meter"><span class="track"><span class="fill" style="width:${v}%"></span></span><b>${v}%</b></span>`;
 }
 const cnt = n => `<span class="${n ? '' : 'zero'}">${n}</span>`;
 function cellKind(d){ return d.status === 'held' ? worstFlag(d.rec).k : d.status; }
@@ -1525,17 +1250,12 @@ function letterLegend(kinds, words = LETTER_TEAM){
 function studentList(A){
   const days = daysInRange(A.days), period = periodOf(A), q = normKey(state.query);
   const all = sortStudents(studentSummary(days));
-  const list = all.filter(s => (!q || s.key.includes(q)) && (state.studentFilter === 'all' || s.concern));
+  const list = all.filter(s => !q || s.key.includes(q));
   return { days, period, all, list };
 }
-function lastFollowUp(key){
-  const xs = state.data.followUps[key] || [];
-  return xs.length ? [...xs].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
-}
-function printMenu(flagged, total){
+function printMenu(total){
   return `<details class="menu noprint"><summary class="btn small ghost">Print…</summary><div class="pop" role="group" aria-label="Print">
     <button class="item" data-printlist>This list</button>
-    <button class="item" data-printreports="flag"${flagged ? '' : ' disabled'}>A report for each student who needs a look (${flagged})</button>
     <button class="item" data-printreports="all">A report for every student (${total})</button>
     <div class="inc">Include on reports:${includeBoxes()}</div></div></details>`;
 }
@@ -1557,73 +1277,40 @@ function renderStudents(){
   }
   if (state.student){ renderStudentReport(A, el); return; }
   const { days, period, all, list } = studentList(A);
-  const T = state.data.settings.concernRate;
-  const flagged = all.filter(s => s.concern).length;
   let h = `<div class="toolbar">${rangeBar()}
-    <div class="seg" role="group" aria-label="Show"><button data-sfilter="all" aria-pressed="${state.studentFilter === 'all'}">Everyone</button>
-      <button data-sfilter="flag" aria-pressed="${state.studentFilter === 'flag'}">Needs a look (${flagged})</button></div>
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <label class="sortby">Sort by <select data-sortby>${[['concern', 'Needs a look first'], ['name', 'Name A–Z'], ['rate', 'Days attended, lowest first'],
-      ['dose', 'Minutes received, lowest first'], ['instr', 'Instruction minutes, lowest first'], ['absent', 'Most absences']]
+    <label class="sortby">Sort by <select data-sortby>${[['name', 'Name A–Z'], ['rate', 'Days attended, lowest first'],
+      ['dose', 'Minutes received, lowest first'], ['absent', 'Most absences']]
       .map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" id="exportSummary">Export CSV</button>
-    ${printMenu(flagged, all.length)}</div>`;
+    ${printMenu(all.length)}</div>`;
   h += missingNotice(A, period);
   if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
-  const rates = all.filter(s => s.rate !== null), doses = all.filter(s => s.dose !== null);
-  const avg = (xs, k) => xs.length ? Math.round(xs.reduce((t, s) => t + s[k], 0) / xs.length) + '%' : '—';
-  const missing = missingDates(A, period).length;
-  h += `<p class="printonly small">Students · ${esc(period.name ? period.name + ' · ' : '')}${esc(fmtPeriod(period))}${state.studentFilter === 'flag' ? ' · Only students who need a look' : ''}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>
-    <div class="tiles">
-    <div class="tile"><div class="n">${days.length}</div><div class="l">class day${days.length === 1 ? '' : 's'} with reports</div>${missing ? `<div class="s">${plural(missing, 'scheduled day has', 'scheduled days have')} no Zoom report</div>` : ''}</div>
-    <div class="tile"><div class="n">${all.length}</div><div class="l">students with class days in these dates</div></div>
-    <div class="tile"><div class="n">${avg(rates, 'rate')}</div><div class="l">average days attended</div></div>
-    <div class="tile"><div class="n">${avg(doses, 'dose')}</div><div class="l">average minutes received</div></div>
-    <button class="tile tilebtn${flagged ? ' warn' : ''}" data-sfilter="${state.studentFilter === 'flag' ? 'all' : 'flag'}" aria-pressed="${state.studentFilter === 'flag'}">
-      <span class="n">${flagged}</span><span class="l">need a look</span><span class="s">below ${T}% with ${FEW_DAYS}+ class days, or absent 2+ in a row</span></button>
-  </div>`;
+  h += `<p class="listinfo">${plural(days.length, 'class day')} with Zoom reports · ${plural(all.length, 'student')}<span class="printonly"> · ${esc(fmtPeriod(period))}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</span></p>`;
   const datesOf = new Map(all.map(s => [s.key, studentDates(A, s.key, period)]));
   const kinds = new Set();
   for (const s of list) for (const d of datesOf.get(s.key).filter(d => d.status === 'held' || d.status === 'noclass' || d.status === 'missing').slice(-10)) kinds.add(cellKind(d));
   h += letterLegend(kinds);
   h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Days attended</th><th>Minutes received</th>
-    <th class="num">Late</th><th class="num">Missed instr.</th><th class="num">Left early</th><th class="num">Out mid-class</th>
-    <th class="num">Absent</th><th>Last 10 class days</th></tr></thead><tbody>`;
-  if (!list.length) h += `<tr><td colspan="9" class="muted">${state.studentFilter === 'flag' && !state.query ? 'Nobody needs a look in these dates.' : 'No students match that search.'}</td></tr>`;
-  let dividerShown = false;
+    <th class="num">Absent</th><th class="num">Late</th><th class="num">Left early</th><th>Last 10 class days</th></tr></thead><tbody>`;
+  if (!list.length) h += `<tr><td colspan="7" class="muted">No students match that search.</td></tr>`;
   for (const s of list){
-    if (state.sort === 'concern' && state.studentFilter === 'all' && !s.concern && !dividerShown && list.some(x => x.concern)){
-      h += `<tr class="divider"><td colspan="9">Not flagged (${list.filter(x => !x.concern).length})</td></tr>`; dividerShown = true;
-    }
     const info = scheduleInfo(A, s.key, period);
     const chips = [];
-    if (s.streak >= 2) chips.push(`<span class="chip k-absent">Absent last ${s.streak}</span>`);
-    if (s.excused) chips.push(`<span class="chip k-exc">${s.excused} excused</span>`);
     if (info.addedOn && info.addedOn > period.from) chips.push(`<span class="chip k-extra">Added to the schedule ${esc(monDay(info.addedOn))}</span>`);
     if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on the current schedule</span>`);
-    let sub = '';
-    if (s.concern){
-      const f = lastFollowUp(s.key);
-      sub = `<span class="reasons">Needs a look: ${esc(s.reasons.map(r => r.short).join(' · '))}</span>
-        <span class="subnote">${f ? `Last follow-up: ${esc(monDay(f.date))}, ${esc(FU_HOW[f.how] ? FU_HOW[f.how].charAt(0).toLowerCase() + FU_HOW[f.how].slice(1) : 'other')}` : 'No follow-up logged'}</span>`;
-    } else if (s.few) sub = `<span class="subnote">${esc(fewText(s, period.open))}</span>`;
-    else if (s.near) sub = `<span class="subnote">Close to the ${T}% line</span>`;
-    const split = s.iReq && s.sReq ? `<span class="subnote">${s.few ? `Instruction ${s.iPres} of ${s.iReq} · Support ${s.sPres} of ${s.sReq}` : `Instruction ${s.instrDose}% · Support ${s.suppDose}%`}</span>` : '';
     const leftEarly = s.early + s.soft;
-    h += `<tr class="${s.concern ? 'flagged' : ''}">
+    h += `<tr>
       <td class="c-name"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
-        ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}${sub}
-        <span class="cardcounts">Late ${s.late} · Missed instr. ${s.missed} · Left early ${leftEarly} · Out ${s.drop} · Absent ${s.absent}</span></td>
-      <td data-label="Days attended">${meter(s.rate, s.few)}<span class="small muted">${s.attended} of ${s.n}</span></td>
-      <td data-label="Minutes received">${meter(s.dose, s.few)}<span class="small muted">${s.pres} of ${s.req} min</span>${split}</td>
-      <td class="num">${cnt(s.late)}</td><td class="num">${cnt(s.missed)}</td>
-      <td class="num">${cnt(leftEarly)}${s.soft ? `<span class="subnote">${s.soft} from support hour</span>` : ''}</td>
-      <td class="num">${cnt(s.drop)}</td><td class="num">${cnt(s.absent)}</td>
+        ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}
+        <span class="cardcounts">Absent ${s.absent} · Late ${s.late} · Left early ${leftEarly}</span></td>
+      <td data-label="Days attended">${meter(s.rate)}<span class="small muted">${s.attended} of ${s.n}${s.excused ? ` · ${s.excused} excused` : ''}</span></td>
+      <td data-label="Minutes received">${meter(s.dose)}<span class="small muted">${s.pres} of ${s.req} min</span></td>
+      <td class="num">${cnt(s.absent)}</td><td class="num">${cnt(s.late)}</td><td class="num">${cnt(leftEarly)}</td>
       <td class="c-last" data-label="Last 10 class days">${lastTen(datesOf.get(s.key))}</td></tr>`;
   }
   h += `</tbody></table></div>
-    <p class="small muted" style="margin-top:10px">Excused absences and finished-work time don’t count against a student. “Minutes received” is time in Zoom during the hours the student was scheduled. Click a name for the full student report.
-    <span class="noprint">Change the ${T}% line on the <button class="linkish" data-goto="settings">Settings tab</button>.</span></p>`;
+    <p class="small muted" style="margin-top:10px">Excused absences and finished-work time aren’t counted. “Minutes received” is time in Zoom during the student’s scheduled hours. Click a name for the student report.</p>`;
   el.innerHTML = h;
 }
 
@@ -1633,10 +1320,7 @@ function ctxFor(A, key, period, sums){
   const p = all.find(x => x.key === key) || null;
   const name = p ? p.name : (A.nameOf[key] || key);
   const dates = studentDates(A, key, period);
-  let allN = 0; for (const d of A.days) for (const s of d.students) if (s.key === key && !isExcused(s)) allN++;
-  const ctx = { A, period, key, name, first: firstName(name), p, dates, weeks: weekRows(dates, period, dk => !!planFor(A, key, dk)), info: scheduleInfo(A, key, period) };
-  ctx.desc = p ? describeStudent(p, allN, period.open) : null;
-  return ctx;
+  return { A, period, key, name, first: firstName(name), p, dates, weeks: weekRows(dates, period, dk => !!planFor(A, key, dk)), info: scheduleInfo(A, key, period) };
 }
 function renderStudentReport(A, el){
   const period = periodOf(A), { list } = studentList(A);
@@ -1654,8 +1338,7 @@ function studentReportHTML(ctx, o){
     if (!o.print) h += followUpSection(ctx, o);
     return h + '</article>';
   }
-  if (!o.print) h += checksSection(ctx);
-  h += statusSection(ctx) + factsSection(ctx, o) + weekSection(ctx, o) + `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, o)}</section>`;
+  h += summarySection(ctx) + weekSection(ctx, o) + `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, o)}</section>`;
   if (!o.print) h += dayRowsSection(ctx);
   else if (o.include.table) h += printDayTable(ctx, o);
   if (!o.print || o.include.log) h += followUpSection(ctx, o);
@@ -1674,10 +1357,10 @@ function reportBar(ctx, o){
         ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : ''}</nav>` : ''}</div>
     ${rangeBar()}
     <div class="r3"><details class="menu"><summary class="btn small">Print…</summary><div class="pop" role="group" aria-label="Print">
-        <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button></div></details>
+        <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
+        <div class="inc">Include:${includeBoxes()}</div></div></details>
       <button class="btn small ghost" data-copysummary>Copy summary</button>
-      <button class="btn small ghost" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Download CSV</button></div>
-    <div class="incrow">Include on print, summary and CSV: ${includeBoxes()}</div></div>`;
+      <button class="btn small ghost" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Download CSV</button></div></div>`;
 }
 
 function reportHeader(ctx){
@@ -1685,73 +1368,25 @@ function reportHeader(ctx){
   const nWeeks = Math.round((parseDk(weekKey(period.to)) - parseDk(weekKey(period.from))) / 6048e5) + 1;
   return `<header class="rhead"><div class="eyebrow">Intervention attendance report</div>
     <h2 tabindex="-1">${esc(ctx.name)}</h2>
-    <p>Report period: ${period.name ? `${esc(period.name)} · ` : ''}${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')}</p>
+    <p>Report period: ${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')}</p>
     <p>Scheduled: ${info.line ? `${esc(info.line)} · ${info.weekMin} minutes a week` : 'not on the schedule at the end of these dates'}${info.changedOn ? ` (changed ${esc(monDay(info.changedOn))})` : ''}</p>
     ${info.addedOn && info.addedOn > period.from ? `<p>On the schedule since ${esc(monDay(info.addedOn))}, ${parseDk(info.addedOn).getFullYear()}</p>` : ''}
     ${info.inLatest ? '' : '<p>Not on the current schedule</p>'}
-    <p class="small muted">Based on ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</p></header>`;
-}
-
-function checksSection(ctx){
-  const { A, p, period, dates, first } = ctx, out = [];
-  const miss = dates.filter(d => d.status === 'missing').map(d => d.dk);
-  if (miss.length) out.push(`No Zoom report for ${esc(dateList(miss, 3))}. If class met, save that report into the folder and click Refresh. If there was no class:${noClassItems(miss)}`);
-  const unm = dates.filter(d => d.status === 'held' && d.rec.isAbsent && !isExcused(d.rec) && d.day.unmatched.length);
-  for (const d of unm.slice(0, 3)) out.push(`${esc(first)} is marked absent on ${esc(shortDate(d.dk))}, but ${plural(d.day.unmatched.length, 'Zoom name')} that day didn’t match anyone: ${esc(listJoin(d.day.unmatched.map(u => `“${u.raw}”`), 3))}. If it was ${esc(first)}, link it. <button class="linkish" data-goday="${d.dk}" data-xkey="${esc(d.rec.xkey)}">Go to that day</button>`);
-  if (unm.length > 3) out.push(`${unm.length - 3} more absent days also have Zoom names that didn’t match anyone.`);
-  if (p.n && p.few) out.push(period.open ? `Only ${plural(p.n, 'class day')} so far. Percentages can change a lot with one more day.`
-    : `Only ${plural(p.n, 'class day')} in these dates, so the percentages rest on very few days.`);
-  for (const v of A.versions) if (v.from && v.from > period.from && v.from <= period.to && planChanged(A, ctx.key, v.from))
-    out.push(`${esc(first)}’s schedule changed on ${esc(monDay(v.from))}. Days before then are checked against the earlier schedule.`);
-  for (const d of dates.filter(d => d.status === 'held' && d.rec.groupLate).slice(0, 3))
-    out.push(`On ${esc(shortDate(d.dk))} most of the ${esc(fmt(d.rec.secs[0].a).replace(':00', ''))} group joined late. That day isn’t used for lateness patterns.`);
-  const conf = conflictNotices(A, period, ctx.key);
-  if (!out.length && !conf) return `<div class="notice info"><b>Before you share:</b> checked. Every scheduled day has a Zoom report or a no-class mark, and every absent day has all Zoom names matched.</div>`;
-  return (out.length ? `<div class="notice"><b>Before you share</b><ul class="checks">${out.map(x => `<li>${x}</li>`).join('')}</ul></div>` : '') + conf;
+    <p class="small muted">Based on ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p></header>`;
 }
 
 const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
-function statusSection(ctx){
-  const { p, dates, period, A } = ctx, T = state.data.settings.concernRate, so = p.few && period.open ? ' so far' : '';
-  let st;
-  if (p.concern) st = `<div class="status bad"><b>Needs a look</b><ul>${p.reasons.map(r => `<li>${esc(r.long)}</li>`).join('')}</ul></div>`;
-  else if (p.few) st = `<div class="status few"><b>${esc(fewText(p, period.open))}</b><span class="small muted">${p.n ? `Not flagged by percent until there are ${FEW_DAYS} class days.` : 'Excused days don’t count for or against a student.'}</span></div>`;
-  else st = `<div class="status"><b>On track</b><span class="small">Attended ${ofN(p.attended, p.n, 'class day')} and ${p.dose}% of scheduled minutes.${p.near ? ` Close to your ${T}% line.` : ''}</span></div>`;
-  const brief = p.missed - p.suppOnly;
-  if (p.suppOnly) st += `<p class="small">Came only for the support hour on ${plural(p.suppOnly, 'day')}. Those days count as attended.</p>`;
-  if (brief) st += `<p class="small">Was in Zoom for less than 5 minutes of instruction on ${plural(brief, 'day')}. Those days count as attended.</p>`;
-  const tiles = [tile('Days attended', `${p.attended} of ${p.n}`, `${p.rate === null ? 'none counted' : `${p.rate}%${so}`}${p.excused ? ` · ${p.excused} excused, not counted` : ''}`)];
-  if (p.iReq) tiles.push(tile('Instruction minutes', `${p.iPres} of ${p.iReq}`, `${p.instrDose}%${so}`));
-  if (p.sReq || p.finMin) tiles.push(tile('Support-hour minutes', `${p.sPres} of ${p.sReq}`,
-    `${p.suppDose === null ? '—' : `${p.suppDose}%${so}`}${p.finMin ? ` · ${p.finMin} min finished work early, not counted` : ''}`));
-  const held = dates.filter(d => d.status === 'held').length, nc = dates.filter(d => d.status === 'noclass'), ms = dates.filter(d => d.status === 'missing');
-  const reason = dk => (NOCLASS_REASONS[(state.data.noClass[dk] || {}).reason] || 'other').toLowerCase();
-  tiles.push(tile('Class days held', `${held} of ${held + nc.length + ms.length}`, nc.length || ms.length
-    ? [nc.length ? `${nc.length} no class (${listJoin(nc.map(d => `${monDay(d.dk)}, ${reason(d.dk)}`), 2)})` : '',
-       ms.length ? `${ms.length} missing a report (${listJoin(ms.map(d => monDay(d.dk)), 2)})` : ''].filter(Boolean).join(' · ')
-    : 'Every scheduled day had a Zoom report'));
-  tiles.push(tile('Absent in a row', `${p.streak} now`, p.streak ? dateList(p.streakDates, 3)
-    : p.longest.len ? `Longest: ${p.longest.len} (${listJoin(p.longest.dates.map(monDay), 3)})` : 'No absences'));
-  let cmp = '';
-  const prev = state.data.periods.filter(x => x.to < period.from).sort((a, b) => b.to.localeCompare(a.to))[0];
-  if (prev && !p.few){
-    const q = studentSummary(A.days.filter(d => d.dk >= prev.from && d.dk <= prev.to)).find(x => x.key === p.key);
-    if (q && !q.few){
-      const useI = p.iReq && q.iReq;
-      const pc = v => v === null || v === undefined ? '—' : `${v}%`;
-      const mins2 = useI ? `instruction minutes ${pc(q.instrDose)} → ${pc(p.instrDose)}`
-        : q.suppDose !== null && p.suppDose !== null ? `support-hour minutes ${pc(q.suppDose)} → ${pc(p.suppDose)}` : `minutes received ${pc(q.dose)} → ${pc(p.dose)}`;
-      cmp = `<p class="small">Compared with ${esc(prev.name)} (${esc(monDay(prev.from))} – ${esc(monDay(prev.to))}): days attended ${pc(q.rate)} → ${pc(p.rate)}, ${esc(mins2)}.</p>`;
-    }
-  }
-  return `<section class="rsec"><h3>Summary</h3>${st}<div class="rtiles">${tiles.join('')}</div>${cmp}</section>`;
-}
-
-function factsSection(ctx, o){
-  const d = ctx.desc;
-  return `<section class="rsec"><h3>What the attendance shows</h3><p style="margin:0 0 6px">${esc(d.lead.join(' '))}</p><ul class="facts">
-    ${d.items.map(it => `<li>${esc(it.text)}${o.print || !it.dks.length ? '' : ` <button class="linkish" data-showdays="${it.dks.join(',')}">Show these days</button>`}</li>`).join('')}
-    ${d.empty ? `<li>${esc(d.empty)}</li>` : ''}${d.strength ? `<li>${esc(d.strength)}</li>` : ''}</ul></section>`;
+// The numbers at the top of a report: what happened, with no verdict attached.
+function summarySection(ctx){
+  const { p } = ctx;
+  const tiles = [tile('Days attended', ofN(p.attended, p.n, 'day'), `${p.rate === null ? '—' : p.rate + '%'}${p.excused ? ` · ${p.excused} excused, not counted` : ''}`)];
+  tiles.push(tile('Minutes received', `${p.pres} of ${p.req}`, [p.dose === null ? '' : p.dose + '%',
+    p.iReq && p.sReq ? `instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : '',
+    p.finMin ? `${p.finMin} min finished work early, not counted` : ''].filter(Boolean).join(' · ')));
+  tiles.push(tile('Absent', String(p.absent), p.streak >= 2 ? `the last ${p.streak} class days in a row` : ''));
+  const more = [['Late', p.late], ['Left early', p.early + p.soft], ['Out of Zoom mid-class', p.drop], ['Missed instruction', p.missed]]
+    .map(([l, v]) => `${l} ${v}`).join(' · ');
+  return `<section class="rsec"><div class="rtiles">${tiles.join('')}</div><p class="small muted" style="margin:0">${esc(more)}</p></section>`;
 }
 
 /* Minutes each week: a light column for the minutes expected while class met, the dark column for what the student got. */
@@ -1815,7 +1450,7 @@ function weekSection(ctx, o){
   const table = `<details class="noprint"><summary class="small">Show as a table</summary><div style="overflow-x:auto"><table class="plain"><thead><tr><th>Week of</th><th>Expected</th><th>Received</th><th>Missed</th><th>Excused or finished early</th><th>No class</th><th>No report</th><th>Days came</th></tr></thead><tbody>
     ${W.map(w => `<tr><td>${esc(monDay(w.wk))}${w.current && !w.complete ? ' (so far)' : ''}</td><td>${w.counted}</td><td>${w.received}</td><td>${w.missed}</td><td>${w.excFin}</td><td>${w.notHeld}</td><td>${w.noReport}</td><td>${w.heldDays ? `${w.cameDays} of ${w.heldDays}` : '—'}</td></tr>`).join('')}</tbody></table></div></details>`;
   return `<section class="rsec"><h3>Minutes each week</h3><p class="wkhead">${esc(head)}</p>${legend}${weekChart(ctx, o, full)}
-    <p class="caption">${esc(ctx.desc.trendCaption)}</p>${o.print ? '' : table}</section>`;
+    ${o.print ? '' : table}</section>`;
 }
 
 function calendarHTML(ctx, o){
@@ -1850,20 +1485,17 @@ function calendarHTML(ctx, o){
     body += '</tr>';
   }
   // Per-weekday summary rows, over every week in the period.
-  const foot = { came: [], ontime: [], joined: [], left: [] };
+  const foot = { came: [], ontime: [] };
   for (const wd of wds){
     const held = dates.filter(d => d.status === 'held' && !isExcused(d.rec) && parseDk(d.dk).getDay() === wd), att = held.filter(d => !d.rec.isAbsent);
-    const one = att.length === 1 ? ' (1 day)' : '';
     foot.came.push(held.length ? `${att.length} of ${held.length}` : '—');
     foot.ontime.push(att.length ? `${att.filter(d => !hasFlag(d.rec, 'late') && !hasFlag(d.rec, 'missed')).length} of ${att.length}` : '—');
-    foot.joined.push(att.length ? fmtMin(median(att.map(d => clockOf(d.rec.firstJoin)))) + one : '—');
-    foot.left.push(att.length ? fmtMin(median(att.map(d => clockOf(d.rec.lastLeave)))) + one : '—');
   }
   const frow = (label, xs) => `<tr><th scope="row">${label}</th>${xs.map(x => `<td>${esc(x)}</td>`).join('')}</tr>`;
   const heldN = dates.filter(d => d.status === 'held').length;
   return `<div class="calwrap"><table class="cal"><caption class="sr">Calendar of ${plural(heldN, 'class day')}. Letters show what happened each day.</caption>
     <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}</tr></thead>
-    <tbody>${body}</tbody><tfoot>${frow('Came', foot.came)}${fam ? '' : frow('On time', foot.ontime) + frow('Usually joined', foot.joined) + frow('Usually left', foot.left)}</tfoot></table></div>
+    <tbody>${body}</tbody><tfoot>${frow('Came', foot.came)}${fam ? '' : frow('On time', foot.ontime)}</tfoot></table></div>
     ${letterLegend(kinds, fam ? LETTER_FAMILY : LETTER_TEAM)}<p class="caption">${fam ? 'The number is minutes in class.' : 'Number = minutes in Zoom during scheduled time.'}</p>
     ${!o.print && total > 12 ? `<button class="linkish noprint" data-calall>${state.calAll ? 'Show the latest 12 weeks' : `Show all ${total} weeks`}</button>` : ''}`;
 }
@@ -1872,7 +1504,9 @@ function dayRowsSection(ctx){
   const shown = ctx.dates.filter(d => d.status === 'held' || d.status === 'noclass' || d.status === 'missing');
   if (!shown.length) return '';
   const groups = groupBy(shown, d => parseDk(d.dk).getDay());
-  let h = `<section class="rsec noprint"><h3>Every class day <span class="small muted">· newest first</span></h3>`;
+  // Closed until opened: the calendar above already shows each day at a glance.
+  let h = `<section class="rsec noprint"><details data-daysbox${state.daysOpen ? ' open' : ''}><summary><h3 style="display:inline">Every class day</h3>
+    <span class="small muted">· ${plural(shown.length, 'day')}, newest first, with notes and excused marks</span></summary>`;
   for (const wd of [...groups.keys()].sort(byWeekOrder)){
     const ds = groups.get(wd), plans = ds.map(d => d.plan).filter(Boolean), latest = plans[plans.length - 1];
     const sMin = Math.min(...plans.map(x => x.startMin)), eMin = Math.max(...plans.map(x => x.endMin));
@@ -1882,7 +1516,7 @@ function dayRowsSection(ctx){
     for (const d of [...ds].reverse()) h += dayRow(d, sMin, eMin);
     h += '</details>';
   }
-  return h + '</section>';
+  return h + '</details></section>';
 }
 function dayRow(d, sMin, eMin){
   const date = `<div class="who"><b>${esc(shortDate(d.dk))}</b></div>`;
@@ -1938,49 +1572,11 @@ function followUpSection(ctx, o){
       : `<li><span class="when">${esc(monDay(f.date))}</span><b>${esc(fuHow(f))}</b><span class="txt">${esc(f.text)}</span>
           <button class="linkish" data-fuedit="${esc(f.id)}">Edit</button><button class="linkish" data-fudel="${esc(f.id)}">Delete</button></li>`).join('')}</ul>`
       : '<p class="small muted">No follow-ups logged yet.</p>'}
-    <div class="fuform" data-fuform>${fuInputs(pre)}<button class="btn small" data-fuadd>Add</button></div>
-    <p class="small muted">Write facts. This can print on the student’s report.</p></section>`;
+    <div class="fuform" data-fuform>${fuInputs(pre)}<button class="btn small" data-fuadd>Add</button></div></section>`;
 }
 
 /* Note to the family: fixed, warm sentences with the student's numbers slotted in. Never notes, follow-ups or Zoom names. */
 const draftKey = ctx => ctx.key;   // one draft per student; it remembers which dates it was written for
-// At most one thing to work on. Lateness, leaving early and time out of Zoom are only raised when the team report
-// finds them as a pattern, or the student needs a look, so a family never hears about something the report calls minor.
-function familyConcern(ctx){
-  const { p, A, first: F } = ctx; if (!p || !p.n) return null;
-  const att = p.rec.filter(r => !isExcused(r.s) && !r.s.isAbsent);
-  const found = id => (ctx.desc && ctx.desc.found || []).find(x => x.id === id);
-  const raise = id => !!found(id) || p.concern;
-  // "On Mondays" only when the pattern itself is about Mondays; otherwise a count of days.
-  const on = (id, rs) => { const it = found(id), w = it && it.w !== null && it.w !== undefined ? it.w : null;
-    return w !== null ? { w, txt: `On ${wdPlural(w)}`, tail: ` on ${wdPlural(w)}` } : { w: null, txt: `On ${rs.length} days`, tail: '' }; };
-  const planOn = w => { const r = [...att].reverse().find(x => x.day.date.getDay() === w); return r ? planFor(A, ctx.key, r.day.dk) : null; };
-  if (p.streak >= 2){
-    const dl = dateList(p.streakDates, 4, longDate);
-    return { concern: `${F} missed the last ${p.streak} classes, ${dl.startsWith('from ') ? '' : 'on '}${dl}.`, ask: 'Is anything making it hard to join? I would like to help.' };
-  }
-  const suppOnlyR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin >= 5);
-  if (suppOnlyR.length >= 2 && raise('E')){
-    const starts = new Set(suppOnlyR.map(r => Math.min(...r.s.secs.filter(x => x.type === 'instruction').map(x => clockOf(x.a)))));
-    return { concern: `On ${suppOnlyR.length} days, ${F} missed the teaching part of class.`,
-      ask: starts.size === 1 ? `The teaching part starts at ${fmtMin([...starts][0])}. Could ${F} join by then?` : `Could ${F} join at the start of the teaching part?` };
-  }
-  const lateR = att.filter(r => !r.s.groupLate && hasFlag(r.s, 'late'));
-  if (lateR.length >= 2 && raise('A')){
-    const o = on('A', lateR), pl = o.w !== null ? planOn(o.w) : null, med = Math.round(median(lateR.map(r => r.s.flags.find(f => f.k === 'late').min)));
-    return { concern: `${o.txt}, ${F} joined about ${med} minutes late.`,
-      ask: pl ? `Class starts at ${fmtMin(pl.startMin)}. Could ${F} log in by ${fmtMin(pl.startMin - 5)}${o.tail}?` : `Could ${F} log in about 5 minutes before class starts?` };
-  }
-  const leftR = att.filter(r => !hasFlag(r.s, 'fin') && (hasFlag(r.s, 'early') || hasFlag(r.s, 'soft')));
-  if (leftR.length >= 2 && raise('B')){
-    const o = on('B', leftR), pl = o.w !== null ? planOn(o.w) : null;
-    return { concern: `${o.txt}, ${F} left before the end of class.`,
-      ask: pl ? `Class ends at ${fmtMin(pl.endMin)}. Could ${F} stay until then${o.tail}?` : `Could ${F} stay until the end of class?` };
-  }
-  const dropR = att.filter(r => hasFlag(r.s, 'drop'));
-  if (dropR.length >= 2 && raise('C')) return { concern: `${F} was out of Zoom for part of class on ${dropR.length} days.`, ask: 'If the internet or a device is a problem, please let me know. I can help.' };
-  return null;
-}
 function familySchedule(ctx){
   const groups = [];
   for (const { w, plan } of ctx.info.byW){
@@ -1991,7 +1587,8 @@ function familySchedule(ctx){
   const parts = groups.map(g => `${listJoin(g.ws.map(wdPlural), 7)}, ${fmtRange(g.s, g.e)}`);
   return `Class meets on ${parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`}.`;
 }
-function familyNote(ctx, withConcern){
+// A short, warm note with the student's numbers. You edit it before sending; it never includes notes or follow-ups.
+function familyNote(ctx){
   const { p, period, first: F } = ctx, S = state.data.settings;
   const L = [`Hello, ${F}’s family,`, '', `This is an update on ${F}’s attendance in ${S.className || 'our intervention class'}.`,
     `It covers ${monthDay(period.from)} to ${monthDay(period.calcTo)}.`];
@@ -2005,9 +1602,7 @@ function familyNote(ctx, withConcern){
     else if (x >= 1) L.push(`${F} came to class on ${plural(x, 'day')}. We were glad to see ${F}.`);
     else L.push(`We miss ${F} in class. ${F} is always welcome.`);
     if (!saidAll && x > 0) L.push(`${F} came to ${x} of ${plural(n, 'class', 'classes')}.`);
-    if (!p.few && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) L.push(`${F} was in class for ${p.pres} of ${p.req} minutes.`);
-    const fc = withConcern ? familyConcern(ctx) : null;
-    if (fc) L.push(fc.concern, fc.ask);
+    if (p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) L.push(`${F} was in class for ${p.pres} of ${p.req} minutes.`);
   }
   const sch = familySchedule(ctx); if (sch) L.push(sch);
   L.push('', 'Thank you,');
@@ -2017,12 +1612,10 @@ function familyNote(ctx, withConcern){
 }
 function familyText(ctx){
   const d = state.familyDraft[draftKey(ctx)];
-  return d ? d.text : familyNote(ctx, state.familyConcern[ctx.key] !== false);
+  return d ? d.text : familyNote(ctx);
 }
 function familySection(ctx){
-  const fc = familyConcern(ctx), withC = state.familyConcern[ctx.key] !== false;
   return `<section class="rsec noprint"><details data-familybox${state.familyOpen ? ' open' : ''}><summary><h3 style="display:inline">Write a note to the family</h3></summary>
-    ${fc ? `<p style="margin:8px 0"><label class="small"><input type="checkbox" data-familyconcern${withC ? ' checked' : ''}> Include one thing to work on</label></p>` : ''}
     ${(() => { const d = state.familyDraft[draftKey(ctx)];
       return d && (d.from !== ctx.period.from || d.to !== ctx.period.to) && isDk(d.from) && isDk(d.to)
         ? `<p class="small" style="color:var(--late)">You edited this note for ${esc(fmtPeriod(d))}. Click Start over to write it for these dates.</p>` : ''; })()}
@@ -2035,7 +1628,7 @@ function familySection(ctx){
 function familyReportHTML(ctx, o){
   const { p, period } = ctx, S = state.data.settings, boxes = [];
   if (p && p.n) boxes.push(tile('Came to class', ofN(p.attended, p.n, 'day'), ''));
-  if (p && !p.few && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${p.pres} of ${p.req} minutes`, ''));
+  if (p && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${p.pres} of ${p.req} minutes`, ''));
   return `<article class="sreport family"><header class="rhead"><div class="eyebrow">${esc(S.className || '')}</div>
       <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
     <div class="notetext" style="margin:0 0 16px">${esc(o.noteText ?? familyText(ctx))}</div>
@@ -2043,25 +1636,26 @@ function familyReportHTML(ctx, o){
     ${p ? `<section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, { ...o, family: true, print: true })}</section>` : ''}</article>`;
 }
 
+// How the numbers are counted, on paper only.
 function footerSection(ctx, o){
+  if (!o.print) return '';
   const S = state.data.settings, held = ctx.dates.filter(d => d.status === 'held').map(d => d.dk);
   const src = held.length ? `Source: Zoom participant reports for ${plural(held.length, 'class day')}, ${monDay(held[0])} – ${monDay(held[held.length - 1])}. ` : '';
   const def = `Minutes are time connected to Zoom during this student’s scheduled hours. They don’t show how much the student took part. Late = joined more than ${S.lateGrace} minutes after the start. Left early = left more than ${S.leaveGrace} minutes before the end. Out mid-class = more than ${S.gapMin} minutes out of Zoom in the middle of class. Excused absences and finished-work time don’t count against the student. Days without a Zoom report aren’t counted.`;
-  return `<footer class="rsec small muted"><p style="margin:0">${esc(src + def)}${o.print ? ' <b>Confidential student information.</b>' : ''}</p>
-    ${o.print ? '<h3 style="margin-top:14px">Team notes</h3><div class="ruled"></div><div class="ruled"></div><div class="ruled"></div>' : ''}</footer>`;
+  return `<footer class="rsec small muted"><p style="margin:0">${esc(src + def)} <b>Confidential student information.</b></p>
+    <h3 style="margin-top:14px">Team notes</h3><div class="ruled"></div><div class="ruled"></div><div class="ruled"></div></footer>`;
 }
 
 /* Copy summary (plain text for an email or a form) and the one-student CSV */
 function teamSummary(ctx, inc){
-  const { p, period, info, desc, dates } = ctx, S = state.data.settings;
+  const { p, period, info, dates } = ctx, S = state.data.settings;
   const L = [`${ctx.name}: intervention attendance`,
-    `${period.name ? `${period.name}: ` : ''}${fmtPeriod(period)} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports`,
+    `${fmtPeriod(period)} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports`,
     `Scheduled: ${info.line ? `${info.line} · ${info.weekMin} minutes a week` : 'not on the schedule'}`];
   if (p){
-    L.push(p.concern ? `Needs a look: ${p.reasons.map(r => r.short).join('; ')}.` : p.few ? `${fewText(p, period.open)}.` : 'On track.');
-    L.push('', desc.lead.join(' '));
-    for (const it of desc.items) L.push(`- ${it.text}`);
-    if (desc.strength) L.push(`- ${desc.strength}`);
+    L.push('', `Days attended: ${ofN(p.attended, p.n, 'day')}${p.rate === null ? '' : ` (${p.rate}%)`}${p.excused ? `, plus ${p.excused} excused` : ''}`,
+      `Minutes received: ${p.pres} of ${p.req}${p.dose === null ? '' : ` (${p.dose}%)`}${p.iReq && p.sReq ? `; instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : ''}`,
+      `Absent ${p.absent} · Late ${p.late} · Left early ${p.early + p.soft} · Out of Zoom mid-class ${p.drop} · Missed instruction ${p.missed}`);
   }
   const held = dates.filter(d => d.status === 'held').length, nc = dates.filter(d => d.status === 'noclass'), ms = dates.filter(d => d.status === 'missing');
   L.push('', `Class days: ${held + nc.length + ms.length} scheduled, ${held} held${nc.length ? `, ${nc.length} not held (${nc.map(d => `${monDay(d.dk)}: ${(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'other').toLowerCase()}`).join(', ')})` : ''}${ms.length ? `, ${ms.length} without a Zoom report (${ms.map(d => monDay(d.dk)).join(', ')})` : ''}.`);
@@ -2132,8 +1726,8 @@ function exportSummary(){
   const rows = [['Student', 'Days scheduled', 'Days attended', 'Excused absences', 'Unexcused absences', 'Days attended %',
     'Minutes present', 'Minutes scheduled', 'Minutes %', 'Instruction minutes present', 'Instruction minutes scheduled', 'Instruction minutes %',
     'Support minutes present', 'Support minutes scheduled', 'Support minutes %', 'Finished-work minutes (not counted)',
-    'Late', 'Missed instruction', 'Left early (class)', 'Left support hour early', 'Out mid-class', 'Current absence streak',
-    'Class days not held', 'Class days without a Zoom report', 'Follow-ups in period', 'Last follow-up', 'What stands out', 'Dates']];
+    'Late', 'Missed instruction', 'Left early (class)', 'Left support hour early', 'Out mid-class', 'Absent in a row (latest)',
+    'Class days not held', 'Class days without a Zoom report', 'Follow-ups in period', 'Last follow-up', 'Dates']];
   const sums = studentSummary(days).sort((a, b) => a.name.localeCompare(b.name));
   for (const s of sums){
     const ctx = ctxFor(A, s.key, period, sums);
@@ -2142,9 +1736,7 @@ function exportSummary(){
       s.iPres, s.iReq, s.instrDose ?? '', s.sPres, s.sReq, s.suppDose ?? '', s.finMin,
       s.late, s.missed, s.early, s.soft, s.drop, s.streak,
       ctx.dates.filter(d => d.status === 'noclass').length, ctx.dates.filter(d => d.status === 'missing').length,
-      inP.length, fus.length ? fus[0].date : '',
-      [...ctx.desc.items.map(i => i.text), ...(ctx.desc.strength ? [ctx.desc.strength] : [])].join(' | '),
-      (period.name ? period.name + ': ' : '') + fmtPeriod(period)]);
+      inP.length, fus.length ? fus[0].date : '', fmtPeriod(period)]);
   }
   downloadFile(`attendance-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
@@ -2309,7 +1901,6 @@ function renderSettings(){
         <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${esc(S.leaveGrace)}">
         <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${esc(S.gapMin)}">
         <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${esc(S.sectionLen)}">
-        <label for="s-rate">On the Students tab, flag anyone whose days attended or minutes received fall below this percent (once they have ${FEW_DAYS} class days)</label><input id="s-rate" type="number" min="0" max="100" data-set="concernRate" value="${esc(S.concernRate)}">
       </div></div>
     <div class="panel"><h2>Reports and notes to families</h2>
       <div class="settext">
@@ -2317,10 +1908,6 @@ function renderSettings(){
         <label for="s-class">What families call this class</label><input id="s-class" type="text" maxlength="120" data-settext="className" value="${esc(S.className)}" placeholder="our intervention class">
         <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="For example, your school email or phone">
       </div></div>
-    <div class="panel"><h2>Saved dates</h2>
-      ${state.data.periods.length ? `<ul class="list">${state.data.periods.map(p => `<li><span>${esc(p.name)}: ${esc(fmtPeriod(p))}</span><button class="btn small ghost" data-perioddel="${esc(p.id)}">Delete</button></li>`).join('')}</ul>`
-        : '<p class="small muted">None yet. Choose dates on the Reports or Students tab and click “Save these dates…”.</p>'}
-    </div>
     <div class="panel"><h2>Days with no class</h2>
       ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${esc(dk)}">Undo</button></li>`).join('')}</ul>`
         : '<p class="small muted">None yet. When a scheduled day has no Zoom report, you can mark it as a day with no class.</p>'}
@@ -2332,7 +1919,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, notes, follow-ups and saved dates are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
+      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
       <div class="actions"><button class="btn ghost" id="dlData">Download data file</button></div>
       <p class="small muted">For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
     </div></div>`;
@@ -2448,10 +2035,10 @@ function ingest(files, dataText, folderName){
   else if (state.loaded && !same) state.data = defaultData();
   state.files = files.sort((a, b) => a.name.localeCompare(b.name));
   state.folderName = folderName; state.loaded = true; state.dirty = keep; state.draft = null; state.noteEdit = null;
-  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null; state.savingPeriod = false;
+  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null;
   if (!same){
     state.openDays.clear(); state.autoOpened = false; state.student = null; state.studentFrom = null; state.returnTo = null;
-    state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyConcern = {}; state.familyCopied = null;
+    state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyCopied = null;
     if (state.tab === 'students') state.tab = 'reports';
   }
   state.status = msg ? { text: msg, type: info ? 'info' : undefined } : null;
@@ -2504,8 +2091,8 @@ function goDay(dk, xkey, withReturn = true){
   if (withReturn) navReplace();
   state.returnTo = withReturn && state.student ? { key: state.student, name: (A && A.nameOf[state.student]) || state.student, range: { ...state.range } } : null;
   state.student = null; state.studentFrom = null;
-  state.tab = 'reports'; state.filter = 'all'; state.query = ''; state.openDays.add(dk); state.autoOpened = true; state.highlight = xkey || null;
-  const b = rangeBounds(); if ((b.from && dk < b.from) || (b.to && dk > b.to)) state.range = { preset: 'all', from: '', to: '', periodId: '' };
+  state.tab = 'reports'; state.query = ''; state.openDays.add(dk); state.autoOpened = true; state.highlight = xkey || null;
+  const b = rangeBounds(); if ((b.from && dk < b.from) || (b.to && dk > b.to)) state.range = { preset: 'all', from: '', to: '' };
   if (withReturn) navPush(); else navReplace();
   render();
   const row = xkey && [...document.querySelectorAll('#tab-reports .row[data-xkey]')].find(r => r.dataset.xkey === xkey);
@@ -2513,14 +2100,6 @@ function goDay(dk, xkey, withReturn = true){
   if (target){ target.scrollIntoView({ block: 'center' }); const f = target.querySelector('.name-btn, summary'); if (f) f.focus({ preventScroll: true }); }
 }
 function currentCtx(){ const A = state.lastAnalysis || analyze(); return ctxFor(A, state.student, periodOf(A)); }
-function savePeriod(){
-  const inp = document.querySelector(`#tab-${state.tab} [data-periodname]`), name = inp ? inp.value.trim() : '';
-  if (!name){ if (inp) inp.focus(); return; }
-  const p = periodOf(state.lastAnalysis || analyze()), id = uid();
-  state.data.periods.push({ id, name: name.slice(0, 40), from: p.from, to: p.to });
-  state.range = { preset: 'custom', from: p.from, to: p.to, periodId: id }; state.savingPeriod = false;
-  changed(); renderCurrent();
-}
 function readFollowUp(form, raw){
   const text = form.querySelector('[data-futext]').value;
   return { date: form.querySelector('[data-fudate]').value || todayDk(), how: form.querySelector('[data-fuhow]').value,
@@ -2557,29 +2136,20 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
-  if (d.filter){ state.filter = d.filter; renderReports(); return; }
   if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent(); return; }
   if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderCurrent(); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
-  if (d.range){ state.range = { preset: d.range, from: '', to: '', periodId: '' }; renderCurrent(); return; }
-  if (has('data-startperiod')){ state.savingPeriod = true; renderCurrent(); const i = visible('[data-periodname]'); if (i) i.focus(); return; }
-  if (has('data-cancelperiod')){ state.savingPeriod = false; renderCurrent(); return; }
-  if (has('data-saveperiod')) return savePeriod();
-  if (t.id === 'openAll'){ for (const day of daysInRange(state.lastAnalysis.days)) state.openDays.add(day.dk); renderReports(); return; }
-  if (t.id === 'closeAll'){ state.openDays.clear(); renderReports(); return; }
+  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
   if (has('data-printlist')) return window.print();
   if (d.printreports){
     const { all } = studentList(state.lastAnalysis || analyze());
-    const keys = all.filter(s => d.printreports === 'all' || s.concern).sort((a, b) => a.name.localeCompare(b.name)).map(s => s.key);
+    const keys = [...all].sort((a, b) => a.name.localeCompare(b.name)).map(s => s.key);
     if (keys.length) printReports(keys); return;
   }
   if (has('data-printone')) return printReports([state.student]);
   if (has('data-printfamily')) return printReports([state.student], { family: true, noteText: familyText(currentCtx()) });
-  if (d.copy){ const day = state.lastAnalysis.days.find(x => x.dk === d.copy); if (!day) return;
-    const ok = await copyText(followUpText(day));
-    setStatus(ok ? 'Follow-up list copied. Paste it into an email or message.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
   if (d.openstudent){ openStudent(d.openstudent, d.from); return; }
   if (has('data-studentback')) return studentBack();
   if (d.stepstudent){
@@ -2593,21 +2163,12 @@ async function onClick(t){
     state.range = r.range; openStudent(r.key); return;
   }
   if (has('data-dismissreturn')){ state.returnTo = null; state.highlight = null; renderReports(); return; }
-  if (d.sfilter){ state.studentFilter = d.sfilter; renderStudents(); return; }
   if (d.noclass || d.noclassall){
     const s = t.parentElement.querySelector('select[data-ncreason]'), reason = s ? s.value : 'other';
     for (const dk of (d.noclass || d.noclassall).split(',')) state.data.noClass[dk] = { reason };
     changed(); renderCurrent(); return;
   }
   if (d.undonoclass){ delete state.data.noClass[d.undonoclass]; changed(); renderCurrent(); return; }
-  if (d.showdays){
-    const want = new Set(d.showdays.split(',')), on = t.getAttribute('aria-pressed') !== 'true';
-    document.querySelectorAll('#tab-students [data-showdays]').forEach(b => b.setAttribute('aria-pressed', 'false'));
-    document.querySelectorAll('#tab-students [data-dk]').forEach(el => el.classList.toggle('hl', on && want.has(el.dataset.dk)));
-    t.setAttribute('aria-pressed', String(on));
-    if (on){ const c = $('#tab-students .hl'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-    return;
-  }
   if (has('data-calall')){ state.calAll = !state.calAll; renderStudents(); return; }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
     setStatus(ok ? 'Summary copied. Paste it into an email or form.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
@@ -2650,11 +2211,6 @@ async function onClick(t){
   if (has('data-ignore')){ const rk = t.closest('[data-rk]').dataset.rk; if (!state.data.ignored.includes(rk)) state.data.ignored.push(rk); changed(); renderCurrent(); return; }
   if (d.unlink){ delete state.data.aliases[d.unlink]; changed(); renderSettings(); return; }
   if (d.unignore){ state.data.ignored = state.data.ignored.filter(z => z !== d.unignore); changed(); renderSettings(); return; }
-  if (d.perioddel){
-    state.data.periods = state.data.periods.filter(p => p.id !== d.perioddel);
-    if (state.range.periodId === d.perioddel) state.range.periodId = '';
-    changed(); renderSettings(); return;
-  }
   if (t.id === 'saveSched'){
     if (state.draft === null) return;
     const hasReports = state.files.length && analyze().days.length;
@@ -2702,21 +2258,11 @@ document.addEventListener('change', e => {
     const ok = v => !v || (isDk(v) && v >= '1990' && v < '2200');
     if (!ok(f) || !ok(to)) return;
     if (f && to && f > to) [f, to] = [to, f];
-    state.range = f || to ? { preset: 'custom', from: f, to, periodId: '' } : { preset: 'all', from: '', to: '', periodId: '' }; renderCurrent();
-  }
-  if ('periodsel' in d){
-    const p = state.data.periods.find(x => x.id === t.value);
-    if (p) state.range = { preset: 'custom', from: p.from, to: p.to, periodId: p.id }; else state.range.periodId = '';
-    renderCurrent();
+    state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; renderCurrent();
   }
   // Notes are saved on focusout and Enter, not here: "change" fires before focusout, and redrawing here would swallow the click that moved focus.
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
-  if ('familyconcern' in d){
-    const k = draftKey(currentCtx());
-    if (state.familyDraft[k] && !confirm('Replace your edited note with a new one?')){ t.checked = !t.checked; return; }
-    delete state.familyDraft[k]; state.familyConcern[state.student] = t.checked; renderStudents();
-  }
   // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
   if (d.schedmode && state.schedChange){ state.schedChange.mode = d.schedmode; updateSchedStep(); }
   if ('schedfrom' in d && state.schedChange){ state.schedChange.date = t.value; state.schedChange.mode = 'start'; updateSchedStep(); }
@@ -2740,11 +2286,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape'){ state.noteEdit = null; renderCurrent(); }
     return;
   }
-  if ('periodname' in d){
-    if (e.key === 'Enter'){ e.preventDefault(); savePeriod(); }
-    if (e.key === 'Escape'){ state.savingPeriod = false; renderCurrent(); }
-    return;
-  }
   const form = t.closest && t.closest('[data-fuform]');
   if (form && t.tagName === 'INPUT'){
     if (e.key === 'Enter'){ e.preventDefault(); const b = form.querySelector('[data-fuadd],[data-fusave]'); if (b) b.click(); }
@@ -2757,6 +2298,7 @@ document.addEventListener('toggle', e => {
     if (el.open){ state.openDays.add(el.dataset.dk); fillDayBody(el); } else state.openDays.delete(el.dataset.dk);
   }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
+  if (el.dataset && 'daysbox' in el.dataset) state.daysOpen = el.open;
   if (el.classList && el.classList.contains('menu') && el.open){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
