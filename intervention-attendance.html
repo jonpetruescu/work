@@ -471,7 +471,10 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2, '0');
 const mins = ms => Math.round(ms / 60000);
-const fmt = t => t == null ? '—' : new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+// Formatting dates is slow when every call builds a new formatter, so each format is built once.
+const DTF = {};
+const dtf = o => { const k = JSON.stringify(o); return DTF[k] || (DTF[k] = new Intl.DateTimeFormat([], o)); };
+const fmt = t => t == null ? '—' : dtf({ hour: 'numeric', minute: '2-digit' }).format(t);
 const fmtMin = m => { m = Math.round(m); let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${pad(mi)} ${ap}`; };
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const fmtRange = (a, b) => { const A = fmtMin(a), B = fmtMin(b); return (A.slice(-2) === B.slice(-2) ? A.slice(0, -3) : A) + '–' + B; };
@@ -484,27 +487,36 @@ const parseDk = dk => { const [y, m, d] = String(dk).split('-').map(Number); ret
 const addDays = (dk, n) => { const d = parseDk(dk); d.setDate(d.getDate() + n); return dkOf(d); };
 const weekKey = dk => { const d = parseDk(dk); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return dkOf(d); };
 const asDate = d => typeof d === 'string' ? parseDk(d) : d;
-const shortDate = d => asDate(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-const monDay = d => asDate(d).toLocaleDateString([], { month: 'short', day: 'numeric' });
-const longDate = d => asDate(d).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-const monthDay = d => asDate(d).toLocaleDateString([], { month: 'long', day: 'numeric' });
+const shortDate = d => dtf({ weekday: 'short', month: 'short', day: 'numeric' }).format(asDate(d));
+const monDay = d => dtf({ month: 'short', day: 'numeric' }).format(asDate(d));
+const longDate = d => dtf({ weekday: 'long', month: 'long', day: 'numeric' }).format(asDate(d));
+const monthDay = d => dtf({ month: 'long', day: 'numeric' }).format(asDate(d));
+const isDk = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(parseDk(v));
 const clockOf = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
 const median = xs => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const wdPlural = w => cap(DAYS[w]) + 's';
 const byWeekOrder = (a, b) => ((a + 6) % 7) - ((b + 6) % 7);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const firstName = name => String(name).replace(/^[^\p{L}]+/u, '').split(/\s+/)[0] || String(name);
+// First name for the family note. Handles "Diaz, Ana" and stray leading symbols like "=Dee Evil".
+function firstName(name){
+  const s = String(name).replace(/^[^\p{L}]+/u, ''), m = s.match(/^([^,]+),\s*([^\s,]+)/);
+  return (m ? m[2] : s.split(/\s+/)[0]) || String(name);
+}
 function listJoin(items, max = 4){
-  const xs = items.slice(0, max), more = items.length - xs.length;
+  const xs = items.length === max + 1 ? items : items.slice(0, max), more = items.length - xs.length;
   if (more > 0) return `${xs.join(', ')} and ${more} more`;
   return xs.length < 2 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 }
-const dateList = (dks, max = 4) => listJoin(dks.map(shortDate), max);
+// A run of dates: listed when short, a "from … to …" span when long, so the latest date is always named.
+function dateList(dks, max = 4, f = shortDate){
+  return dks.length > max + 1 ? `from ${f(dks[0])} to ${f(dks[dks.length - 1])}` : listJoin(dks.map(f), max);
+}
+const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
 function groupBy(xs, f){ const m = new Map(); for (const x of xs){ const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 function fmtPeriod(p){
   const a = parseDk(p.from), b = parseDk(p.to), o = { weekday: 'short', month: 'short', day: 'numeric' };
-  if (a.getFullYear() !== b.getFullYear()) return `${a.toLocaleDateString([], { ...o, year: 'numeric' })} – ${b.toLocaleDateString([], { ...o, year: 'numeric' })}`;
-  return `${a.toLocaleDateString([], o)} – ${b.toLocaleDateString([], o)}, ${b.getFullYear()}`;
+  if (a.getFullYear() !== b.getFullYear()) return `${dtf({ ...o, year: 'numeric' }).format(a)} – ${dtf({ ...o, year: 'numeric' }).format(b)}`;
+  return `${dtf(o).format(a)} – ${dtf(o).format(b)}, ${b.getFullYear()}`;
 }
 
 function defaultData(){
@@ -516,16 +528,28 @@ function defaultData(){
     followUps: {},   // { studentKey: [{ id, date, how, text }] }
     periods: [] };   // [{ id, name, from, to }]
 }
+const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], concernRate: [0, 100] };
+const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+// Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
 function withDefaults(d){
-  d = d && typeof d === 'object' ? d : {};
-  const base = defaultData();
-  const out = { ...base, ...d, version: 3, settings: { ...base.settings, ...d.settings },
-    aliases: { ...d.aliases }, ignored: [...(d.ignored || [])], excused: { ...d.excused }, excusedAbsent: { ...d.excusedAbsent },
-    notes: { ...d.notes }, noClass: { ...d.noClass }, followUps: {},
-    periods: Array.isArray(d.periods) ? d.periods.filter(p => p && p.from && p.to).map(p => ({ ...p })) : [] };
-  for (const [k, v] of Object.entries(d.followUps || {})) if (Array.isArray(v)) out.followUps[k] = v.map(f => ({ ...f }));
-  const vs = Array.isArray(d.scheduleVersions) && d.scheduleVersions.length
-    ? d.scheduleVersions.map(v => ({ from: String((v && v.from) || ''), text: String((v && v.text) || '') }))
+  d = obj(d);
+  const base = defaultData(), set = obj(d.settings);
+  const out = { ...base, ...d, version: 3, settings: { ...base.settings },
+    aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, followUps: {},
+    periods: Array.isArray(d.periods) ? d.periods.filter(p => p && isDk(p.from) && isDk(p.to) && p.from <= p.to)
+      .map(p => ({ id: String(p.id || uid()), name: String(p.name || 'Saved dates').slice(0, 40), from: p.from, to: p.to })) : [] };
+  for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
+  for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
+  for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
+  for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
+  for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
+  for (const [k, v] of Object.entries(obj(d.followUps))) if (Array.isArray(v)){
+    const xs = v.filter(f => f && isDk(f.date)).map(f => ({ id: String(f.id || uid()), date: f.date, how: f.how in FU_HOW ? f.how : 'other', text: String(f.text || '').slice(0, 300) }));
+    if (xs.length) out.followUps[k] = xs;
+  }
+  const vs = Array.isArray(d.scheduleVersions) && d.scheduleVersions.some(v => v && typeof v === 'object')
+    ? d.scheduleVersions.filter(v => v && typeof v === 'object').map(v => ({ from: isDk(v.from) ? v.from : '', text: String(v.text || '') }))
     : [{ from: '', text: String(d.scheduleText || '') }];
   vs.sort((a, b) => a.from.localeCompare(b.from)); vs[0].from = '';
   // An older copy of this page only knows scheduleText. If it changed the schedule, keep that change.
@@ -746,7 +770,10 @@ function evaluate(intervals, sections, at, S){
     const m = mins(winEnd - out.lastLeave);
     const inSupport = supp.some(s => out.lastLeave >= s.a && out.lastLeave < s.b);
     const suppPresent = supp.reduce((t, s) => t + overlap(merged, s.a, s.b), 0);
-    if (inSupport && suppPresent >= 5 * 60000) out.flags.push({ k: 'soft', label: `Left support ${m} min early`, min: m });
+    if (inSupport && suppPresent >= 5 * 60000){
+      const sm = mins(overlap(mergeIntervals(supp.map(s => [s.a, s.b])), out.lastLeave, winEnd));   // support time left, not instruction
+      out.flags.push({ k: 'soft', label: `Left support ${sm} min early`, min: sm });
+    }
     else if (inSupport && instr.length) out.flags.push({ k: 'early', label: 'Skipped support hour', min: m, skip: true });
     else out.flags.push({ k: 'early', label: `Left ${m} min early`, min: m });
   }
@@ -766,8 +793,12 @@ function analyze(){
   const nameOf = {};
   for (const v of versions) for (const r of v.sched.roster) nameOf[r.key] = r.name;   // latest spelling wins
   const roster = Object.keys(nameOf).map(key => ({ key, name: nameOf[key] })).sort((a, b) => a.name.localeCompare(b.name));
-  const matcher = buildMatcher(roster, state.data.aliases);
-  const schedFor = dk => { let s = versions[0]; for (const v of versions) if (v.from <= dk) s = v; return s.sched; };
+  const verFor = dk => { let s = versions[0]; for (const v of versions) if (v.from <= dk) s = v; return s; };
+  const schedFor = dk => verFor(dk).sched;
+  // Zoom names are matched against that day's schedule first, so adding "Ben Carter" later can't make "ben c" ambiguous
+  // on days Ben Carter wasn't scheduled. Everyone from every version is the fallback, for students who joined but weren't scheduled.
+  const anyone = buildMatcher(roster, state.data.aliases);
+  const matchFor = dk => { const v = verFor(dk); if (!v.match){ const m = buildMatcher(v.sched.roster, state.data.aliases); v.match = (r, e) => m(r, e) || anyone(r, e); } return v.match; };
   const ignored = new Set(state.data.ignored);
   const fileErrors = [], byDate = new Map();
   for (const f of state.files){
@@ -780,14 +811,15 @@ function analyze(){
     }
   }
   const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk))
-    .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matcher, ignored, S));
+    .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S));
   markGroupLate(days);
   return { sched, versions, schedFor, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors };
 }
 
 function analyzeDay(g, sched, nameOf, matcher, ignored, S){
-  const date = parseDk(g.dk), base = date.getTime();
-  const at = m => base + m * 60000;
+  const date = parseDk(g.dk);
+  // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
+  const at = m => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, m).getTime();
   const dayName = DAYS[date.getDay()];
   const secs = (sched.days[dayName] || []).map(s => ({ ...s, endMin: s.endMin ?? s.startMin + S.sectionLen }));
   const plan = new Map();
@@ -851,7 +883,7 @@ function markGroupLate(days){
   for (const day of days){
     for (const [start, g] of groupBy(day.students, s => s.secs[0].a)){
       const came = g.filter(s => !s.isAbsent);
-      if (came.length >= 3 && came.filter(s => s.flags.some(f => f.k === 'late')).length * 2 >= came.length){
+      if (came.length >= 3 && came.filter(s => s.flags.some(f => f.k === 'late')).length * 2 > came.length){
         g.forEach(s => { s.groupLate = true; });
         day.groupLate.push(start);
       }
@@ -880,7 +912,8 @@ function axis(day){
 }
 // A time axis for one date, from minutes after midnight. Lets rows from different days line up.
 function axisFor(dk, startMin, endMin){
-  const base = parseDk(dk).getTime(), axisStart = base + (startMin - 10) * 60000, axisEnd = base + (endMin + 10) * 60000, ticks = [];
+  const d = parseDk(dk), at = m => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, m).getTime();
+  const axisStart = at(startMin - 10), axisEnd = at(endMin + 10), ticks = [];
   for (let t = Math.ceil(axisStart / 1800000) * 1800000; t <= axisEnd; t += 1800000) ticks.push(t);
   return { axisStart, axisEnd, ticks };
 }
@@ -922,8 +955,8 @@ function renderReports(){
 }
 function noClassCard(dk){
   const r = state.data.noClass[dk] || {};
-  return `<div class="noclasscard" data-dk="${dk}"><b>${esc(longDate(dk))}</b> <span>No class: ${esc(NOCLASS_REASONS[r.reason] || 'Other')}</span>
-    <button class="linkish" data-undonoclass="${dk}">Undo</button></div>`;
+  return `<div class="noclasscard" data-dk="${esc(dk)}"><b>${esc(longDate(dk))}</b> <span>No class: ${esc(NOCLASS_REASONS[r.reason] || 'Other')}</span>
+    <button class="linkish" data-undonoclass="${esc(dk)}">Undo</button></div>`;
 }
 function focusNoteInput(el){
   if (!state.noteEdit) return;
@@ -948,7 +981,7 @@ function periodOf(A){
   const oldest = A.days.length ? A.days[A.days.length - 1].dk : today;
   const from = b.from || oldest, to = b.to || (A.days.length && A.days[0].dk > today ? A.days[0].dk : today);
   const saved = state.range.periodId && state.data.periods.find(p => p.id === state.range.periodId);
-  return { from, to, calcTo: to < today ? to : today, name: saved ? saved.name : '' };
+  return { from, to, calcTo: to < today ? to : today, open: to >= today, name: saved ? saved.name : '' };
 }
 function rangeBar(){
   const p = state.range.preset, b = rangeBounds(), P = state.data.periods;
@@ -1026,23 +1059,34 @@ function noteBlock(s){
     : s.note ? `<span class="note-txt">${esc(s.note)}</span>` : '';
 }
 
+// A closed day only draws its heading; its rows are drawn when it's opened (see the toggle listener), which keeps
+// the Reports tab quick with a whole year of reports.
 function renderDay(day){
-  const q = normKey(state.query);
   const counts = {}; for (const s of day.students) for (const f of s.flags) counts[f.k] = (counts[f.k] || 0) + 1;
   const title = longDate(day.date);
   const sub = day.secs.length
     ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
     : `No ${cap(day.dayName)} schedule`;
-  const expected = day.students.filter(s => s.flags[0].k !== 'exc').length;
-  const came = day.students.filter(s => !s.isAbsent).length;
-  const rows = day.students.filter(s => (state.filter === 'all' || s.sev >= 2) && (!q || s.key.includes(q)));
   const groupLate = day.groupLate.map(t => fmt(t).replace(':00', ''));
-  let h = `<details class="day" data-dk="${day.dk}"${state.openDays.has(day.dk) ? ' open' : ''}>
+  const open = state.openDays.has(day.dk);
+  return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
     <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span>
       <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
       ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}
       ${groupLate.length ? `<span class="count k-extra">Most of the ${esc(listJoin(groupLate))} group joined late</span>` : ''}</span>
-    </summary><div class="day-body">`;
+    </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
+}
+function fillDayBody(el){
+  const body = el.querySelector(':scope > .day-body'), day = state.lastAnalysis && state.lastAnalysis.dayByDk.get(el.dataset.dk);
+  if (body && day && !body.childElementCount) body.innerHTML = dayBody(day);
+}
+function dayBody(day){
+  const q = normKey(state.query);
+  const expected = day.students.filter(s => s.flags[0].k !== 'exc').length;
+  const came = day.students.filter(s => !s.isAbsent).length;
+  const rows = day.students.filter(s => (state.filter === 'all' || s.sev >= 2) && (!q || s.key.includes(q)));
+  const groupLate = day.groupLate.map(t => fmt(t).replace(':00', ''));
+  let h = '';
   if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
   if (groupLate.length) h += `<p class="muted small">Most of the ${esc(listJoin(groupLate))} group joined late, so the class may have started late. This day isn’t used for anyone’s lateness pattern on their student report.</p>`;
   if (day.students.length){
@@ -1084,7 +1128,7 @@ function renderDay(day){
         <button class="btn small" data-link>Link</button>` : ''}
         <button class="btn small ghost" data-ignore>Ignore</button></div></div>`;
   }
-  h += `<div class="files">From ${day.files.map(esc).join(', ')}</div></div></details>`;
+  h += `<div class="files">From ${day.files.map(esc).join(', ')}</div>`;
   return h;
 }
 
@@ -1094,13 +1138,17 @@ const isWhole = s => !s.isAbsent && s.flags.every(f => f.k === 'full' || f.k ===
 const worstFlag = s => s.flags.reduce((w, x) => SEVERITY[x.k] > SEVERITY[w.k] ? x : w);
 const isExcused = s => s.flags[0].k === 'exc';
 // Minutes a student left early after finishing their work. They come out of the "scheduled" total.
-function finMinOf(s){ const f = s.flags.find(x => x.k === 'fin'); return f ? Math.min(f.min || 0, Math.max(0, s.reqMin - s.presentMin)) : 0; }
+function finMinOf(s){
+  const f = s.flags.find(x => x.k === 'fin');
+  return f ? Math.min(f.min || 0, Math.max(0, s.reqMin - s.presentMin), Math.max(0, s.suppReqMin - s.suppMin)) : 0;
+}
 const instrIvOf = s => mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
 
-// A student's scheduled sections on one date, from the schedule version in effect that day.
+// A student's scheduled sections on one date, from the schedule version in effect that day
+// (or, with `at`, from the version in effect on another date).
 const planCache = new WeakMap();
-function planFor(A, key, dk){
-  const sched = A.schedFor(dk), w = DAYS[parseDk(dk).getDay()], len = state.data.settings.sectionLen;
+function planFor(A, key, dk, at){
+  const sched = A.schedFor(at || dk), w = DAYS[parseDk(dk).getDay()], len = state.data.settings.sectionLen;
   let m = planCache.get(sched); if (!m) planCache.set(sched, m = new Map());
   const ck = `${w}|${key}|${len}`;
   if (!m.has(ck)){
@@ -1177,7 +1225,7 @@ function studentSummary(days){
   return [...map.values()].map(p => summarize(p, T));
 }
 function summarize(p, T){
-  const c = { sessions: 0, excused: 0, attended: 0, absent: 0, late: 0, missed: 0, early: 0, soft: 0, drop: 0, full: 0,
+  const c = { sessions: 0, excused: 0, attended: 0, absent: 0, late: 0, missed: 0, suppOnly: 0, early: 0, soft: 0, drop: 0, full: 0,
     pres: 0, req: 0, finMin: 0, iPres: 0, iReq: 0, sPres: 0, sReq: 0 };
   for (const { s } of p.rec){
     c.sessions++;
@@ -1187,7 +1235,7 @@ function summarize(p, T){
     c.iReq += s.instrReqMin; c.iPres += s.instrMin; c.sReq += s.suppReqMin - fin; c.sPres += s.suppMin;
     if (s.isAbsent) c.absent++; else c.attended++;
     if (hasFlag(s, 'late')) c.late++;
-    if (hasFlag(s, 'missed')) c.missed++;
+    if (hasFlag(s, 'missed')){ c.missed++; if (s.suppMin >= 5) c.suppOnly++; }   // suppOnly: missed instruction but was in the support hour
     if (hasFlag(s, 'early')) c.early++;
     if (hasFlag(s, 'soft')) c.soft++;
     if (hasFlag(s, 'drop')) c.drop++;
@@ -1204,8 +1252,8 @@ function summarize(p, T){
   const breakdown = minutesBreakdown(p.rec, c.req - c.pres);
   // The reasons are built from the same tests that decide "needs a look", so the page never contradicts itself.
   const reasons = [];
-  if (!few && rate !== null && rate < T) reasons.push({ k: 'rate', short: `came ${c.attended} of ${n} days (${rate}%)`,
-    long: `Attended ${c.attended} of ${n} class days (${rate}%), ${T - rate} under your ${T}% line.` });
+  if (!few && rate !== null && rate < T) reasons.push({ k: 'rate', short: `came ${ofN(c.attended, n, 'day')} (${rate}%)`,
+    long: `Attended ${ofN(c.attended, n, 'class day')} (${rate}%), ${T - rate} under your ${T}% line.` });
   if (!few && dose !== null && dose < T){
     const top = topMissed(breakdown, c.req - c.pres);
     reasons.push({ k: 'dose', short: `minutes ${dose}%`,
@@ -1217,6 +1265,8 @@ function summarize(p, T){
   const near = !concern && !few && Math.min(rate ?? 101, dose ?? 101) < T + 5;
   return { ...p, ...c, n, few, rate, dose, instrDose, suppDose, streak, streakDates, longest, breakdown, reasons, concern, near };
 }
+// "Only 3 class days so far" while the period is still running, "in these dates" once it has ended.
+const fewText = (p, open) => !p.n ? 'All class days in these dates were excused' : `Only ${plural(p.n, 'class day')} ${open ? 'so far' : 'in these dates'}`;
 function sortStudents(list){
   const by = state.sort, v = x => x ?? 101, name = (a, b) => a.name.localeCompare(b.name);
   return list.sort((a, b) =>
@@ -1231,14 +1281,16 @@ function sameWeekday(rs){ const w = new Set(rs.map(r => r.day.date.getDay())); r
 const spanTxt = rs => `${monDay(rs[0].day.dk)} – ${monDay(rs[rs.length - 1].day.dk)}`;
 
 // "What the attendance shows": template sentences only, each tied to the days it describes.
-function describeStudent(p, allN){
+// `open` is true while the period is still running, so "so far" is only said when more days can come.
+function describeStudent(p, allN, open = true){
   const R = p.rec.filter(r => !isExcused(r.s)), att = R.filter(r => !r.s.isAbsent);
-  const so = p.few ? ' so far' : '';
+  const soFar = small => small && open ? ' so far' : '';
+  const so = soFar(p.few);
   const lead = [];
   if (!p.n) lead.push(`All ${plural(p.sessions, 'class day')} in these dates were excused.`);
   else {
     const exc = p.excused ? `, not counting ${plural(p.excused, 'excused absence')}` : '';
-    lead.push(p.few ? `Attended ${p.attended} of ${p.n} class days so far${exc}.` : `Attended ${p.attended} of ${p.n} class days (${p.rate}%)${exc}.`);
+    lead.push(p.few ? `Attended ${ofN(p.attended, p.n, 'class day')}${so}${exc}.` : `Attended ${ofN(p.attended, p.n, 'class day')} (${p.rate}%)${exc}.`);
     const iTxt = `${p.iPres} of ${p.iReq} instruction minutes${p.few ? '' : ` (${p.instrDose}%)`}`;
     const sTxt = `${p.sPres} of ${p.sReq} support-hour minutes${p.few ? '' : ` (${p.suppDose}%)`}`;
     if (p.iReq && p.sReq) lead.push(`Received ${iTxt} and ${sTxt}${so}.`);
@@ -1254,7 +1306,7 @@ function describeStudent(p, allN){
   } else if (p.longest.len >= 2) items.push({ id: 'F', text: `Absent ${p.longest.len} class days in a row (${dateList(p.longest.dates)}).`, dks: p.longest.dates });
   else if (p.absent >= 3 && p.absent / p.n >= .3){
     const ab = R.filter(r => r.s.isAbsent);
-    items.push({ id: 'F', text: `Absent on ${p.absent} of ${p.n} class days (${dateList(dks(ab))}).`, dks: dks(ab) });
+    items.push({ id: 'F', text: `Absent on ${ofN(p.absent, p.n, 'class day')} (${dateList(dks(ab))}).`, dks: dks(ab) });
   }
   // T: trend in minutes received
   const weeks = new Set(R.map(r => weekKey(r.day.dk))).size;
@@ -1269,8 +1321,9 @@ function describeStudent(p, allN){
     }
   }
   const trendCaption = trend || (p.n >= TREND_DAYS && weeks >= TREND_WEEKS ? 'No clear change in minutes received over these dates.'
-    : (allN || 0) >= TREND_DAYS ? 'Choose a longer date range to see a trend.'
-    : `Too early to call a trend: ${plural(p.n, 'class day')} so far (needs ${TREND_DAYS} over ${TREND_WEEKS} weeks).`);
+    : (allN || 0) > p.n && allN >= TREND_DAYS ? 'Choose a longer date range to see a trend.'
+    : p.n >= TREND_DAYS ? `Too early to call a trend: ${plural(weeks, 'week')} of class${open ? ' so far' : ' in these dates'} (needs ${TREND_WEEKS}).`
+    : `Too early to call a trend: ${plural(p.n, 'class day')}${open ? ' so far' : ' in these dates'} (needs ${TREND_DAYS} over ${TREND_WEEKS} weeks).`);
   // W: one weekday much worse than another
   const ws = [...groupBy(R, r => r.day.date.getDay())].filter(([, xs]) => xs.length >= 2)
     .map(([w, xs]) => ({ w, xs, n: xs.length, a: xs.filter(r => !r.s.isAbsent).length })).map(o => ({ ...o, rate: o.a / o.n }));
@@ -1280,10 +1333,12 @@ function describeStudent(p, allN){
     if ((hi.rate - lo.rate) * 100 >= WEEKDAY_GAP)
       items.push({ id: 'W', text: `Attended ${hi.a} of ${hi.n} ${wdPlural(hi.w)} but ${lo.a} of ${lo.n} ${wdPlural(lo.w)}.`, dks: dks(lo.xs.filter(r => r.s.isAbsent)) });
   }
-  // E: came only for the support hour
-  const missedR = att.filter(r => hasFlag(r.s, 'missed'));
-  if (missedR.length >= PATTERN_MIN)
-    items.push({ id: 'E', text: `Was in Zoom only for the support hour, not instruction, on ${missedR.length} of ${att.length} days attended.`, dks: dks(missedR) });
+  // E: missed instruction. Only called "came for the support hour" when the student really was in the support hour.
+  const suppOnlyR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin >= 5), briefR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin < 5);
+  if (suppOnlyR.length >= PATTERN_MIN)
+    items.push({ id: 'E', text: `Was in Zoom only for the support hour, not instruction, on ${suppOnlyR.length} of ${plural(att.length, 'day')} attended.`, dks: dks(suppOnlyR) });
+  if (briefR.length >= PATTERN_MIN)
+    items.push({ id: 'E2', text: `Was in Zoom for less than 5 minutes of instruction on ${briefR.length} of ${plural(att.length, 'day')} attended.`, dks: dks(briefR) });
   // C: out of Zoom mid-class
   const dropR = att.filter(r => hasFlag(r.s, 'drop'));
   if (dropR.length >= PATTERN_MIN){
@@ -1295,10 +1350,11 @@ function describeStudent(p, allN){
         const hits = perDay.map(x => x.find(y => Math.abs(y.clock - g.clock) <= 10));
         if (hits.every(Boolean)){ best = hits; break; } } if (best) break; }
       const medMin = Math.round(median(dropR.map(r => r.s.flags.find(f => f.k === 'drop').min)));
-      let text = `Out of Zoom in the middle of class on ${dropR.length} of ${baseR.length} ${oneW !== null ? wdPlural(oneW) : 'days attended'}${baseR.length < FEW_DAYS ? ' so far' : ''}${best ? `, usually around ${fmtMin(median(best.map(g => g.clock)))}` : ''}, for about ${medMin} minutes.`;
+      // dropR has at least 2 days, so the base is always plural.
+      let text = `Out of Zoom in the middle of class on ${dropR.length} of ${baseR.length} ${oneW !== null ? wdPlural(oneW) : 'days attended'}${soFar(baseR.length < FEW_DAYS)}${best ? `, usually around ${fmtMin(median(best.map(g => g.clock)))}` : ''}, for about ${medMin} minutes.`;
       const j = best ? best.filter(g => g.changedName).length : 0;
       if (j && j * 2 >= best.length) text += ` On ${j} of these days, Zoom shows a different name before and after.`;
-      items.push({ id: 'C', text, dks: dks(dropR) });
+      items.push({ id: 'C', text, dks: dks(dropR), w: oneW });
     }
   }
   // B: leaving early
@@ -1311,12 +1367,12 @@ function describeStudent(p, allN){
     if (oneW !== null) baseR = baseR.filter(r => r.day.date.getDay() === oneW);
     if (baseR.length && leftR.length / baseR.length >= .5){
       const word = oneW !== null ? wdPlural(oneW) : allSupp ? 'days with a support hour' : 'days attended';
-      const sf = baseR.length < FEW_DAYS ? ' so far' : '';
+      const sf = soFar(baseR.length < FEW_DAYS);
       const clock = fmtMin(median(leftR.map(r => clockOf(r.s.lastLeave))));
       const text = allSkip ? `Was not in Zoom for the support hour on ${leftR.length} of ${baseR.length} ${word}${sf}.`
         : allSupp ? `Left the support hour early on ${leftR.length} of ${baseR.length} ${word}${sf}, usually around ${clock}.`
         : `Left before the end of class on ${leftR.length} of ${baseR.length} ${word}${sf}, usually around ${clock}.`;
-      items.push({ id: 'B', text, dks: dks(leftR) });
+      items.push({ id: 'B', text, dks: dks(leftR), w: oneW });
     }
   }
   // A: joining late (days when most of the group was late are left out)
@@ -1332,13 +1388,13 @@ function describeStudent(p, allN){
       if (others.length && lateO / others.length > .34) continue;
       const onTime = others.filter(r => !hasFlag(r.s, 'late') && !hasFlag(r.s, 'missed')).length;
       const otherWs = [...new Set(others.map(r => r.day.date.getDay()))].sort(byWeekOrder).map(wdPlural);
-      let text = `Joined late on ${c.late.length} of ${c.xs.length} ${wdPlural(c.w)}${c.xs.length < FEW_DAYS ? ' so far' : ''}, about ${Math.round(median(c.late.map(lateMin)))} minutes after the start.`;
-      if (others.length) text += ` On time on ${onTime} of ${others.length} ${listJoin(otherWs)}.`;
+      let text = `Joined late on ${c.late.length} of ${c.xs.length} ${wdPlural(c.w)}${soFar(c.xs.length < FEW_DAYS)}, about ${Math.round(median(c.late.map(lateMin)))} minutes after the start.`;
+      if (others.length) text += ` On time on ${onTime} of ${others.length} ${others.length === 1 ? otherWs[0].replace(/s$/, '') : listJoin(otherWs)}.`;
       const l = lost(c.late); if (l) text += ` About ${l} minutes of instruction missed this way.`;
-      items.push({ id: 'A', text, dks: dks(c.late) }); done = true; break;
+      items.push({ id: 'A', text, dks: dks(c.late), w: c.w }); done = true; break;
     }
     if (!done && lateR.length / ng.length >= .5)
-      items.push({ id: 'A', text: `Joined late on ${lateR.length} of ${ng.length} days attended, usually about ${Math.round(median(lateR.map(lateMin)))} minutes after the start.`, dks: dks(lateR) });
+      items.push({ id: 'A', text: `Joined late on ${lateR.length} of ${plural(ng.length, 'day')} attended, usually about ${Math.round(median(lateR.map(lateMin)))} minutes after the start.`, dks: dks(lateR), w: null });
   }
   // One strength, always last.
   let strength = null;
@@ -1348,16 +1404,30 @@ function describeStudent(p, allN){
     let run = 0; for (let i = R.length - 1; i >= 0 && isWhole(R[i].s); i--) run++;
     if (run >= 3) strength = `Was in class the whole time on the last ${run} class days in a row.`;
     else if (R.length >= 2 && !R[R.length - 1].s.isAbsent && R[R.length - 2].s.isAbsent) strength = `Came back to class on ${shortDate(R[R.length - 1].day.dk)}.`;
-    else if (p.full >= 1) strength = `Was in class the whole time on ${p.full} of ${p.attended} days attended.`;
+    else if (p.full >= 1) strength = `Was in class the whole time on ${p.full} of ${plural(p.attended, 'day')} attended.`;
   }
   const shown = items.slice(0, 3);
-  const empty = shown.length ? null : p.n < TREND_DAYS ? `Nothing else stands out yet (${plural(p.n, 'class day')}).` : 'No repeated lateness, leaving early or time out of Zoom.';
-  return { lead, items: shown, strength, empty, trendCaption };
+  // When nothing reaches a pattern, still say what happened instead of claiming there was nothing.
+  let empty = null;
+  if (!shown.length && p.n){
+    const parts = [];
+    if (p.late) parts.push(`late on ${plural(p.late, 'day')}`);
+    if (p.early + p.soft) parts.push(`left early on ${plural(p.early + p.soft, 'day')}`);
+    if (p.drop) parts.push(`out of Zoom mid-class on ${plural(p.drop, 'day')}`);
+    if (p.missed) parts.push(`missed instruction on ${plural(p.missed, 'day')}`);
+    const count = p.late + p.early + p.soft + p.drop + p.missed;
+    empty = count > 1 ? `${cap(listJoin(parts, 4))} out of ${plural(att.length, 'day')} attended, with no regular pattern.`
+      : p.n < TREND_DAYS ? `Nothing else stands out yet (${plural(p.n, 'class day')}).` : 'No repeated lateness, leaving early or time out of Zoom.';
+  }
+  return { lead, items: shown, found: items, strength, empty, trendCaption };
 }
 
 // Weekly totals for the chart and the calendar rows. Upcoming days are left out, so this week is "so far".
-function weekRows(dates, period){
+function weekRows(dates, period, hasPlan = () => true){
   const map = new Map(), today = todayDk(), thisWeek = weekKey(today);
+  // A week is complete when none of the student's scheduled days in it fall outside the period
+  // (so a period ending on a Friday still counts its last week).
+  const inside = wk => { for (let i = 0; i < 7; i++){ const dk = addDays(wk, i); if ((dk < period.from || dk > period.to) && hasPlan(dk)) return false; } return true; };
   for (const d of dates){
     const wk = weekKey(d.dk);
     if (!map.has(wk)) map.set(wk, { wk, received: 0, missed: 0, excFin: 0, notHeld: 0, noReport: 0, cameDays: 0, heldDays: 0,
@@ -1376,16 +1446,22 @@ function weekRows(dates, period){
   }
   return [...map.values()].sort((a, b) => a.wk.localeCompare(b.wk)).map(w => ({ ...w,
     counted: w.received + w.missed,
-    complete: !w.waiting && w.wk >= period.from && addDays(w.wk, 6) <= period.to,
+    complete: !w.waiting && inside(w.wk),
     current: w.wk === thisWeek }));
 }
 
+// Whether a schedule version starting on `from` changed this student's days or times
+// (the same weekday is compared the week before and the week of the change).
+function planChanged(A, key, from){
+  for (let i = 0; i < 7; i++) if (JSON.stringify(planFor(A, key, addDays(from, i - 7))) !== JSON.stringify(planFor(A, key, addDays(from, i)))) return true;
+  return false;
+}
 // The student's weekly schedule as of the end of the period, e.g. "Mondays 2–4 PM (instruction 2–3, support hour 3–4)".
 function scheduleInfo(A, key, period){
-  const end = period.to, byW = [];
+  // Every weekday is read from the one schedule in effect at the end of the period.
+  const end = isDk(period.to) ? period.to : todayDk(), endW = parseDk(end).getDay(), byW = [];
   for (const w of [1, 2, 3, 4, 5, 6, 0]){
-    let dk = end; while (parseDk(dk).getDay() !== w) dk = addDays(dk, -1);
-    const plan = planFor(A, key, dk);
+    const plan = planFor(A, key, addDays(end, -((endW - w + 7) % 7)), end);
     if (plan) byW.push({ w, plan });
   }
   const desc = plan => {
@@ -1398,17 +1474,11 @@ function scheduleInfo(A, key, period){
   for (const x of byW){ const d = desc(x.plan), g = groups.find(y => y.d === d); if (g) g.ws.push(x.w); else groups.push({ d, ws: [x.w] }); }
   const line = groups.map(g => `${listJoin(g.ws.map(wdPlural), 7)} ${g.d}`).join(' · ');
   const weekMin = byW.reduce((t, x) => t + x.plan.minutes, 0);
-  // Did this student's plan change inside the period?
+  // Did this student's plan change inside the period? (The last change wins.)
   let changedOn = null;
-  for (const v of A.versions) if (v.from && v.from > period.from && v.from <= period.to){
-    const before = addDays(v.from, -1);
-    for (let i = 0; i < 7 && !changedOn; i++){
-      const a = planFor(A, key, addDays(before, -i)), b = planFor(A, key, addDays(v.from, i));
-      if (JSON.stringify(a) !== JSON.stringify(b)) changedOn = v.from;
-    }
-  }
-  // First and last schedule versions that include the student.
-  let firstFrom = null; const inLatest = A.sched.roster.some(r => r.key === key);
+  for (const v of A.versions) if (v.from && v.from > period.from && v.from <= period.to && planChanged(A, key, v.from)) changedOn = v.from;
+  // The first schedule version with the student, and whether today's schedule has them.
+  let firstFrom = null; const inLatest = A.schedFor(todayDk()).roster.some(r => r.key === key);
   for (const v of A.versions) if (v.sched.roster.some(r => r.key === key)){ firstFrom = v.from; break; }
   // Joining the schedule is reported on its own line, so it isn't also called a change.
   if (changedOn && changedOn === firstFrom) changedOn = null;
@@ -1514,7 +1584,7 @@ function renderStudents(){
   let dividerShown = false;
   for (const s of list){
     if (state.sort === 'concern' && state.studentFilter === 'all' && !s.concern && !dividerShown && list.some(x => x.concern)){
-      h += `<tr class="divider"><td colspan="9">Doing fine (${list.filter(x => !x.concern).length})</td></tr>`; dividerShown = true;
+      h += `<tr class="divider"><td colspan="9">Not flagged (${list.filter(x => !x.concern).length})</td></tr>`; dividerShown = true;
     }
     const info = scheduleInfo(A, s.key, period);
     const chips = [];
@@ -1527,7 +1597,7 @@ function renderStudents(){
       const f = lastFollowUp(s.key);
       sub = `<span class="reasons">Needs a look: ${esc(s.reasons.map(r => r.short).join(' · '))}</span>
         <span class="subnote">${f ? `Last follow-up: ${esc(monDay(f.date))}, ${esc(FU_HOW[f.how] ? FU_HOW[f.how].charAt(0).toLowerCase() + FU_HOW[f.how].slice(1) : 'other')}` : 'No follow-up logged'}</span>`;
-    } else if (s.few) sub = `<span class="subnote">Only ${plural(s.n, 'class day')} so far</span>`;
+    } else if (s.few) sub = `<span class="subnote">${esc(fewText(s, period.open))}</span>`;
     else if (s.near) sub = `<span class="subnote">Close to the ${T}% line</span>`;
     const split = s.iReq && s.sReq ? `<span class="subnote">${s.few ? `Instruction ${s.iPres} of ${s.iReq} · Support ${s.sPres} of ${s.sReq}` : `Instruction ${s.instrDose}% · Support ${s.suppDose}%`}</span>` : '';
     const leftEarly = s.early + s.soft;
@@ -1555,8 +1625,8 @@ function ctxFor(A, key, period, sums){
   const name = p ? p.name : (A.nameOf[key] || key);
   const dates = studentDates(A, key, period);
   let allN = 0; for (const d of A.days) for (const s of d.students) if (s.key === key && !isExcused(s)) allN++;
-  const ctx = { A, period, key, name, first: firstName(name), p, dates, weeks: weekRows(dates, period), info: scheduleInfo(A, key, period) };
-  ctx.desc = p ? describeStudent(p, allN) : null;
+  const ctx = { A, period, key, name, first: firstName(name), p, dates, weeks: weekRows(dates, period, dk => !!planFor(A, key, dk)), info: scheduleInfo(A, key, period) };
+  ctx.desc = p ? describeStudent(p, allN, period.open) : null;
   return ctx;
 }
 function renderStudentReport(A, el){
@@ -1620,9 +1690,10 @@ function checksSection(ctx){
   const unm = dates.filter(d => d.status === 'held' && d.rec.isAbsent && !isExcused(d.rec) && d.day.unmatched.length);
   for (const d of unm.slice(0, 3)) out.push(`${esc(first)} is marked absent on ${esc(shortDate(d.dk))}, but ${plural(d.day.unmatched.length, 'Zoom name')} that day didn’t match anyone: ${esc(listJoin(d.day.unmatched.map(u => `“${u.raw}”`), 3))}. If it was ${esc(first)}, link it. <button class="linkish" data-goday="${d.dk}" data-xkey="${esc(d.rec.xkey)}">Go to that day</button>`);
   if (unm.length > 3) out.push(`${unm.length - 3} more absent days also have Zoom names that didn’t match anyone.`);
-  if (p.few) out.push(`Only ${plural(p.n, 'class day')} so far. Percentages can change a lot with one more day.`);
-  for (const v of A.versions) if (v.from && v.from > period.from && v.from <= period.to)
-    out.push(`Your schedule changed on ${esc(monDay(v.from))}. Days before then are checked against the earlier schedule.`);
+  if (p.n && p.few) out.push(period.open ? `Only ${plural(p.n, 'class day')} so far. Percentages can change a lot with one more day.`
+    : `Only ${plural(p.n, 'class day')} in these dates, so the percentages rest on very few days.`);
+  for (const v of A.versions) if (v.from && v.from > period.from && v.from <= period.to && planChanged(A, ctx.key, v.from))
+    out.push(`${esc(first)}’s schedule changed on ${esc(monDay(v.from))}. Days before then are checked against the earlier schedule.`);
   for (const d of dates.filter(d => d.status === 'held' && d.rec.groupLate).slice(0, 3))
     out.push(`On ${esc(shortDate(d.dk))} most of the ${esc(fmt(d.rec.secs[0].a).replace(':00', ''))} group joined late. That day isn’t used for lateness patterns.`);
   const conf = conflictNotices(A, period, ctx.key);
@@ -1632,12 +1703,14 @@ function checksSection(ctx){
 
 const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
 function statusSection(ctx){
-  const { p, dates, period, A } = ctx, T = state.data.settings.concernRate, so = p.few ? ' so far' : '';
+  const { p, dates, period, A } = ctx, T = state.data.settings.concernRate, so = p.few && period.open ? ' so far' : '';
   let st;
   if (p.concern) st = `<div class="status bad"><b>Needs a look</b><ul>${p.reasons.map(r => `<li>${esc(r.long)}</li>`).join('')}</ul></div>`;
-  else if (p.few) st = `<div class="status few"><b>Only ${plural(p.n, 'class day')} so far</b><span class="small muted">Not flagged by percent until there are ${FEW_DAYS} class days.</span></div>`;
-  else st = `<div class="status"><b>On track</b><span class="small">Attended ${p.attended} of ${p.n} class days and ${p.dose}% of scheduled minutes.${p.near ? ` Close to your ${T}% line.` : ''}</span></div>`;
-  if (p.missed) st += `<p class="small">Came only for the support hour on ${plural(p.missed, 'day')}. Those days count as attended.</p>`;
+  else if (p.few) st = `<div class="status few"><b>${esc(fewText(p, period.open))}</b><span class="small muted">${p.n ? `Not flagged by percent until there are ${FEW_DAYS} class days.` : 'Excused days don’t count for or against a student.'}</span></div>`;
+  else st = `<div class="status"><b>On track</b><span class="small">Attended ${ofN(p.attended, p.n, 'class day')} and ${p.dose}% of scheduled minutes.${p.near ? ` Close to your ${T}% line.` : ''}</span></div>`;
+  const brief = p.missed - p.suppOnly;
+  if (p.suppOnly) st += `<p class="small">Came only for the support hour on ${plural(p.suppOnly, 'day')}. Those days count as attended.</p>`;
+  if (brief) st += `<p class="small">Was in Zoom for less than 5 minutes of instruction on ${plural(brief, 'day')}. Those days count as attended.</p>`;
   const tiles = [tile('Days attended', `${p.attended} of ${p.n}`, `${p.rate === null ? 'none counted' : `${p.rate}%${so}`}${p.excused ? ` · ${p.excused} excused, not counted` : ''}`)];
   if (p.iReq) tiles.push(tile('Instruction minutes', `${p.iPres} of ${p.iReq}`, `${p.instrDose}%${so}`));
   if (p.sReq || p.finMin) tiles.push(tile('Support-hour minutes', `${p.sPres} of ${p.sReq}`,
@@ -1648,7 +1721,7 @@ function statusSection(ctx){
     ? [nc.length ? `${nc.length} no class (${listJoin(nc.map(d => `${monDay(d.dk)}, ${reason(d.dk)}`), 2)})` : '',
        ms.length ? `${ms.length} missing a report (${listJoin(ms.map(d => monDay(d.dk)), 2)})` : ''].filter(Boolean).join(' · ')
     : 'Every scheduled day had a Zoom report'));
-  tiles.push(tile('Absent in a row', `${p.streak} now`, p.streak ? listJoin(p.streakDates.map(shortDate), 3)
+  tiles.push(tile('Absent in a row', `${p.streak} now`, p.streak ? dateList(p.streakDates, 3)
     : p.longest.len ? `Longest: ${p.longest.len} (${listJoin(p.longest.dates.map(monDay), 3)})` : 'No absences'));
   let cmp = '';
   const prev = state.data.periods.filter(x => x.to < period.from).sort((a, b) => b.to.localeCompare(a.to))[0];
@@ -1656,8 +1729,10 @@ function statusSection(ctx){
     const q = studentSummary(A.days.filter(d => d.dk >= prev.from && d.dk <= prev.to)).find(x => x.key === p.key);
     if (q && !q.few){
       const useI = p.iReq && q.iReq;
-      cmp = `<p class="small">Compared with ${esc(prev.name)} (${esc(monDay(prev.from))} – ${esc(monDay(prev.to))}): days attended ${q.rate}% → ${p.rate}%, ${useI
-        ? `instruction minutes ${q.instrDose}% → ${p.instrDose}%` : `support-hour minutes ${q.suppDose ?? '—'}% → ${p.suppDose ?? '—'}%`}.</p>`;
+      const pc = v => v === null || v === undefined ? '—' : `${v}%`;
+      const mins2 = useI ? `instruction minutes ${pc(q.instrDose)} → ${pc(p.instrDose)}`
+        : q.suppDose !== null && p.suppDose !== null ? `support-hour minutes ${pc(q.suppDose)} → ${pc(p.suppDose)}` : `minutes received ${pc(q.dose)} → ${pc(p.dose)}`;
+      cmp = `<p class="small">Compared with ${esc(prev.name)} (${esc(monDay(prev.from))} – ${esc(monDay(prev.to))}): days attended ${pc(q.rate)} → ${pc(p.rate)}, ${esc(mins2)}.</p>`;
     }
   }
   return `<section class="rsec"><h3>Summary</h3>${st}<div class="rtiles">${tiles.join('')}</div>${cmp}</section>`;
@@ -1848,7 +1923,7 @@ function followUpSection(ctx, o){
   const pre = state.fuPrefill && state.fuPrefill.key === ctx.key ? state.fuPrefill : { date: todayDk(), how: 'call', text: '' };
   return `<section class="rsec" data-fusection><h3>Follow-up log</h3>
     ${all.length ? `<ul class="fu">${all.map(f => state.fuEdit === f.id
-      ? `<li class="fuform" data-fuform data-fuid="${esc(f.id)}">${fuInputs(f)}<button class="btn small" data-fusave="${esc(f.id)}">Save</button><button class="btn small ghost" data-fucancel>Cancel</button></li>`
+      ? `<li class="fuform" data-fuform data-fuid="${esc(f.id)}">${fuInputs(state.fuEditDraft && state.fuEditDraft.id === f.id ? state.fuEditDraft : f)}<button class="btn small" data-fusave="${esc(f.id)}">Save</button><button class="btn small ghost" data-fucancel>Cancel</button></li>`
       : `<li><span class="when">${esc(monDay(f.date))}</span><b>${esc(fuHow(f))}</b><span class="txt">${esc(f.text)}</span>
           <button class="linkish" data-fuedit="${esc(f.id)}">Edit</button><button class="linkish" data-fudel="${esc(f.id)}">Delete</button></li>`).join('')}</ul>`
       : '<p class="small muted">No follow-ups logged yet.</p>'}
@@ -1857,30 +1932,42 @@ function followUpSection(ctx, o){
 }
 
 /* Note to the family: fixed, warm sentences with the student's numbers slotted in. Never notes, follow-ups or Zoom names. */
-const draftKey = ctx => `${ctx.key}|${ctx.period.from}|${ctx.period.to}`;
+const draftKey = ctx => ctx.key;   // one draft per student; it remembers which dates it was written for
+// At most one thing to work on. Lateness, leaving early and time out of Zoom are only raised when the team report
+// finds them as a pattern, or the student needs a look, so a family never hears about something the report calls minor.
 function familyConcern(ctx){
-  const { p, first: F } = ctx; if (!p || !p.n) return null;
+  const { p, A, first: F } = ctx; if (!p || !p.n) return null;
   const att = p.rec.filter(r => !isExcused(r.s) && !r.s.isAbsent);
-  const on = rs => { const w = sameWeekday(rs); return w !== null ? { txt: `On ${wdPlural(w)}`, tail: ` on ${wdPlural(w)}` } : { txt: `On ${rs.length} days`, tail: '' }; };
-  const last = rs => rs[rs.length - 1].s;
-  if (p.streak >= 2) return { concern: `${F} missed the last ${p.streak} classes, on ${listJoin(p.streakDates.map(longDate), 4)}.`, ask: 'Is anything making it hard to join? I would like to help.' };
-  const missedR = att.filter(r => hasFlag(r.s, 'missed'));
-  if (missedR.length >= 2){
-    const st = Math.min(...last(missedR).secs.filter(x => x.type === 'instruction').map(x => clockOf(x.a)));
-    return { concern: `On ${missedR.length} days, ${F} missed the teaching part of class.`, ask: `The teaching part starts at ${fmtMin(st)}. Could ${F} join by then?` };
+  const found = id => (ctx.desc && ctx.desc.found || []).find(x => x.id === id);
+  const raise = id => !!found(id) || p.concern;
+  // "On Mondays" only when the pattern itself is about Mondays; otherwise a count of days.
+  const on = (id, rs) => { const it = found(id), w = it && it.w !== null && it.w !== undefined ? it.w : null;
+    return w !== null ? { w, txt: `On ${wdPlural(w)}`, tail: ` on ${wdPlural(w)}` } : { w: null, txt: `On ${rs.length} days`, tail: '' }; };
+  const planOn = w => { const r = [...att].reverse().find(x => x.day.date.getDay() === w); return r ? planFor(A, ctx.key, r.day.dk) : null; };
+  if (p.streak >= 2){
+    const dl = dateList(p.streakDates, 4, longDate);
+    return { concern: `${F} missed the last ${p.streak} classes, ${dl.startsWith('from ') ? '' : 'on '}${dl}.`, ask: 'Is anything making it hard to join? I would like to help.' };
+  }
+  const suppOnlyR = att.filter(r => hasFlag(r.s, 'missed') && r.s.suppMin >= 5);
+  if (suppOnlyR.length >= 2 && raise('E')){
+    const starts = new Set(suppOnlyR.map(r => Math.min(...r.s.secs.filter(x => x.type === 'instruction').map(x => clockOf(x.a)))));
+    return { concern: `On ${suppOnlyR.length} days, ${F} missed the teaching part of class.`,
+      ask: starts.size === 1 ? `The teaching part starts at ${fmtMin([...starts][0])}. Could ${F} join by then?` : `Could ${F} join at the start of the teaching part?` };
   }
   const lateR = att.filter(r => !r.s.groupLate && hasFlag(r.s, 'late'));
-  if (lateR.length >= 2){
-    const o = on(lateR), st = clockOf(last(lateR).winStart), med = Math.round(median(lateR.map(r => r.s.flags.find(f => f.k === 'late').min)));
-    return { concern: `${o.txt}, ${F} joined about ${med} minutes late.`, ask: `Class starts at ${fmtMin(st)}. Could ${F} log in by ${fmtMin(st - 5)}${o.tail}?` };
+  if (lateR.length >= 2 && raise('A')){
+    const o = on('A', lateR), pl = o.w !== null ? planOn(o.w) : null, med = Math.round(median(lateR.map(r => r.s.flags.find(f => f.k === 'late').min)));
+    return { concern: `${o.txt}, ${F} joined about ${med} minutes late.`,
+      ask: pl ? `Class starts at ${fmtMin(pl.startMin)}. Could ${F} log in by ${fmtMin(pl.startMin - 5)}${o.tail}?` : `Could ${F} log in about 5 minutes before class starts?` };
   }
   const leftR = att.filter(r => !hasFlag(r.s, 'fin') && (hasFlag(r.s, 'early') || hasFlag(r.s, 'soft')));
-  if (leftR.length >= 2){
-    const o = on(leftR);
-    return { concern: `${o.txt}, ${F} left before the end of class.`, ask: `Class ends at ${fmtMin(clockOf(last(leftR).winEnd))}. Could ${F} stay until then${o.tail}?` };
+  if (leftR.length >= 2 && raise('B')){
+    const o = on('B', leftR), pl = o.w !== null ? planOn(o.w) : null;
+    return { concern: `${o.txt}, ${F} left before the end of class.`,
+      ask: pl ? `Class ends at ${fmtMin(pl.endMin)}. Could ${F} stay until then${o.tail}?` : `Could ${F} stay until the end of class?` };
   }
   const dropR = att.filter(r => hasFlag(r.s, 'drop'));
-  if (dropR.length >= 2) return { concern: `${F} was out of Zoom for part of class on ${dropR.length} days.`, ask: 'If the internet or a device is a problem, please let me know. I can help.' };
+  if (dropR.length >= 2 && raise('C')) return { concern: `${F} was out of Zoom for part of class on ${dropR.length} days.`, ask: 'If the internet or a device is a problem, please let me know. I can help.' };
   return null;
 }
 function familySchedule(ctx){
@@ -1906,7 +1993,7 @@ function familyNote(ctx, withConcern){
     else if (prevR && !lastR.s.isAbsent && prevR.s.isAbsent) L.push(`It was great to see ${F} back in class on ${longDate(lastR.day.dk)}.`);
     else if (x >= 1) L.push(`${F} came to class on ${plural(x, 'day')}. We were glad to see ${F}.`);
     else L.push(`We miss ${F} in class. ${F} is always welcome.`);
-    if (!saidAll) L.push(`${F} came to ${x} of ${n} classes.`);
+    if (!saidAll && x > 0) L.push(`${F} came to ${x} of ${plural(n, 'class', 'classes')}.`);
     if (!p.few && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) L.push(`${F} was in class for ${p.pres} of ${p.req} minutes.`);
     const fc = withConcern ? familyConcern(ctx) : null;
     if (fc) L.push(fc.concern, fc.ask);
@@ -1918,14 +2005,17 @@ function familyNote(ctx, withConcern){
   return L.join('\n');
 }
 function familyText(ctx){
-  const withC = state.familyConcern[ctx.key] !== false;
-  return state.familyDraft[draftKey(ctx)] ?? familyNote(ctx, withC);
+  const d = state.familyDraft[draftKey(ctx)];
+  return d ? d.text : familyNote(ctx, state.familyConcern[ctx.key] !== false);
 }
 function familySection(ctx){
   const fc = familyConcern(ctx), withC = state.familyConcern[ctx.key] !== false;
   return `<section class="rsec noprint"><details data-familybox${state.familyOpen ? ' open' : ''}><summary><h3 style="display:inline">Write a note to the family</h3></summary>
     ${fc ? `<p style="margin:8px 0"><label class="small"><input type="checkbox" data-familyconcern${withC ? ' checked' : ''}> Include one thing to work on</label></p>` : ''}
-    <textarea class="family" rows="10" data-familydraft="${esc(draftKey(ctx))}" aria-label="Note to the family">${esc(familyText(ctx))}</textarea>
+    ${(() => { const d = state.familyDraft[draftKey(ctx)];
+      return d && (d.from !== ctx.period.from || d.to !== ctx.period.to) && isDk(d.from) && isDk(d.to)
+        ? `<p class="small" style="color:var(--late)">You edited this note for ${esc(fmtPeriod(d))}. Click Start over to write it for these dates.</p>` : ''; })()}
+    <textarea class="family" rows="10" data-familydraft="${esc(draftKey(ctx))}" data-familyfrom="${esc(ctx.period.from)}" data-familyto="${esc(ctx.period.to)}" aria-label="Note to the family">${esc(familyText(ctx))}</textarea>
     <div class="actions"><button class="btn small" data-copyfamily>Copy note</button><button class="btn small ghost" data-familyreset>Start over</button>
       <button class="btn small ghost" data-printfamily>Print family version</button>
       ${state.familyCopied === ctx.key ? '<button class="linkish" data-fulognote>Add “Sent attendance note” to the follow-up log</button>' : ''}</div>
@@ -1933,7 +2023,7 @@ function familySection(ctx){
 }
 function familyReportHTML(ctx, o){
   const { p, period } = ctx, S = state.data.settings, boxes = [];
-  if (p && p.n) boxes.push(tile('Came to class', `${p.attended} of ${p.n} days`, ''));
+  if (p && p.n) boxes.push(tile('Came to class', ofN(p.attended, p.n, 'day'), ''));
   if (p && !p.few && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${p.pres} of ${p.req} minutes`, ''));
   return `<article class="sreport family"><header class="rhead"><div class="eyebrow">${esc(S.className || '')}</div>
       <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
@@ -1957,7 +2047,7 @@ function teamSummary(ctx, inc){
     `${period.name ? `${period.name}: ` : ''}${fmtPeriod(period)} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports`,
     `Scheduled: ${info.line ? `${info.line} · ${info.weekMin} minutes a week` : 'not on the schedule'}`];
   if (p){
-    L.push(p.concern ? `Needs a look: ${p.reasons.map(r => r.short).join('; ')}.` : p.few ? `Only ${plural(p.n, 'class day')} so far.` : 'On track.');
+    L.push(p.concern ? `Needs a look: ${p.reasons.map(r => r.short).join('; ')}.` : p.few ? `${fewText(p, period.open)}.` : 'On track.');
     L.push('', desc.lead.join(' '));
     for (const it of desc.items) L.push(`- ${it.text}`);
     if (desc.strength) L.push(`- ${desc.strength}`);
@@ -2075,10 +2165,25 @@ function startScreen(){
 
 /* ---------------- Schedule tab (with history, so a new schedule doesn't rewrite past days) ---------------- */
 function versionLabel(i){
-  const vs = state.data.scheduleVersions, v = vs[i], next = vs[i + 1];
-  if (!next) return v.from ? `Current, since ${monDay(v.from)}` : 'Current';
-  const end = monDay(addDays(next.from, -1));
+  const vs = state.data.scheduleVersions, v = vs[i], next = vs[i + 1], today = todayDk();
+  if (v.from && v.from > today) return `Starts ${monDay(v.from)}`;
+  const end = next ? monDay(addDays(next.from, -1)) : '';
+  if (!next || next.from > today) return `${v.from ? `Current, since ${monDay(v.from)}` : 'Current'}${next ? ` (until ${end})` : ''}`;
   return v.from ? `${monDay(v.from)} – ${end}` : `Until ${end}`;
+}
+// A start date can't be earlier than the newest schedule's start, or the change would be filed into the past.
+const schedStartOk = sc => sc.mode === 'fix' || (sc.mode === 'start' && isDk(sc.date) && sc.date >= state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from);
+function schedStepHint(sc){
+  const latestFrom = state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from;
+  return sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom
+    ? `Your newest schedule starts ${monDay(latestFrom)}. Pick that date or later, or choose “Fixing a mistake”.` : '';
+}
+function updateSchedStep(){
+  const sc = state.schedChange; if (!sc) return;
+  const b = $('[data-schedconfirm]'), h = $('[data-schedhint]'), r = $(`[data-schedmode="${sc.mode}"]`);
+  if (r) r.checked = true;
+  if (b) b.disabled = !schedStartOk(sc);
+  if (h) h.textContent = schedStepHint(sc);
 }
 function schedulePreview(P){
   const order = DAYS.filter(d => P.days[d]), S = state.data.settings;
@@ -2121,12 +2226,13 @@ function renderSchedule(){
     const names = xs => xs.length ? esc(listJoin(xs.map(r => r.name), 6)) : 'none';
     step = `<div class="sched-step" role="group" aria-label="When does this change start?"><b>Does this change start on a certain date?</b>
       <label><input type="radio" name="schedmode" data-schedmode="start"${sc.mode === 'start' ? ' checked' : ''}> <b>Starting on</b>
-        <input type="date" data-schedfrom value="${esc(sc.date)}" aria-label="Start date">. Days before this keep the old schedule. Use this when students join, leave or move.</label>
+        <input type="date" data-schedfrom value="${esc(sc.date)}"${latestFrom ? ` min="${esc(latestFrom)}"` : ''} aria-label="Start date">. Days before this keep the old schedule. Use this when students join, leave or move.</label>
       <label><input type="radio" name="schedmode" data-schedmode="fix"${sc.mode === 'fix' ? ' checked' : ''}> <b>Fixing a mistake.</b>
-        Every day ${latestFrom ? `since ${esc(monDay(latestFrom))}` : 'in your reports'} is checked again with this schedule. Use this for spelling fixes.</label>
+        Every day ${latestFrom ? `since ${esc(monDay(latestFrom))}` : 'in your reports'} is checked again with this schedule. Use this for spelling fixes: a corrected name is also fixed in earlier schedules, and its notes and follow-ups move with it.</label>
+      <p class="small" data-schedhint style="margin:4px 0 0;color:var(--late)">${esc(schedStepHint(sc))}</p>
       <p class="small" style="margin:6px 0 0">What changed: Added: ${names(d.added)}. Removed: ${names(d.removed)}.</p>
       ${d.respelled.map(([a, b]) => `<p class="small" style="margin:4px 0 0">“${esc(a)}” and “${esc(b)}” look like the same student. If you fixed a spelling, choose “Fixing a mistake”.</p>`).join('')}
-      <div class="actions"><button class="btn" data-schedconfirm${sc.mode && (sc.mode === 'fix' || sc.date) ? '' : ' disabled'}>Save schedule</button>
+      <div class="actions"><button class="btn" data-schedconfirm${schedStartOk(sc) ? '' : ' disabled'}>Save schedule</button>
         <button class="btn ghost" data-schedcancel>Cancel</button></div></div>`;
   }
   const history = vs.length > 1 ? `<div class="small" style="margin-top:14px"><b>Schedule history</b><ul class="hist-list">${vs.map((v, i) => i).reverse().map(i =>
@@ -2148,12 +2254,31 @@ function renderSchedule(){
       <p class="small muted" style="margin-top:12px">Students listed in both instruction and support on a day are expected for both hours. Students listed only in a support hour are expected for that hour only.</p>
     </div></div>`;
 }
+// A corrected spelling keeps the student's notes, marks and follow-ups.
+function renameStudentKey(oldK, newK){
+  if (!oldK || !newK || oldK === newK) return;
+  const D = state.data;
+  for (const bag of [D.notes, D.excused, D.excusedAbsent]) for (const k of Object.keys(bag)){
+    const i = k.indexOf('|');
+    if (k.slice(i + 1) === oldK){ const nk = k.slice(0, i + 1) + newK; if (!(nk in bag)) bag[nk] = bag[k]; delete bag[k]; }
+  }
+  if (D.followUps[oldK]){ D.followUps[newK] = [...(D.followUps[newK] || []), ...D.followUps[oldK]]; delete D.followUps[oldK]; }
+  for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
+}
+const respellText = (text, a, b) => text.split('\n').map(r => r.split('\t').map(c => normKey(c) === normKey(a) ? b : c).join('\t')).join('\n');
 function applySchedule(mode, from){
   const vs = state.data.scheduleVersions, text = state.draft;
-  if (mode === 'start' && from){
+  if (mode === 'start' && !schedStartOk({ mode, date: from })) return;
+  if (mode === 'start'){
     const i = vs.findIndex(v => v.from === from);
     if (i >= 0) vs[i].text = text; else { vs.push({ from, text }); vs.sort((a, b) => a.from.localeCompare(b.from)); }
-  } else vs[vs.length - 1].text = text;
+  } else {
+    for (const [a, b] of scheduleDiff(state.data.scheduleText, text).respelled){
+      for (const v of vs.slice(0, -1)) v.text = respellText(v.text, a, b);
+      renameStudentKey(normKey(a), normKey(b));
+    }
+    vs[vs.length - 1].text = text;
+  }
   vs[0].from = '';
   state.data.scheduleText = vs[vs.length - 1].text;
   state.draft = null; state.schedChange = null; state.viewVersion = null;
@@ -2169,11 +2294,11 @@ function renderSettings(){
   $('#tab-settings').innerHTML = `<div class="stack" style="max-width:760px">
     <div class="panel"><h2>Timing</h2>
       <div class="set">
-        <label for="s-late">Count a student late if they join more than this many minutes after the start</label><input id="s-late" type="number" min="0" max="60" data-set="lateGrace" value="${S.lateGrace}">
-        <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${S.leaveGrace}">
-        <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${S.gapMin}">
-        <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${S.sectionLen}">
-        <label for="s-rate">On the Students tab, flag anyone whose days attended or minutes received fall below this percent (once they have ${FEW_DAYS} class days)</label><input id="s-rate" type="number" min="0" max="100" data-set="concernRate" value="${S.concernRate}">
+        <label for="s-late">Count a student late if they join more than this many minutes after the start</label><input id="s-late" type="number" min="0" max="60" data-set="lateGrace" value="${esc(S.lateGrace)}">
+        <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${esc(S.leaveGrace)}">
+        <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${esc(S.gapMin)}">
+        <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${esc(S.sectionLen)}">
+        <label for="s-rate">On the Students tab, flag anyone whose days attended or minutes received fall below this percent (once they have ${FEW_DAYS} class days)</label><input id="s-rate" type="number" min="0" max="100" data-set="concernRate" value="${esc(S.concernRate)}">
       </div></div>
     <div class="panel"><h2>Reports and notes to families</h2>
       <div class="settext">
@@ -2186,7 +2311,7 @@ function renderSettings(){
         : '<p class="small muted">None yet. Choose dates on the Reports or Students tab and click “Save these dates…”.</p>'}
     </div>
     <div class="panel"><h2>Days with no class</h2>
-      ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${dk}">Undo</button></li>`).join('')}</ul>`
+      ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${esc(dk)}">Undo</button></li>`).join('')}</ul>`
         : '<p class="small muted">None yet. When a scheduled day has no Zoom report, you can mark it as a day with no class.</p>'}
     </div>
     <div class="panel"><h2>Linked Zoom names</h2>
@@ -2289,25 +2414,30 @@ async function loadFromInput(list){
 }
 function ingest(files, dataText, folderName){
   let msg = null, info = false;
-  if (dataText){
+  const same = state.loaded && folderName === state.folderName;
+  // Refreshing the same folder keeps changes that haven't reached the folder yet, instead of reloading the older file.
+  const keep = same && state.dirty;
+  if (keep){ msg = 'Your changes that aren’t saved in the folder yet were kept.'; info = true; }
+  else if (dataText){
     try {
       const raw = JSON.parse(dataText);
       state.data = withDefaults(raw);
       if ((raw.version || 1) < 3 && Object.keys(raw.excused || {}).length){ msg = 'Finished-work time no longer counts as missed minutes on the Students tab.'; info = true; }
     } catch (e){ msg = `${DATA_FILE} couldn’t be read, so the schedule and settings weren’t loaded.`; }
   }
-  else if (!state.loaded) state.data = state.data || defaultData();
-  // Refresh keeps your place. A different folder starts over.
-  const same = state.loaded && folderName === state.folderName;
+  // A different folder (another class) with no data file starts empty, so one class's notes never land in another's folder.
+  else if (state.loaded && !same) state.data = defaultData();
   state.files = files.sort((a, b) => a.name.localeCompare(b.name));
-  state.folderName = folderName; state.loaded = true; state.dirty = false; state.draft = null; state.noteEdit = null;
-  state.fuEdit = null; state.schedChange = null; state.viewVersion = null; state.savingPeriod = false;
+  state.folderName = folderName; state.loaded = true; state.dirty = keep; state.draft = null; state.noteEdit = null;
+  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null; state.savingPeriod = false;
   if (!same){
     state.openDays.clear(); state.autoOpened = false; state.student = null; state.studentFrom = null; state.returnTo = null;
     state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyConcern = {}; state.familyCopied = null;
+    if (state.tab === 'students') state.tab = 'reports';
   }
   state.status = msg ? { text: msg, type: info ? 'info' : undefined } : null;
-  render();
+  render(); navReplace();
+  if (keep && state.dirHandle && state.canWrite) changed();
 }
 let saveTimer = null;
 function changed(){ state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState(); }
@@ -2323,28 +2453,41 @@ async function save(){
 }
 function downloadData(){ downloadFile(DATA_FILE, JSON.stringify(state.data, null, 2), 'application/json'); }
 
-/* ---------------- Moving between Reports and a student report ---------------- */
+/* ---------------- Moving between Reports and a student report ----------------
+   Each screen is a browser history entry (the address never changes), so the browser's Back button
+   goes back a screen instead of leaving the page. */
+let navSeq = 0;
+const navSnap = () => ({ seq: navSeq, tab: state.tab, student: state.student, from: state.studentFrom, range: { ...state.range },
+  returnTo: state.returnTo, highlight: state.highlight });
+function navReplace(){ try { history.replaceState(navSnap(), ''); } catch (e){} }
+function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e){} }
+const navCanGoBack = () => !!(history.state && history.state.seq > 0);
 function openStudent(key, from){
+  navReplace();
   state.tab = 'students'; state.student = key; state.studentFrom = from || null;
-  state.noteEdit = null; state.fuEdit = null; state.calAll = false; state.familyCopied = null; state.returnTo = null; state.highlight = null;
-  // A history entry (with no change to the address) lets the browser's Back button return to the list instead of leaving the page.
-  try { history.pushState({ student: key }, ''); } catch (e){}
+  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.calAll = false; state.familyCopied = null; state.returnTo = null; state.highlight = null;
+  navPush();
   render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
 }
+function focusStudentLink(key){
+  const b = visible(`[data-openstudent="${CSS.escape(key)}"]`);
+  if (b){ b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); }
+}
 function studentBack(){
   const key = state.student, from = state.studentFrom;
+  if (navCanGoBack() && history.state.student === key){ history.back(); return; }
   if (from){ goDay(from, `${from}|${key}`, false); return; }
-  state.student = null; render();
-  const b = document.querySelector(`#tab-students [data-openstudent="${CSS.escape(key)}"]`);
-  if (b){ b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); }
+  state.student = null; render(); navReplace(); focusStudentLink(key);
 }
 function goDay(dk, xkey, withReturn = true){
   const A = state.lastAnalysis;
+  if (withReturn) navReplace();
   state.returnTo = withReturn && state.student ? { key: state.student, name: (A && A.nameOf[state.student]) || state.student, range: { ...state.range } } : null;
   state.student = null; state.studentFrom = null;
   state.tab = 'reports'; state.filter = 'all'; state.query = ''; state.openDays.add(dk); state.autoOpened = true; state.highlight = xkey || null;
   const b = rangeBounds(); if ((b.from && dk < b.from) || (b.to && dk > b.to)) state.range = { preset: 'all', from: '', to: '', periodId: '' };
+  if (withReturn) navPush(); else navReplace();
   render();
   const row = xkey && [...document.querySelectorAll('#tab-reports .row[data-xkey]')].find(r => r.dataset.xkey === xkey);
   const target = row || document.querySelector(`#tab-reports details.day[data-dk="${dk}"]`);
@@ -2359,9 +2502,10 @@ function savePeriod(){
   state.range = { preset: 'custom', from: p.from, to: p.to, periodId: id }; state.savingPeriod = false;
   changed(); renderCurrent();
 }
-function readFollowUp(form){
+function readFollowUp(form, raw){
+  const text = form.querySelector('[data-futext]').value;
   return { date: form.querySelector('[data-fudate]').value || todayDk(), how: form.querySelector('[data-fuhow]').value,
-    text: form.querySelector('[data-futext]').value.trim().slice(0, 300) };
+    text: raw ? text : text.trim().slice(0, 300) };
 }
 const visible = sel => [...document.querySelectorAll(sel)].find(el => el.offsetParent !== null);
 // After a redraw, put keyboard focus back on the control that was clicked (or its replacement).
@@ -2377,6 +2521,8 @@ document.addEventListener('click', async e => {
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')) menu.open = false;
   const sel = focusSelector(t);
   await onClick(t);
+  // A note box that saved itself when this button took focus is still on screen; redraw to close it.
+  if (!state.noteEdit && document.querySelector('main input.note')) renderCurrent();
   requestAnimationFrame(() => {
     if (!sel || document.body.contains(t)) return;
     if (document.activeElement && document.activeElement !== document.body) return;
@@ -2385,9 +2531,13 @@ document.addEventListener('click', async e => {
 });
 async function onClick(t){
   const d = t.dataset, has = a => t.hasAttribute(a);
-  if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); return; }
-  if (d.goto){ state.tab = d.goto; state.student = null; render(); return; }
-  if (t.id === 'pick') return pickFolder();
+  if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); navReplace(); return; }
+  if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
+  if (t.id === 'pick'){
+    if (state.dirty && !(state.dirHandle && state.canWrite)
+      && !confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download data file” to keep them. Or click OK to open another folder without them.')) return;
+    return pickFolder();
+  }
   if (t.id === 'reopen') return reopen();
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
@@ -2418,12 +2568,15 @@ async function onClick(t){
   if (d.openstudent){ openStudent(d.openstudent, d.from); return; }
   if (has('data-studentback')) return studentBack();
   if (d.stepstudent){
-    state.student = d.stepstudent; state.studentFrom = null; state.noteEdit = null; state.fuEdit = null; state.familyCopied = null;
-    try { history.replaceState({ student: d.stepstudent }, ''); } catch (e){}
-    renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return;
+    state.student = d.stepstudent; state.studentFrom = null; state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.familyCopied = null;
+    navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return;
   }
   if (d.goday){ goDay(d.goday, d.xkey); return; }
-  if (has('data-returnto')){ const r = state.returnTo; if (!r) return; state.range = r.range; openStudent(r.key); return; }
+  if (has('data-returnto')){
+    const r = state.returnTo; if (!r) return;
+    if (navCanGoBack() && history.state.returnTo){ history.back(); return; }
+    state.range = r.range; openStudent(r.key); return;
+  }
   if (has('data-dismissreturn')){ state.returnTo = null; state.highlight = null; renderReports(); return; }
   if (d.sfilter){ state.studentFilter = d.sfilter; renderStudents(); return; }
   if (d.noclass || d.noclassall){
@@ -2447,16 +2600,16 @@ async function onClick(t){
   if (has('data-fuadd')){
     const form = t.closest('[data-fuform]'), f = readFollowUp(form);
     if (!f.text){ form.querySelector('[data-futext]').focus(); return; }
-    (state.data.followUps[state.student] = state.data.followUps[state.student] || []).push({ id: uid(), ...f });
+    (state.data.followUps[state.student] = state.data.followUps[state.student] || []).push({ id: uid(), ...f, date: isDk(f.date) ? f.date : todayDk() });
     state.fuPrefill = null; changed(); renderStudents(); return;
   }
   if (d.fuedit){ state.fuEdit = d.fuedit; renderStudents(); const i = visible('[data-fuid] [data-futext]'); if (i) i.focus(); return; }
   if (d.fusave){
     const f = readFollowUp(t.closest('[data-fuform]')), x = (state.data.followUps[state.student] || []).find(y => y.id === d.fusave);
-    if (x && f.text){ Object.assign(x, f); changed(); }
-    state.fuEdit = null; renderStudents(); return;
+    if (x && f.text){ Object.assign(x, f, { date: isDk(f.date) ? f.date : x.date }); changed(); }
+    state.fuEdit = null; state.fuEditDraft = null; renderStudents(); return;
   }
-  if (has('data-fucancel')){ state.fuEdit = null; renderStudents(); return; }
+  if (has('data-fucancel')){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); return; }
   if (d.fudel){
     if (!confirm('Delete this follow-up?')) return;
     state.data.followUps[state.student] = (state.data.followUps[state.student] || []).filter(y => y.id !== d.fudel);
@@ -2501,7 +2654,7 @@ async function onClick(t){
     const i = +d.delversion, vs = state.data.scheduleVersions;
     if (vs.length < 2 || !confirm(`Delete the schedule used ${versionLabel(i)}? Those days will be checked with the ${i === 0 ? 'next' : 'earlier'} schedule.`)) return;
     vs.splice(i, 1); vs[0].from = ''; state.data.scheduleText = vs[vs.length - 1].text;
-    state.viewVersion = null; state.draft = null; state.schedChange = null; changed(); renderSchedule(); return;
+    state.viewVersion = null; state.schedChange = null; changed(); renderSchedule(); return;   // an unsaved edit in the box stays
   }
 }
 document.addEventListener('input', e => {
@@ -2509,14 +2662,31 @@ document.addEventListener('input', e => {
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
     state.schedTimer = setTimeout(() => { const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop; renderSchedule(); const n = $('#schedText'); n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top; }, 250); }
-  if ('familydraft' in d) state.familyDraft[d.familydraft] = t.value;   // never re-render while typing
+  // Drafts are kept in memory as they're typed (never re-rendering), so a redraw doesn't wipe them.
+  if ('familydraft' in d) state.familyDraft[d.familydraft] = { text: t.value, from: d.familyfrom, to: d.familyto };
+  const form = t.closest && t.closest('[data-fuform]');
+  if (form && state.student){
+    if (form.dataset.fuid) state.fuEditDraft = { id: form.dataset.fuid, ...readFollowUp(form, true) };
+    else state.fuPrefill = { key: state.student, ...readFollowUp(form, true) };
+  }
 });
 document.addEventListener('change', e => {
   const t = e.target, d = t.dataset || {};
-  if (d.set){ let v = Math.max(0, Math.round(+t.value)); if (d.set === 'concernRate') v = Math.min(100, v); if (!isNaN(v)){ state.data.settings[d.set] = v; changed(); } }
+  if (d.set){
+    // An empty or out-of-range box never saves 0: the old value comes back, or the value is held to the allowed range.
+    const [lo, hi] = NUM_SETTINGS[d.set] || [0, 999];
+    if (t.value.trim() === '' || !Number.isFinite(+t.value)){ t.value = state.data.settings[d.set]; return; }
+    const v = Math.min(hi, Math.max(lo, Math.round(+t.value)));
+    t.value = v; state.data.settings[d.set] = v; changed();
+  }
   if (d.settext){ state.data.settings[d.settext] = t.value.trim().slice(0, 120); changed(); }
   if ('rfrom' in d || 'rto' in d){
-    const r = t.closest('.range'), f = r.querySelector('[data-rfrom]').value, to = r.querySelector('[data-rto]').value;
+    const r = t.closest('.range');
+    let f = r.querySelector('[data-rfrom]').value, to = r.querySelector('[data-rto]').value;
+    // While a date is still being typed the browser can report year 0002; wait until it's a real date.
+    const ok = v => !v || (isDk(v) && v >= '1990' && v < '2200');
+    if (!ok(f) || !ok(to)) return;
+    if (f && to && f > to) [f, to] = [to, f];
     state.range = f || to ? { preset: 'custom', from: f, to, periodId: '' } : { preset: 'all', from: '', to: '', periodId: '' }; renderCurrent();
   }
   if ('periodsel' in d){
@@ -2524,16 +2694,17 @@ document.addEventListener('change', e => {
     if (p) state.range = { preset: 'custom', from: p.from, to: p.to, periodId: p.id }; else state.range.periodId = '';
     renderCurrent();
   }
-  if (d.note) commitNote(t);
+  // Notes are saved on focusout and Enter, not here: "change" fires before focusout, and redrawing here would swallow the click that moved focus.
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
   if ('familyconcern' in d){
     const k = draftKey(currentCtx());
-    if (state.familyDraft[k] !== undefined && !confirm('Replace your edited note with a new one?')){ t.checked = !t.checked; return; }
+    if (state.familyDraft[k] && !confirm('Replace your edited note with a new one?')){ t.checked = !t.checked; return; }
     delete state.familyDraft[k]; state.familyConcern[state.student] = t.checked; renderStudents();
   }
-  if (d.schedmode && state.schedChange){ state.schedChange.mode = d.schedmode; renderSchedule(); }
-  if ('schedfrom' in d && state.schedChange){ state.schedChange.date = t.value; state.schedChange.mode = 'start'; renderSchedule(); }
+  // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
+  if (d.schedmode && state.schedChange){ state.schedChange.mode = d.schedmode; updateSchedStep(); }
+  if ('schedfrom' in d && state.schedChange){ state.schedChange.date = t.value; state.schedChange.mode = 'start'; updateSchedStep(); }
 });
 function commitNote(input, redraw = true){
   const k = input.dataset.note; if (state.noteEdit !== k) return;
@@ -2541,8 +2712,9 @@ function commitNote(input, redraw = true){
   if (v !== (state.data.notes[k] || '')){ if (v) state.data.notes[k] = v; else delete state.data.notes[k]; changed(); }
   state.noteEdit = null; if (redraw) renderCurrent();
 }
-// Leaving the note box saves it. When focus moves to another note button, its click redraws the page.
-document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.dataset && e.relatedTarget.dataset.noteedit)); });
+// Leaving the note box saves it. When focus moves to a button, that button's click redraws the page,
+// so the redraw doesn't swallow the click.
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('button'))); });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => { m.open = false; });
@@ -2559,12 +2731,14 @@ document.addEventListener('keydown', e => {
   const form = t.closest && t.closest('[data-fuform]');
   if (form && t.tagName === 'INPUT'){
     if (e.key === 'Enter'){ e.preventDefault(); const b = form.querySelector('[data-fuadd],[data-fusave]'); if (b) b.click(); }
-    if (e.key === 'Escape' && form.dataset.fuid){ state.fuEdit = null; renderStudents(); }
+    if (e.key === 'Escape' && form.dataset.fuid){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); }
   }
 });
 document.addEventListener('toggle', e => {
   const el = e.target;
-  if (el.classList && el.classList.contains('day')){ if (el.open) state.openDays.add(el.dataset.dk); else state.openDays.delete(el.dataset.dk); }
+  if (el.classList && el.classList.contains('day')){
+    if (el.open){ state.openDays.add(el.dataset.dk); fillDayBody(el); } else state.openDays.delete(el.dataset.dk);
+  }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
 }, true);
 
@@ -2583,14 +2757,23 @@ document.addEventListener('focusout', e => { if (tipOf(e.target)) $('#tip').hidd
 window.addEventListener('scroll', () => { $('#tip').hidden = true; }, { passive: true });
 
 window.addEventListener('popstate', e => {
-  const k = e.state && e.state.student;
-  state.student = k || null; state.studentFrom = null;
-  if (k) state.tab = 'students';
+  const s = e.state || {}, leaving = state.student;
+  navSeq = s.seq || 0;
+  state.tab = s.tab || 'reports'; state.student = s.student || null; state.studentFrom = s.from || null;
+  if (s.range) state.range = s.range;
+  state.returnTo = s.returnTo || null; state.highlight = s.highlight || null;
+  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null;
   render();
+  if (state.student){ const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
+  else if (leaving) focusStudentLink(leaving);
 });
 $('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
+let closedForPrint = [];
 window.addEventListener('beforeprint', () => {
-  document.querySelectorAll('details.day').forEach(d => { d.open = true; });
+  if (state.tab === 'reports' && !document.body.classList.contains('print-reports')){
+    closedForPrint = [...document.querySelectorAll('#tab-reports details.day:not([open])')];
+    closedForPrint.forEach(d => { fillDayBody(d); d.open = true; });
+  }
   // Ctrl+P on a student report prints the report, not the screen.
   if (state.tab === 'students' && state.student && !document.body.classList.contains('print-reports')){
     const A = state.lastAnalysis || analyze();
@@ -2598,11 +2781,14 @@ window.addEventListener('beforeprint', () => {
     document.body.classList.add('print-reports');
   }
 });
-window.addEventListener('afterprint', () => document.body.classList.remove('print-reports'));
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('print-reports');
+  closedForPrint.forEach(d => { d.open = false; }); closedForPrint = [];
+});
 window.addEventListener('beforeunload', e => { if (state.dirty && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
 
 (async function init(){
-  render();
+  render(); navReplace();
   if (!HAS_FSA) return;
   const h = await idbGet('dir');
   if (!h) return;
