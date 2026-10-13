@@ -18,6 +18,8 @@
   --drop:#57409A; --drop-bg:#E9E3F7;
   --fin:#11636C; --fin-bg:#D8EFF1;
   --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
+  /* Where a scheduled minute went, for the student report's bars and strips (checked for color-blind separation). */
+  --loss-before:#CB7E6B; --loss-out:#5346A7; --loss-after:#837120; --loss-absent:#8E3642;
   --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -30,6 +32,7 @@
     --bad:#F28B82; --bad-bg:#40201D; --soft:#E8D27A; --soft-bg:#3A3315;
     --drop:#C3B1F2; --drop-bg:#2C2445; --fin:#7FD3DB; --fin-bg:#14363A;
     --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
+    --loss-before:#A05B11; --loss-out:#6863B1; --loss-after:#A19500; --loss-absent:#D1717A;
   }
 }
 *{box-sizing:border-box}
@@ -99,6 +102,8 @@ details.day[open] > summary::before{transform:rotate(45deg)}
 
 /* Status colors */
 .k-full{background:var(--ok-bg);color:var(--ok)}
+.s-in{background:var(--bar)} .s-before{background:var(--loss-before)} .s-out{background:var(--loss-out)}
+.s-after{background:var(--loss-after)} .s-absent{background:var(--loss-absent)}
 .k-fin{background:var(--fin-bg);color:var(--fin)}
 .k-late{background:var(--late-bg);color:var(--late)}
 .k-missed,.k-early{background:var(--bad-bg);color:var(--bad)}
@@ -240,11 +245,28 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .rhead p{margin:2px 0;font-size:.9rem}
 .rsec h3{font-size:1.12rem;margin-bottom:8px}
 .rsec h3 .small{font-family:var(--sans);font-weight:400}
-.rhead .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:12px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--grid)}
-.stat dt{font-size:.78rem;color:var(--muted)}
-.stat dd{margin:0;font-size:1.3rem;font-weight:600;line-height:1.3}
-.stat dd.sub{font-size:.78rem;font-weight:400;color:var(--muted)}
-.stat dd .of{font-size:.8rem;font-weight:500;color:var(--muted)}
+.mblock{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--grid)}
+.mfig{display:flex;flex-wrap:wrap;gap:6px 40px;margin:0}
+.mfig dt{font-size:.78rem;color:var(--muted)}
+.mfig dd{margin:0;font-size:1.55rem;font-weight:600;line-height:1.2;font-variant-numeric:proportional-nums}
+.mfig dd span{font-size:.9rem;font-weight:400;color:var(--muted)}
+.mbars{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 12px;align-items:center;margin:12px 0 10px}
+.mbars .lab{font-size:.82rem;white-space:nowrap}
+.mbars .lab b{font-weight:600}
+.mbars .lab span{color:var(--muted)}
+.mbar{display:flex;gap:2px;height:14px}
+.mbar i{display:block;min-width:2px}
+.mbar i:last-child{border-radius:0 4px 4px 0}
+.mkey{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 20px;font-size:.82rem}
+.mkey li{display:inline-flex;flex-wrap:wrap;align-items:center;gap:3px 6px}
+.mkey b{font-weight:600}
+.ksw{display:inline-block;width:12px;height:12px;border-radius:2px}
+.mkey .v{color:var(--muted)}
+.mkey li.zero,.mkey li.zero .v{color:var(--faint)}
+.mkey li.zero .ksw{opacity:.5}
+.mkey .lc,.mnot .lc{width:16px;height:16px;font-size:.64rem}
+.mkey .kd .lc{margin-right:4px}
+.mnot{font-size:.8rem;color:var(--muted);margin:8px 0 0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 .wsched{margin:14px 0 0;max-width:640px}
 .ws-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.8rem;color:var(--muted);margin-bottom:2px}
 .ws-head b{color:var(--ink);font-weight:600;font-size:.9rem}
@@ -360,6 +382,14 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   .nclist li > span:first-child{min-width:0}
 }
 @media screen and (max-width: 560px){
+  .mbars{grid-template-columns:1fr;gap:2px}
+  .mbars .lab{margin-top:6px}
+  .mkey{flex-direction:column;gap:6px}
+  .mkey li{flex-wrap:nowrap;align-items:flex-start}
+  .mkey .ksw{margin-top:3px;flex:none}
+  .mkey .kd{display:block;margin-top:2px}
+  .mkey .kd .sep{display:none}
+  .mfig{gap:6px 24px}
   table.cal .wkc{display:none}
   .wkmini{display:block;font-size:.66rem;font-weight:500;margin-top:2px;line-height:1.25}
 }
@@ -372,6 +402,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
     --bad:#A8231A; --bad-bg:#FADFDB; --soft:#6E5800; --soft-bg:#FBF0BF;
     --drop:#57409A; --drop-bg:#E9E3F7; --fin:#11636C; --fin-bg:#D8EFF1;
     --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
+    --loss-before:#CB7E6B; --loss-out:#5346A7; --loss-after:#837120; --loss-absent:#8E3642;
   }
   @page{margin:.5in}
   body{background:#fff}
@@ -380,21 +411,24 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
   details.day{break-inside:avoid-page;border-color:#bbb}
-  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i, .ws-track, .ws-blk, .ws-sw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lc, .chip, .count, .tl, .tl *, .cal td, .tile, .meter .track, .meter .fill, .wkbar, .wkbar i, .ws-track, .ws-blk, .ws-sw, .mbar i, .ksw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-reports header.top, body.print-reports main{display:none !important}
   body.print-reports #printArea{display:block}
   .sreport{max-width:none}
   .sreport + .sreport{break-before:page}
-  .rtiles, .stats, .wsched, .calwrap, .hist tr, .fu li{break-inside:avoid}
-  .rhead .stats{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))}
-  .stat dd{font-size:1.08rem}
-  .stat dd.sub{font-size:.72rem}
+  .rtiles, .mblock, .wsched, .calwrap, .hist tr, .fu li{break-inside:avoid}
+  .mfig dd{font-size:1.25rem}
+  .s-before{background:repeating-linear-gradient(135deg,var(--loss-before) 0 1.5px,#fff 1.5px 3.5px)}
+  .s-out{background:repeating-linear-gradient(135deg,var(--loss-out) 0 1.5px,#fff 1.5px 3.5px)}
+  .s-after{background:repeating-linear-gradient(135deg,var(--loss-after) 0 1.5px,#fff 1.5px 3.5px)}
+  .s-absent{background:repeating-linear-gradient(135deg,var(--loss-absent) 0 1.5px,#fff 1.5px 3.5px)}
   .rhead, .rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0}
   .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
   .name-btn{text-decoration:none}
   table.sum{font-size:.8rem}
   table.sum td.c-name{width:32%}
 }
+@media (forced-colors: active){ .mbar, .ksw, .ws-blk, .ws-sw{forced-color-adjust:none} }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 </head>
@@ -1126,6 +1160,85 @@ function gapsOf(s){
   return out;
 }
 
+/* Where each scheduled minute of a class day went: in Zoom, before joining, out of Zoom mid-class, after leaving,
+   or a whole day absent. The report's bars and strips are drawn from this; the numbers on the page come from summarize(). */
+const clockMinF = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; };   // clock time, safe across daylight saving
+const hm = t => fmt(t).replace(/\s?[AP]M$/, '');
+const dayLetters = s => [...new Set(s.flags.map(f => f.k))].filter(k => k !== 'full').sort((a, b) => SEVERITY[b] - SEVERITY[a]).slice(0, 2);
+// Spans in ms, inside the scheduled time only. Finished-work and excused time are their own kinds and aren't counted.
+function segsOf(s){
+  const R = mergeIntervals(s.secs.map(x => [x.a, x.b])), out = [];
+  if (isExcused(s)) return R.map(([a, b]) => ({ k: 'exc', a, b }));
+  if (s.isAbsent) return R.map(([a, b]) => ({ k: 'absent', a, b }));
+  const fin = hasFlag(s, 'fin');
+  const kind = (a, b) => b <= s.firstJoin ? 'before' : a >= s.lastLeave ? (fin ? 'fin' : 'after') : 'out';
+  for (const [A, B] of R){
+    let cur = A;
+    for (const [a, b] of s.merged){
+      if (b <= cur || a >= B) continue;
+      if (a > cur) out.push({ k: kind(cur, a), a: cur, b: a });
+      out.push({ k: 'in', a: Math.max(a, cur), b: Math.min(b, B) });
+      cur = Math.min(b, B); if (cur >= B) break;
+    }
+    if (cur < B) out.push({ k: kind(cur, B), a: cur, b: B });
+  }
+  return out;
+}
+// Splits a whole-minute total by weights (largest remainder), so the parts always add up to the total.
+function apportion(total, W){
+  const K = ['before', 'out', 'after'], r = { before: 0, out: 0, after: 0 }, sum = K.reduce((t, k) => t + W[k], 0);
+  if (total <= 0) return r;
+  if (!sum){ r.out = total; return r; }   // a rounding minute with no gap to show it in
+  const raw = K.map(k => total * W[k] / sum);
+  K.forEach((k, i) => { r[k] = Math.floor(raw[i]); });
+  let left = total - K.reduce((t, k) => t + r[k], 0);
+  K.map((k, i) => [k, raw[i] - Math.floor(raw[i]), i]).sort((x, y) => y[1] - x[1] || x[2] - y[2])
+    .forEach(([k]) => { if (left > 0){ r[k]++; left--; } });
+  return r;
+}
+// One held, not-excused day in whole minutes, anchored to the day's own rounded numbers.
+function dayParts(s){
+  const fin = finMinOf(s), z = () => ({ in: 0, before: 0, out: 0, after: 0, absent: 0 });
+  const P = { instruction: z(), support: z(), fin, clamped: 0 };
+  P.instruction.in = s.instrMin; P.support.in = s.suppMin;
+  if (s.isAbsent){
+    const sa = s.suppReqMin - s.suppMin;
+    P.instruction.absent = s.instrReqMin - s.instrMin; P.support.absent = Math.max(0, sa);
+    if (sa < 0) P.clamped = -sa;
+    return P;
+  }
+  const iIv = mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
+  const W = { instruction: { before: 0, out: 0, after: 0 }, support: { before: 0, out: 0, after: 0 } };
+  for (const g of segsOf(s)){
+    if (g.k === 'in') continue;
+    const iMs = overlap(iIv, g.a, g.b), sMs = (g.b - g.a) - iMs;
+    W.instruction[g.k === 'fin' ? 'after' : g.k] += iMs;
+    if (g.k !== 'fin') W.support[g.k] += sMs;   // finished-work minutes aren't counted
+  }
+  let sT = s.suppReqMin - s.suppMin - fin;
+  if (sT < 0){ P.clamped = -sT; sT = 0; }   // a rounding minute between presentMin and instrMin
+  Object.assign(P.instruction, apportion(s.instrReqMin - s.instrMin, W.instruction));
+  Object.assign(P.support, apportion(sT, W.support));
+  return P;
+}
+function partTotals(ctx){
+  const z = () => ({ in: 0, before: 0, out: 0, after: 0, absent: 0 });
+  const T = { instruction: z(), support: z(), excDays: 0, excMin: 0, finDays: 0, finMin: 0, clamped: 0 };
+  for (const d of ctx.dates){
+    if (d.status !== 'held') continue;
+    const s = d.rec;
+    if (isExcused(s)){ T.excDays++; T.excMin += s.reqMin; continue; }
+    const P = dayParts(s);
+    for (const t of ['instruction', 'support']) for (const k in P[t]) T[t][k] += P[t][k];
+    if (P.fin){ T.finDays++; T.finMin += P.fin; }
+    T.clamped += P.clamped;
+  }
+  const sum = o => o.in + o.before + o.out + o.after + o.absent, p = ctx.p;
+  if (p) console.assert(T.instruction.in === p.iPres && sum(T.instruction) === p.iReq && T.support.in === p.sPres
+    && sum(T.support) - T.clamped === p.sReq && T.finMin === p.finMin, 'partTotals does not match summarize()', T, p);
+  return T;
+}
+
 function studentSummary(days){
   const map = new Map();
   for (const day of [...days].reverse()) for (const s of day.students){   // oldest first
@@ -1383,7 +1496,7 @@ function reportHeader(ctx){
     <h2 tabindex="-1">${esc(ctx.name)}</h2>
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
     ${scheduleChart(info)}
-    ${p ? statsRow(p) : ''}</header>`;
+    ${p ? minutesBlock(ctx) : ''}</header>`;
 }
 // The weekly schedule as a picture: one row per class day on a shared clock, with the instruction and
 // support-hour blocks drawn where they fall. Screen readers get the same schedule as a sentence.
@@ -1413,17 +1526,42 @@ function scheduleChart(info){
     <div role="img" aria-label="${esc(sentence)}">${axis}${rows}</div>
     <div class="ws-key" aria-hidden="true">${types.has('instruction') ? '<span><i class="ws-sw instruction">I</i>Instruction</span>' : ''}${types.has('support') ? '<span><i class="ws-sw support">S</i>Support hour</span>' : ''}</div></div>`;
 }
-function statsRow(p){
-  const st = (label, value, sub) => { const [n, of] = String(value).split(' of ');
-    return `<div class="stat"><dt>${esc(label)}</dt><dd>${esc(n)}${of ? `<span class="of"> of ${esc(of)}</span>` : ''}</dd>${sub ? `<dd class="sub">${esc(sub)}</dd>` : ''}</div>`; };
-  const items = [
-    st('Days attended', `${p.attended} of ${p.n}`, [p.rate === null ? '' : p.rate + '%', p.excused ? `${p.excused} excused` : ''].filter(Boolean).join(' · ')),
-    st('Minutes received', `${p.pres} of ${p.req}`, [p.dose === null ? '' : p.dose + '%', p.finMin ? `${p.finMin} min finished early` : ''].filter(Boolean).join(' · ')),
-    st('Absent', String(p.absent), p.streak >= 2 ? `last ${p.streak} in a row` : ''),
-    st('Late', String(p.late)), st('Left early', String(p.early + p.soft)), st('Out mid-class', String(p.drop))];
-  if (p.missed) items.push(st('Missed instruction', String(p.missed)));
-  const split = p.iReq && p.sReq ? `<p class="small muted" style="margin:8px 0 0">Instruction ${p.iPres} of ${p.iReq} minutes · Support hour ${p.sPres} of ${p.sReq} minutes</p>` : '';
-  return `<dl class="stats">${items.join('')}</dl>${split}`;
+// The numbers, and where every scheduled minute went: one bar per kind of class time on a shared scale,
+// dark for minutes in Zoom, colored by where the other minutes went. Every value is also written out.
+const nf = n => Number(n).toLocaleString('en-US');
+const PART = { in: 'in Zoom', before: 'before joining', out: 'out of Zoom mid-class', after: 'after leaving', absent: 'absent days' };
+function minutesBlock(ctx){
+  const p = ctx.p, S = state.data.settings;
+  if (!p.n) return `<p class="small muted mblock">No class days counted in these dates${p.excused ? ` (${plural(p.excused, 'excused day')})` : ''}.</p>`;
+  const T = partTotals(ctx), sum = o => o.in + o.before + o.out + o.after + o.absent;
+  const types = [['instruction', 'Instruction', p.iPres, p.iReq], ['support', 'Support hour', p.sPres, p.sReq]].filter(x => x[3] > 0);
+  const maxC = Math.max(1, ...types.map(([t]) => sum(T[t])));
+  const bars = types.map(([t, label, got, of]) => {
+    const parts = Object.keys(PART).filter(k => T[t][k] > 0);
+    const aria = `${label}: ${got} of ${of} minutes in Zoom; ` + ['before', 'out', 'after', 'absent'].map(k => `${T[t][k]} ${PART[k]}`).join('; ') + '.';
+    return `<div class="lab"><b>${label}</b> <span>${nf(got)} of ${nf(of)}</span></div>
+      <div class="mtrack"><div class="mbar" role="img" aria-label="${esc(aria)}" style="width:${(sum(T[t]) / maxC * 100).toFixed(2)}%">${parts.map(k =>
+        `<i class="s-${k}" style="flex:${T[t][k]} 0 0" title="${esc(`${label} · ${PART[k]}: ${nf(T[t][k])} min`)}"></i>`).join('')}</div></div>`;
+  }).join('');
+  const tot = k => T.instruction[k] + T.support[k];
+  const days = (k, n, words, tail = '') => n ? `<span class="kd"><span class="sep"> · </span>${letterCell(k, '')} ${esc(words)} ${plural(n, 'day')}${tail}</span>` : '';
+  const item = (k, name, extra, title) => { const m = k === 'in' ? p.pres : tot(k);
+    return `<li class="${m ? '' : 'zero'}"${title ? ` title="${esc(title)}"` : ''}><span class="ksw s-${k}" aria-hidden="true"></span><span class="kt"><b>${name}</b> <span class="v">${nf(m)} min</span>${extra}</span></li>`; };
+  const key = [
+    item('in', 'In Zoom', ''),
+    item('before', 'Before joining', days('late', p.late, 'late') + days('missed', p.missed, 'missed instruction'),
+      `Counts every minute before the student joined. A day counts as late after ${S.lateGrace} minutes.`),
+    item('out', 'Out of Zoom mid-class', days('drop', p.drop, 'out mid-class')),
+    item('after', 'After leaving', days('soft', p.soft, 'left support hour early') + days('early', p.early, 'left early')),
+    item('absent', 'Absent days', days('absent', p.absent, 'absent', p.streak >= 2 ? `, last ${p.streak} in a row` : ''))];
+  const not = [T.excDays ? `${letterCell('exc', '')} ${plural(T.excDays, 'excused day')} (${nf(T.excMin)} min)` : '',
+    T.finMin ? `${letterCell('fin', '')} finished work early, ${nf(T.finMin)} min on ${plural(T.finDays, 'day')}` : ''].filter(Boolean);
+  return `<div class="mblock">
+    <dl class="mfig"><div><dt>Days attended</dt><dd>${p.attended} of ${p.n}${p.rate === null ? '' : ` <span>${p.rate}%</span>`}</dd></div>
+      <div><dt>Minutes received</dt><dd>${nf(p.pres)} of ${nf(p.req)}${p.dose === null ? '' : ` <span>${p.dose}%</span>`}</dd></div></dl>
+    <div class="mbars">${bars}</div>
+    <ul class="mkey">${key.join('')}</ul>
+    ${not.length ? `<p class="mnot">Not counted: ${not.join(' · ')}</p>` : ''}</div>`;
 }
 
 function weekTip(w){
