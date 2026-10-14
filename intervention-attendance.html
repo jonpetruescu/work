@@ -257,7 +257,8 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovm{font-size:.72rem;color:var(--ov-ink)}
 .ovlegend .ovm{color:var(--ink)}
 .ovn{position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--ov-ink);border-left:6px solid transparent}
-.ovmarkbar{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:.88rem}
+.ovmarkbar{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:.88rem}
+.ovbrushes{display:flex;flex-wrap:wrap;gap:4px}
 .ovwrap.marking .ovb{cursor:copy}
 .ovwrap.marking .ovb:hover{box-shadow:inset 0 0 0 2px var(--focus)}
 .ovpop{position:absolute;z-index:10;width:340px;max-height:calc(100vh - 16px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:.86rem}
@@ -763,7 +764,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: false, ovMarkN: 0, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1644,9 +1645,9 @@ function renderOverview(){
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <button class="btn small${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done checking' : '✓ Check off messages sent'}</button>
+    <button class="btn small${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     <button class="btn small ghost" data-printlist>Print</button></div>
-    ${state.ovMark ? `<div class="ovmarkbar" role="status"><b>✓ Check-mark mode.</b> Click any day to check or uncheck “message sent home.” <span data-ovmarkn>${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far.' : ''}</span> Click <b>Done checking</b> when you’re finished.</div>` : ''}`;
+    ${state.ovMark ? ovMarkBar() : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Formative names that didn't match anyone on the schedule can be linked once, like Zoom names.
   const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
@@ -1695,6 +1696,23 @@ function renderOverview(){
     ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}</div>`;
   el.innerHTML = h;
   placeOvEditor();
+}
+// Quick mark: pick what to mark, then click days. Clicking a day again undoes it.
+const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'],
+  ...['engaged', 'idle', 'away', 'camera', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
+function ovMarkBar(){
+  return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.</span>
+    <div class="ovbrushes">${BRUSHES.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
+      sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('')}</div>
+    <span class="muted small" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far.' : ''}</span></div>`;
+}
+function applyBrush(xk, brush){
+  const A = state.lastAnalysis || analyze(), dk = xk.slice(0, 10), key = xk.slice(11);
+  const c = cellState(A, key, dk, new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))])));
+  if (brush === 'msg') setMsg(xk, !c.msg);
+  else if (brush === 'auto') setOverride(xk, { cat: undefined });
+  else if (brush in OV_LET){ const now = !c[brush], auto = brush === 'C' ? false : c.auto[brush]; setOverride(xk, { [brush]: now === auto ? undefined : now }); }
+  else setOverride(xk, { cat: c.ov.cat === brush ? undefined : brush });
 }
 // The editor for one day, next to its cell.
 function ovEditor(A, c, name){
@@ -2911,17 +2929,11 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
-  if (has('data-ovmark')){ state.ovMark = !state.ovMark; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
+  if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
+  if (d.ovbrush){ state.ovMark = d.ovbrush; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
-    // Check-mark mode: a click checks or unchecks "message sent" right in the cell, without opening the editor.
-    const on = !t.querySelector('.ovm');
-    setMsg(d.ovcell, on); state.ovMarkN = (state.ovMarkN || 0) + 1;
-    if (on) t.insertAdjacentHTML('beforeend', '<b class="ovm">✓</b>'); else t.querySelector('.ovm').remove();
-    const lab = t.getAttribute('aria-label').replace(', Message sent', ''), i = lab.indexOf(', Has a note');
-    const next = on ? (i < 0 ? lab + ', Message sent' : lab.slice(0, i) + ', Message sent' + lab.slice(i)) : lab;
-    t.setAttribute('aria-label', next); t.title = next;
-    const n = $('#tab-overview [data-ovmarkn]'); if (n) n.textContent = plural(state.ovMarkN, 'change') + ' so far.';
-    return;
+    // Quick mark: a click applies the chosen mark right in the cell, without opening the editor.
+    applyBrush(d.ovcell, state.ovMark); state.ovMarkN = (state.ovMarkN || 0) + 1; renderOverview(); return;
   }
   if (d.ovcell !== undefined){ state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(d.ovcell); return; }
   if (has('data-ovclose')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
@@ -3155,7 +3167,7 @@ function overviewKey(e, t){
   const all = [...document.querySelectorAll('#tab-overview .ovb')];
   let to = null;
   if (e.key === 'Escape' && state.ovSel){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
-  if (e.key === 'Escape' && state.ovMark){ const was = t.dataset.ovcell; state.ovMark = false; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
+  if (e.key === 'Escape' && state.ovMark){ const was = t.dataset.ovcell; state.ovMark = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
   const step = (dr, dc) => { for (let rr = r + dr, cc = c + dc, n = 0; n < 400; rr += dr, cc += dc, n++){ const b = at(rr, cc); if (b) return b; if (rr < 0 || cc < 0 || rr > 2000 || cc > 2000) break; } return null; };
   if (e.key === 'ArrowRight') to = step(0, 1);
   else if (e.key === 'ArrowLeft') to = step(0, -1);
