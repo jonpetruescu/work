@@ -273,6 +273,21 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovx{margin-left:auto}
 .ovgrp{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
 .ovgrp > span{width:100%}
+.tgl{display:inline-flex;align-items:center;gap:7px;background:none;border:0;padding:2px 0;font:inherit;font-size:.86rem;color:var(--ink);cursor:pointer}
+.tgl .tbox{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.tgl[aria-pressed="true"] .tbox{background:var(--focus);border-color:var(--focus)}
+.tgl[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.tgl:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+.ddact{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:8px}
+.ddnote{display:flex;align-items:center;gap:8px;flex:1;min-width:260px}
+.ddnote input{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 8px;font-size:.86rem}
+.ovset{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:2px}
+.ovset.on{background:var(--focus)}
+.ovauto{flex-basis:100%;justify-content:flex-start}
+.ovfacts{min-height:4.6em}
+.ovmarkbtn{min-width:8.6em}
+.ovmarkn{margin-left:8px}
+.linkish:disabled{color:var(--faint);cursor:default;text-decoration:none}
 .ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer;color:var(--ink)}
 .ovchip[aria-pressed="true"],.ovlet[aria-pressed="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
 .ovmsg{display:flex;align-items:center;gap:8px;margin:8px 0}
@@ -1292,11 +1307,12 @@ function conflictNotices(A, period, key){
 }
 
 // The action links under a student's status, shared by Reports and the student report.
+const tgl = (attr, xk, on, label, extra = '') => `<button class="tgl" ${attr}="${esc(xk)}" aria-pressed="${!!on}"${extra}><span class="tbox" aria-hidden="true"></span>${esc(label)}</button>`;
 function rowActions(s){
   const editing = state.noteEdit === s.xkey;
-  return `${s.canFinish || state.data.excused[s.xkey] ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}
-    ${s.isAbsent ? `<button class="linkish" data-excabs="${esc(s.xkey)}">${state.data.excusedAbsent[s.xkey] ? 'Undo excused' : 'Mark excused'}</button>` : ''}
-    ${editing ? '' : `<button class="linkish" data-noteedit="${esc(s.xkey)}">${s.note ? 'Edit note' : 'Add note'}</button>`}`;
+  return `${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
+    ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
+    <button class="linkish" data-noteedit="${esc(s.xkey)}"${editing ? ' disabled' : ''}>Note</button>`;
 }
 function noteBlock(s){
   return state.noteEdit === s.xkey
@@ -1675,7 +1691,7 @@ function renderOverview(){
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <button class="btn small${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
+    <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     <button class="btn small ghost" data-printlist>Print</button>${droppedToggle(A)}</div>
     ${state.ovMark ? ovMarkBar() : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
@@ -1687,7 +1703,7 @@ function renderOverview(){
       ${[...unm.values()].map(u => `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b>${u.email ? ` <span class="muted small">${esc(u.email)}</span>` : ''}
         <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`).join('')}</div>`;
   }
-  h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
+  if (!state.ovMark) h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
     <span><i class="ovsw c-noclass">–</i>No class</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span></div>
     <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>
     <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}.` : 'No Formative exports in the folder yet.'} Click a day to change it.</span></div>`;
@@ -1731,10 +1747,10 @@ function renderOverview(){
 const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'],
   ...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
 function ovMarkBar(){
-  return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.</span>
+  return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.
+      <span class="muted small ovmarkn" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far' : ''}</span></span>
     <div class="ovbrushes">${BRUSHES.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
-      sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('')}</div>
-    <span class="muted small" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far.' : ''}</span></div>`;
+      sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('')}</div></div>`;
 }
 function applyBrush(xk, brush){
   const A = state.lastAnalysis || analyze(), dk = xk.slice(0, 10), key = xk.slice(11);
@@ -1754,16 +1770,16 @@ function ovEditor(A, c, name){
     : `Formative: answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}.`;
   const autoName = OV_CAT[c.base] || OV_STATE[c.base];
   const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
-  const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}"><b>${k}</b> ${esc(v)}${c.ov[k] !== undefined ? ' <span class="muted">(set by you)</span>' : ''}</button>`).join('');
+  const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
-    <p class="small">${esc(zoom)}<br>${esc(formLine)}</p>
-    <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
+    <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}</p>
+    <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip ovauto" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
     <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
     <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Sent a message home about this day</label>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" maxlength="300" value="${esc(c.note)}" placeholder="Optional"></label>
-    <div class="ovpop-f">${s && (s.canFinish || state.data.excused[s.xkey]) ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work (let go early)'}</button>` : ''}
-      ${Object.keys(c.ov).length ? '<button class="linkish" data-ovreset>Back to automatic</button>' : ''}
+    ${s && (s.canFinish || state.data.excused[s.xkey]) ? `<div class="ovgrp">${tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early')}</div>` : ''}
+    <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
       ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open in ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
 }
 function placeOvEditor(){
@@ -1824,8 +1840,7 @@ const supLeft = d => { const r = d.rec; if (!r) return ''; const iw = r.merged.f
 // One support day with its mark button. Marking (or undoing) changes the row in place, so nothing moves under the pointer.
 function supItem(d){
   const on = d.kind === 'fin';
-  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span><span class="sup-st muted small"></span>
-    <button class="${on ? 'linkish' : 'btn small ghost'}" data-supmark="${esc(d.rec.xkey)}">${on ? 'Undo' : 'Mark finished work'}</button></span>`;
+  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span>${tgl('data-supmark', d.rec.xkey, on, 'Finished work, let go early')}</span>`;
 }
 function supportResults(W){
   const q = normKey(state.supQuery || ''), of = (p, k) => p.days.filter(d => d.kind === k);
@@ -2354,7 +2369,9 @@ function dayDetail(ctx){
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
     ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${f.inFile ? `answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}` : 'not in the export'}</p>` : ''; })()}
-    ${noteBlock(s)}<div class="chips" style="margin-top:6px">${rowActions(s)}</div></div>`;
+    <div class="ddact">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
+      ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
+      <label class="ddnote"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(s.xkey)}" maxlength="300" value="${esc(s.note)}" placeholder="Optional"></label></div></div>`;
 }
 // Every class day as a table: printed on request, and on screen under "Show every day as a table".
 function dayTableHTML(ctx, notes){
@@ -2446,7 +2463,7 @@ function familySection(ctx){
     <textarea class="family" rows="10" data-familydraft="${esc(draftKey(ctx))}" data-familyfrom="${esc(ctx.period.from)}" data-familyto="${esc(ctx.period.to)}" aria-label="Note to the family">${esc(familyText(ctx))}</textarea>
     <div class="actions"><button class="btn small" data-copyfamily>Copy note</button><button class="btn small ghost" data-familyreset>Start over</button>
       <button class="btn small ghost" data-printfamily>Print family version</button>
-      ${state.familyCopied === ctx.key ? '<button class="linkish" data-fulognote>Add “Sent attendance note” to the follow-up log</button>' : ''}</div>
+      <button class="linkish" data-fulognote${state.familyCopied === ctx.key ? '' : ' disabled title="Copy the note first"'}>Add “Sent attendance note” to the follow-up log</button></div>
     <p class="small muted">Your day notes and follow-up log are never put in this note. Read it before you send it.</p></details></section>`;
 }
 const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
@@ -3020,8 +3037,7 @@ async function onClick(t){
     // Support hour tab: change the row in place, so the list doesn't shift under the pointer. The lists catch up on the next redraw.
     const k = d.supmark, on = !state.data.excused[k];
     if (on) state.data.excused[k] = true; else delete state.data.excused[k];
-    changed(); t.textContent = on ? 'Undo' : 'Mark finished work';
-    const st = t.parentElement.querySelector('.sup-st'); if (st) st.textContent = on ? 'marked finished work' : 'not marked';
+    changed(); t.setAttribute('aria-pressed', String(on));
     return;
   }
   if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent(); return; }
@@ -3179,8 +3195,11 @@ document.addEventListener('change', e => {
     const v = t.value.trim().slice(0, 300);
     if (v) state.data.notes[d.ovnote] = v; else delete state.data.notes[d.ovnote];
     changed();
+    // Show or hide the note mark in place (Overview cell or calendar day), so nothing redraws while you type or tab away.
     const b = $(`#tab-overview .ovb[data-ovcell="${CSS.escape(d.ovnote)}"]`);
     if (b){ const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove(); }
+    const cal = $(`#tab-students .sbtn[data-selday="${d.ovnote.slice(0, 10)}"]`);
+    if (cal && state.student === d.ovnote.slice(11)){ const dot = cal.lastElementChild; if (dot) dot.className = v ? 'nd' : ''; }
     return;
   }
   if ('showdropped' in d){ state.showDropped = t.checked; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
