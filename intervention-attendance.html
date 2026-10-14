@@ -224,6 +224,61 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
 
+/* Overview grid: the teacher's spreadsheet colors */
+:root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-camera:#F6B26B; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
+@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-camera:#C27E3C; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
+.c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)} .c-camera{background:var(--ov-camera)}
+.c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)} .c-nosched{background:var(--ov-nosched)}
+.c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
+.ovlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);margin:0 0 6px}
+.ovlegend > span{display:inline-flex;align-items:center;gap:6px}
+.ovlegend b{color:var(--ink)}
+.ovsw{display:inline-flex;align-items:center;justify-content:center;width:16px;height:12px;border-radius:2px;font-style:normal;font-size:.7rem;border:1px solid var(--line)}
+.ovsw.ovnote-k{background:linear-gradient(225deg,var(--ink) 0 4px,var(--surface) 4px)}
+.ovwrap{position:relative;margin-top:8px}
+.ovscroll{position:relative;overflow:auto;max-height:calc(100vh - 230px);border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
+.ovt th,.ovt td{padding:0;border-right:1px solid var(--surface);border-bottom:1px solid var(--surface)}
+.ovt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--muted);font-weight:600;text-align:center;white-space:nowrap;padding:2px 3px;font-size:.72rem}
+.ovt thead tr:nth-child(2) th{top:22px}
+.ovt th.ovmo{text-align:left;color:var(--ink);padding-left:6px;height:22px}
+.ovt th.today{color:var(--focus)}
+.ovwd{display:block;font-weight:400;font-size:.66rem}
+.ovt .wk{border-left:2px solid var(--muted)}
+.ovt th.ovname{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px 0 8px;min-width:170px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink);border-right:1px solid var(--line)}
+.ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px}
+.ovt tbody tr:hover th.ovname{background:var(--paper)}
+.ovc{width:38px;min-width:38px;height:24px}
+.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:24px;cursor:pointer;color:var(--ov-ink);font-size:.68rem;font-weight:700;letter-spacing:.04em}
+.ovb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.ovb:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.ovc.sel .ovb{outline:3px solid var(--focus);outline-offset:-3px}
+.c-noclass .ovb,.c-missing .ovb,.c-later .ovb{color:inherit}
+.ovm{font-size:.72rem;color:var(--ov-ink)}
+.ovlegend .ovm{color:var(--ink)}
+.ovn{position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--ov-ink);border-left:6px solid transparent}
+.ovpop{position:absolute;z-index:10;width:340px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:.86rem}
+.ovpop p{margin:6px 0 8px}
+.ovpop-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.ovx{margin-left:auto}
+.ovgrp{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.ovgrp > span{width:100%}
+.ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer;color:var(--ink)}
+.ovchip[aria-pressed="true"],.ovlet[aria-pressed="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
+.ovmsg{display:flex;align-items:center;gap:8px;margin:8px 0}
+.ovnoteb{display:grid;gap:2px;margin:6px 0}
+.ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:.86rem}
+.ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
+.ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
+@media print{
+  .ovscroll{overflow:visible;max-height:none;border:0}
+  .ovt thead th,.ovt th.ovname{position:static}
+  .ovpop,#tab-overview .toolbar{display:none !important}
+  .ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ovc{width:24px;min-width:24px}
+  table.ovt{font-size:.62rem}
+}
+
 /* Support hour tab */
 .sup{max-width:560px}
 .sup-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:4px 0 12px}
@@ -555,7 +610,8 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
     </div>
     <div class="tabrow">
       <nav class="tabs" role="tablist" aria-label="Sections">
-        <button role="tab" data-tab="reports" aria-selected="true">Reports</button>
+        <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+        <button role="tab" data-tab="reports" aria-selected="false">Reports</button>
         <button role="tab" data-tab="students" aria-selected="false">Students</button>
         <button role="tab" data-tab="support" aria-selected="false">Support<span class="tabx"> hour</span></button>
         <button role="tab" data-tab="schedule" aria-selected="false">Schedule</button>
@@ -567,7 +623,8 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
 </header>
 <main class="wrap">
   <div id="status" aria-live="polite"></div>
-  <section id="tab-reports"></section>
+  <section id="tab-overview"></section>
+  <section id="tab-reports" hidden></section>
   <section id="tab-students" hidden></section>
   <section id="tab-support" hidden></section>
   <section id="tab-schedule" hidden></section>
@@ -602,6 +659,10 @@ const LETTER_FAMILY = { full:'whole class', fin:'finished work early', late:'lat
   soft:'left help time early', drop:'out of Zoom for part of class', absent:'missed', exc:'excused', noclass:'no class', missing:'no record', off:'' };
 const LETTER_ORDER = ['full','fin','late','missed','early','soft','drop','absent','exc','noclass','missing'];
 const NOCLASS_REASONS = { holiday:'School holiday', testing:'Testing', canceled:'Class canceled', other:'Other' };
+// The Overview grid's colors and letters, in the teacher's own words.
+const OV_CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle: 'Likely present but not engaging', camera: 'Camera off',
+  away: 'Likely not actually present', absent: 'Did not attend', nosched: 'Not scheduled' };
+const OV_LET = { L: 'Late or left early', D: 'Disengaged', C: 'Camera off' };
 const FU_HOW = { call:'Called home', message:'Emailed or texted home', student:'Talked with the student', meeting:'Meeting (team or family)', other:'Other' };
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -651,13 +712,14 @@ function fmtPeriod(p){
 
 function defaultData(){
   return { version: 3, scheduleText: '', scheduleVersions: [{ from: '', text: '' }],
-    settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60,
+    settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, engagedPct: 50,
                 teacherName: '', className: 'our intervention class', contactLine: '' },
     aliases: {}, ignored: [], excused: {}, excusedAbsent: {}, notes: {},
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
-    followUps: {} }; // { studentKey: [{ id, date, how, text }] }
+    dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid
+    followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
 }
-const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180] };
+const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], engagedPct: [1, 100] };
 const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 // Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
 function withDefaults(d){
@@ -665,14 +727,20 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
   for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
+  for (const [k, v] of Object.entries(obj(d.dayStatus))){
+    const o = {}, x = obj(v);
+    if (x.cat in OV_CAT) o.cat = x.cat;
+    for (const l of ['L', 'D', 'C']) if (typeof x[l] === 'boolean') o[l] = x[l];
+    if (isDk(k.split('|')[0]) && Object.keys(o).length) out.dayStatus[k] = o;
+  }
   for (const [k, v] of Object.entries(obj(d.followUps))) if (Array.isArray(v)){
-    const xs = v.filter(f => f && isDk(f.date)).map(f => ({ id: String(f.id || uid()), date: f.date, how: f.how in FU_HOW ? f.how : 'other', text: String(f.text || '').slice(0, 300) }));
+    const xs = v.filter(f => f && isDk(f.date)).map(f => ({ id: String(f.id || uid()), date: f.date, how: f.how in FU_HOW ? f.how : 'other', text: String(f.text || '').slice(0, 300), ...(isDk(f.day) ? { day: f.day } : {}) }));
     if (xs.length) out.followUps[k] = xs;
   }
   const vs = Array.isArray(d.scheduleVersions) && d.scheduleVersions.some(v => v && typeof v === 'object')
@@ -688,11 +756,11 @@ function withDefaults(d){
 const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false,
-  tab: 'reports', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
+  tab: 'overview', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovScroll: null, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -912,6 +980,55 @@ function evaluate(intervals, sections, at, S){
   return out;
 }
 
+/* ---------------- Formative exports ----------------
+   A Formative results export (CSV) saved into the folder: one row per student, columns for each question.
+   For each class day this gives, per student, how many questions they answered and of how many. */
+const F_NAME = /^(student( full)?( name)?|name|full name|(student )?(first|last)( name)?|first|last)$/;
+const F_META = /e-?mail|^(class(es)?|section|period|teacher|id|student id|sis\b.*|grade( level)?|status|progress|returned|feedback|total.*|score.*|.*percent.*|%.*|.*points?( earned| possible)?|.*standards?.*|.*mastery.*)$|submitted|started|updated|modified|^(date|time)\b|\bdate$|\btime$/;
+function dateInName(name, year){
+  let m;
+  if ((m = name.match(/(20\d\d)[-_. ](\d{1,2})[-_. ](\d{1,2})/))) return dkOf(new Date(+m[1], +m[2] - 1, +m[3]));
+  if ((m = name.match(/(?:^|\D)(\d{1,2})[-_. ](\d{1,2})[-_. ](\d{2}|\d{4})(?:\D|$)/))){ let y = +m[3]; if (y < 100) y += 2000; return dkOf(new Date(y, +m[1] - 1, +m[2])); }
+  const mon = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  if ((m = name.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?[ _-]?(\d{1,2})\b/))) return dkOf(new Date(year, mon.indexOf(m[1]), +m[2]));
+  return null;
+}
+function parseFormativeFile(name, text, modified){
+  const rows = parseCSV(String(text).replace(/^﻿/, '')).filter(r => r.some(c => c.trim()));
+  const hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(c.trim().toLowerCase())));
+  if (hi < 0) return null;
+  const h = rows[hi].map(c => c.trim().toLowerCase()), col = re => h.findIndex(c => re.test(c));
+  // Only a file named for Formative, or one with score or question columns, counts. Any other CSV keeps its Zoom error.
+  if (!/formative/i.test(name) && !h.some(c => /score|points|percent|question|response|answer/.test(c))) return null;
+  const first = col(/^(student )?first( name)?$|^first$/), last = col(/^(student )?last( name)?$|^last$/), full = col(/^(student( full)?( name)?|name|full name)$/);
+  const email = col(/e-?mail/), pctCol = col(/percent|^%|score %|% score|^score \(%\)/);
+  const meta = new Set([first, last, full, email].filter(i => i >= 0));
+  h.forEach((c, i) => { if (!c || F_NAME.test(c) || F_META.test(c)) meta.add(i); });
+  const qCols = h.map((c, i) => i).filter(i => !meta.has(i));
+  const stamps = h.map((c, i) => /submitted|started|updated|modified|\bdate\b|\btime\b/.test(c) ? i : -1).filter(i => i >= 0);
+  const out = [], dates = {};
+  for (const r of rows.slice(hi + 1)){
+    const nm = (full >= 0 && r[full] ? r[full] : [first >= 0 ? r[first] : '', last >= 0 ? r[last] : ''].join(' ')).trim();
+    if (!nm || /^(average|class average|total|mean|median)s?$/i.test(nm)) continue;
+    const answered = qCols.filter(i => (r[i] || '').trim() && !/^(-|—|n\/a|not answered|no response|unanswered|0\/\d+)$/i.test((r[i] || '').trim())).length;
+    const pv = pctCol >= 0 ? parseFloat(String(r[pctCol]).replace('%', '')) : NaN;
+    out.push({ name: nm, email: email >= 0 ? (r[email] || '').trim() : '', answered, pct: Number.isFinite(pv) ? pv : null });
+    for (const i of stamps){ const t = parseZoomTime(r[i]); if (t) dates[dkOf(t)] = (dates[dkOf(t)] || 0) + 1; }
+  }
+  if (!out.length) return { error: 'This looks like a Formative export, but no student rows were found in it.' };
+  // The class day: a date in the file name, else the date most answers were submitted, else the day the file was saved.
+  const year = new Date(modified || Date.now()).getFullYear();
+  const dk = dateInName(name, year) || Object.entries(dates).sort((a, b) => b[1] - a[1])[0]?.[0] || (modified ? dkOf(new Date(modified)) : null);
+  if (!dk) return { error: 'This Formative export has no date. Put the class date in the file name, like formative-10-14-2026.csv.' };
+  return { formative: true, dk, questions: qCols.length, rows: out };
+}
+
+// Each file is read once: a Zoom participant report, or else a Formative export, or else an error.
+function parsedFile(f){
+  if (!f.parsed){ const z = parseZoomFile(f.name, f.text); f.parsed = z.error ? (parseFormativeFile(f.name, f.text, f.modified) || z) : z; }
+  return f.parsed;
+}
+
 function analyze(){
   const S = state.data.settings;
   // Each schedule version covers the days from its start date until the next version starts.
@@ -927,10 +1044,11 @@ function analyze(){
   const anyone = buildMatcher(roster, state.data.aliases);
   const matchFor = dk => { const v = verFor(dk); if (!v.match){ const m = buildMatcher(v.sched.roster, state.data.aliases); v.match = (r, e) => m(r, e) || anyone(r, e); } return v.match; };
   const ignored = new Set(state.data.ignored);
-  const fileErrors = [], byDate = new Map();
+  const fileErrors = [], byDate = new Map(), forms = [];
   for (const f of state.files){
-    const z = f.parsed || (f.parsed = parseZoomFile(f.name, f.text));
+    const z = parsedFile(f);
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
+    if (z.formative){ forms.push({ name: f.name, ...z }); continue; }
     for (const r of z.rows){
       const dk = dkOf(r.join);
       if (!byDate.has(dk)) byDate.set(dk, { dk, files: new Set(), rows: [] });
@@ -939,7 +1057,27 @@ function analyze(){
   }
   const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk))
     .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S));
-  return { sched, versions, schedFor, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors };
+  // Formative results by class day: per student, questions answered of the day's total (several files in a day add up).
+  const formByDk = new Map();
+  for (const F of forms){
+    if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], questions: 0, byKey: new Map(), unmatched: new Map() });
+    const g = formByDk.get(F.dk), match = matchFor(F.dk);
+    g.files.push(F.name); g.questions += F.questions;
+    const seen = new Map();
+    for (const r of F.rows){
+      const m = match(r.name, r.email);
+      if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
+      const e = seen.get(m.key) || { answered: 0, pct: null };
+      e.answered = Math.max(e.answered, r.answered); if (r.pct !== null) e.pct = Math.max(e.pct ?? 0, r.pct);
+      seen.set(m.key, e);
+    }
+    for (const [k, e] of seen){
+      const t = g.byKey.get(k) || { answered: 0, pcts: [] };
+      t.answered += e.answered; if (e.pct !== null) t.pcts.push(e.pct);
+      g.byKey.set(k, t);
+    }
+  }
+  return { sched, versions, schedFor, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
 }
 
 function analyzeDay(g, sched, nameOf, matcher, ignored, S){
@@ -1440,6 +1578,141 @@ function scheduleInfo(A, key, period){
   // Joining the schedule is reported on its own line, so it isn't also called a change.
   if (changedOn && changedOn === firstFrom) changedOn = null;
   return { byW, line, weekMin, changedOn, addedOn: firstFrom || null, inLatest };
+}
+
+/* ---------------- Overview: the attendance grid ----------------
+   One row per student, one column per class day, filled in from the Zoom and Formative reports in the folder
+   and colored the way the teacher's own spreadsheet was. Any cell can be changed by hand. */
+// A student's Formative results for one class day, if there was a Formative export that day.
+function formOf(A, key, dk){
+  const g = A.formByDk.get(dk); if (!g) return null;
+  const t = g.byKey.get(key), pct = t && t.pcts.length ? Math.round(t.pcts.reduce((a, b) => a + b, 0) / t.pcts.length) : null;
+  const answered = t ? t.answered : 0, total = g.questions;
+  // Share of the questions answered. With no question columns, any score counts as taking part.
+  const share = total ? Math.min(1, answered / total) : pct !== null ? (pct > 0 ? 1 : 0) : t ? 1 : 0;
+  return { answered, total, pct, inFile: !!t, share, files: g.files };
+}
+const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day === dk);
+function cellState(A, key, dk, recs){
+  const plan = planFor(A, key, dk), rec = (recs.get(dk) || new Map()).get(key) || null;
+  const xk = `${dk}|${key}`, ov = state.data.dayStatus[xk] || {}, auto = { L: false, D: false };
+  let base, f = null;
+  if (!plan && !rec) base = 'nosched';
+  else if (rec){
+    f = formOf(A, key, dk);
+    if (isExcused(rec)) base = 'excused';
+    else if (rec.isAbsent) base = 'absent';
+    else {
+      const eng = state.data.settings.engagedPct / 100;
+      base = !f ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
+      auto.L = ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));
+      auto.D = !!f && f.share < eng;
+    }
+  } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
+  const cat = ov.cat || base;
+  return { dk, key, xk, plan, rec, f, base, cat, auto, ov, L: ov.L ?? auto.L, D: ov.D ?? auto.D, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
+}
+const OV_STATE = { noclass: 'No class', missing: 'No Zoom report yet', later: 'Not yet' };
+const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'D', 'C'].filter(l => c[l] && OV_LET[l] !== OV_CAT[c.cat]).map(l => OV_LET[l]), c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
+// Class days in the dates shown: any day with a report, a no-class mark, or someone on the schedule. An open range runs to the end of this week.
+function overviewDates(A, period){
+  const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
+  for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
+    const secs = A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || [];
+    if (A.dayByDk.has(dk) || A.formByDk.has(dk) || state.data.noClass[dk] || secs.some(x => x.students.length)) out.push(dk);
+  }
+  return out;
+}
+function renderOverview(){
+  const el = $('#tab-overview'), A = analyze();
+  state.lastAnalysis = A;
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">The overview needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> to know who is expected each day.</p></div>`; return; }
+  const old = $('#tab-overview .ovscroll'); if (old) state.ovScroll = { x: old.scrollLeft, y: old.scrollTop };
+  const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
+  const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
+  const rows = A.roster.map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
+    .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
+  let h = `<div class="toolbar">${rangeBar()}
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <button class="btn small ghost" data-printlist>Print</button></div>`;
+  if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
+  // Formative names that didn't match anyone on the schedule can be linked once, like Zoom names.
+  const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
+  if (unm.size){
+    const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+    h += `<div class="notice"><b>Formative names that didn’t match a student.</b> Link each one once and it’s matched from then on.
+      ${[...unm.values()].map(u => `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b>${u.email ? ` <span class="muted small">${esc(u.email)}</span>` : ''}
+        <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`).join('')}</div>`;
+  }
+  h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
+    <span><i class="ovsw c-noclass">–</i>No class</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span></div>
+    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>
+    <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}.` : 'No Formative exports in the folder yet.'} Click a day to change it.</span></div>`;
+  if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
+  // Header: month, weekday and date. A thicker line starts each week.
+  const wkStart = dates.map((dk, i) => i === 0 || weekKey(dk) !== weekKey(dates[i - 1]));
+  let months = '', i = 0;
+  while (i < dates.length){ let j = i; const m = parseDk(dates[i]).getMonth(); while (j < dates.length && parseDk(dates[j]).getMonth() === m) j++;
+    months += `<th colspan="${j - i}" class="ovmo${wkStart[i] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[i])))}</th>`; i = j; }
+  const today = todayDk();
+  const head = dates.map((dk, n) => `<th scope="col" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`).join('');
+  const sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
+  const tabDk = selCell ? sel : null;
+  let first = true;
+  const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></th>${r.cells.map((c, ci) => {
+    const words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`;
+    const letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
+    const stop = tabDk ? c.xk === tabDk : first && (first = false, true);
+    if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
+    return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
+      c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+  }).join('')}</tr>`).join('');
+  h += `<div class="ovwrap"><div class="ovscroll"><table class="ovt"><caption class="sr">Attendance overview: ${plural(rows.length, 'student')} by ${plural(dates.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
+    <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}</div>`;
+  el.innerHTML = h;
+  // Keep the scroll position across redraws; the first time, show the latest days.
+  const sc = $('#tab-overview .ovscroll');
+  if (state.ovScroll){ sc.scrollLeft = state.ovScroll.x; sc.scrollTop = state.ovScroll.y; } else sc.scrollLeft = sc.scrollWidth;
+  placeOvEditor();
+}
+// The editor for one day, next to its cell.
+function ovEditor(A, c, name){
+  const s = c.rec, fin = s ? finMinOf(s) : 0;
+  const zoom = s ? (s.isAbsent ? `Zoom: ${isExcused(s) ? 'excused absence' : 'not in Zoom during class'}` : `Zoom: in ${fmt(s.firstJoin)}–${fmt(s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
+    : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
+  const f = c.f, form = A.formByDk.get(c.dk);
+  const formLine = !form ? 'Formative: no export for this day.' : !f.inFile ? `Formative: not in the export (${plural(f.total, 'question')}).`
+    : `Formative: answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}.`;
+  const autoName = OV_CAT[c.base] || OV_STATE[c.base];
+  const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
+  const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}"><b>${k}</b> ${esc(v)}${c.ov[k] !== undefined ? ' <span class="muted">(set by you)</span>' : ''}</button>`).join('');
+  return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
+    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
+    <p class="small">${esc(zoom)}<br>${esc(formLine)}</p>
+    <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
+    <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
+    <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Sent a message home about this day</label>
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" maxlength="300" value="${esc(c.note)}" placeholder="Optional"></label>
+    <div class="ovpop-f">${Object.keys(c.ov).length ? '<button class="linkish" data-ovreset>Back to automatic</button>' : ''}
+      ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open in ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
+}
+function placeOvEditor(){
+  const pop = $('#tab-overview .ovpop'); if (!pop) return;
+  const cell = $(`#tab-overview .ovb[data-ovcell="${CSS.escape(pop.dataset.ovpop)}"]`), wrap = $('#tab-overview .ovwrap');
+  if (!cell){ pop.remove(); return; }
+  const r = cell.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  let left = r.left - w.left + r.width + 8;
+  if (left + pop.offsetWidth > w.width) left = Math.max(0, r.left - w.left - pop.offsetWidth - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = Math.max(0, Math.min(r.top - w.top - 20, w.height - pop.offsetHeight)) + 'px';
+}
+function setOverride(xk, patch){
+  const o = { ...(state.data.dayStatus[xk] || {}), ...patch };
+  for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
+  if (Object.keys(o).length) state.data.dayStatus[xk] = o; else delete state.data.dayStatus[xk];
+  changed();
 }
 
 /* ---------------- Support hour tab ----------------
@@ -1988,6 +2261,7 @@ function dayDetail(ctx){
       ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
+    ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${f.inFile ? `answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}` : 'not in the export'}</p>` : ''; })()}
     ${noteBlock(s)}<div class="chips" style="margin-top:6px">${rowActions(s)}</div></div>`;
 }
 // Every class day as a table: printed on request, and on screen under "Show every day as a table".
@@ -2361,6 +2635,13 @@ function renderSettings(){
         <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${esc(S.gapMin)}">
         <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${esc(S.sectionLen)}">
       </div></div>
+    <div class="panel"><h2>Overview colors from Formative</h2>
+      <p class="small muted" style="margin:0 0 10px">Save each day’s Formative results export (CSV) into the attendance folder, with the date in the file name (for example <b>formative-10-14-2026.csv</b>), and click Refresh.
+        On days with a Formative export, a student who was in Zoom is <b>present and engaged</b> if they answered at least this share of the questions,
+        <b>likely present but not engaging</b> (D) if they answered some but less, and <b>likely not actually present</b> if they answered none. You can change any day by hand on the Overview.</p>
+      <div class="set">
+        <label for="s-eng">Answered at least this percent of the questions to count as engaged</label><input id="s-eng" type="number" min="1" max="100" data-set="engagedPct" value="${esc(S.engagedPct)}">
+      </div></div>
     <div class="panel"><h2>Reports and notes to families</h2>
       <div class="settext">
         <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="For example, Ms. Lopez">
@@ -2388,7 +2669,8 @@ function renderFolderBar(){
   const b = $('#folderBar');
   let h = '';
   if (state.loaded){
-    h = `<span class="where">Folder: <b>${esc(state.folderName || 'selected')}</b>, ${state.files.length} Zoom report${state.files.length === 1 ? '' : 's'}</span>
+    const nForm = state.files.filter(f => parsedFile(f).formative).length, nZoom = state.files.length - nForm;
+    h = `<span class="where">Folder: <b>${esc(state.folderName || 'selected')}</b>, ${plural(nZoom, 'Zoom report')}${nForm ? `, ${plural(nForm, 'Formative export')}` : ''}</span>
       <button class="btn ghost" id="refresh">Refresh</button><button class="btn ghost" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
     h = `<button class="btn" id="reopen">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
@@ -2408,7 +2690,7 @@ function renderStatus(){
   const el = $('#status');
   el.innerHTML = state.status ? `<div class="notice ${state.status.type === 'info' ? 'info' : ''}">${esc(state.status.text)}</div>` : '';
 }
-const RENDER = { reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
+const RENDER = { overview: () => renderOverview(), reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
 function render(){
   renderFolderBar(); renderSaveState(); renderStatus();
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
@@ -2460,7 +2742,7 @@ async function loadFromHandle(){
     if (entry.kind !== 'file') continue;
     const low = name.toLowerCase();
     if (low === DATA_FILE) dataText = await (await entry.getFile()).text();
-    else if (low.endsWith('.csv')) files.push({ name, text: await (await entry.getFile()).text() });
+    else if (low.endsWith('.csv')){ const file = await entry.getFile(); files.push({ name, text: await file.text(), modified: file.lastModified }); }
   }
   state.canWrite = (await h.queryPermission({ mode: 'readwrite' })) === 'granted';
   ingest(files, dataText, h.name);
@@ -2471,7 +2753,7 @@ async function loadFromInput(list){
     const low = f.name.toLowerCase();
     if (!folder && f.webkitRelativePath) folder = f.webkitRelativePath.split('/')[0];
     if (low === DATA_FILE) dataText = await f.text();
-    else if (low.endsWith('.csv')) files.push({ name: f.name, text: await f.text() });
+    else if (low.endsWith('.csv')) files.push({ name: f.name, text: await f.text(), modified: f.lastModified });
   }
   if (!okToSwitch(folder)) return;
   state.canWrite = false;
@@ -2535,6 +2817,11 @@ function openStudent(key, from){
   render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
 }
+function focusOvCell(xk){
+  const b = xk && $(`#tab-overview .ovb[data-ovcell="${CSS.escape(xk)}"]`); if (!b) return;
+  document.querySelectorAll('#tab-overview .ovb').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
+  b.focus({ preventScroll: true });
+}
 function focusDayCell(dk){
   const b = $(`#tab-students .sbtn[data-selday="${dk}"]`); if (!b) return;
   document.querySelectorAll('#tab-students .sbtn').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
@@ -2579,6 +2866,7 @@ function focusSelector(t){
 /* ---------------- Events ---------------- */
 document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) m.open = false; });
+  if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){ state.ovSel = null; renderOverview(); }
   const t = e.target.closest('button'); if (!t) return;
   if (e.detail > 1 && t.dataset.supmark !== undefined) return;   // a double-click marks once
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
@@ -2601,6 +2889,20 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
+  if (d.ovcell !== undefined){ state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(d.ovcell); return; }
+  if (has('data-ovclose')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
+  if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
+  if (d.ovlet && state.ovSel){
+    const now = t.getAttribute('aria-pressed') !== 'true', auto = d.auto === 'true';
+    setOverride(state.ovSel, { [d.ovlet]: now === auto ? undefined : now }); renderOverview(); return;
+  }
+  if (has('data-ovreset') && state.ovSel){ delete state.data.dayStatus[state.ovSel]; changed(); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
+  if (has('data-ovopen') && state.ovSel){
+    const [dk, key] = [state.ovSel.slice(0, 10), state.ovSel.slice(11)];
+    state.ovSel = null; openStudent(key); state.selDay = dk; renderStudents(); navReplace();
+    const dd = $('#tab-students .daydetail'); if (dd) dd.scrollIntoView({ block: 'center' });
+    return;
+  }
   if (d.supmark){
     // Support hour tab: change the row in place, so the list doesn't shift under the pointer. The lists catch up on the next redraw.
     const k = d.supmark, on = !state.data.excused[k];
@@ -2757,6 +3059,21 @@ document.addEventListener('change', e => {
     const box = visible(`.range [data-${'rfrom' in d ? 'rfrom' : 'rto'}]`); if (box) box.focus({ preventScroll: true });
   }
   // Notes are saved on focusout and Enter, not here: "change" fires before focusout, and redrawing here would swallow the click that moved focus.
+  if (d.ovmsg){
+    // A message about a class day is kept in the student's follow-up log, tied to that day.
+    const dk = d.ovmsg.slice(0, 10), key = d.ovmsg.slice(11), list = state.data.followUps[key] || [];
+    if (t.checked) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: `Attendance message about ${shortDate(dk)}`, day: dk }];
+    else { const rest = list.filter(f => f.day !== dk); if (rest.length) state.data.followUps[key] = rest; else delete state.data.followUps[key]; }
+    changed(); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return;
+  }
+  if (d.ovnote){
+    const v = t.value.trim().slice(0, 300);
+    if (v) state.data.notes[d.ovnote] = v; else delete state.data.notes[d.ovnote];
+    changed();
+    const b = $(`#tab-overview .ovb[data-ovcell="${CSS.escape(d.ovnote)}"]`);
+    if (b){ const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove(); }
+    return;
+  }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
   // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
@@ -2778,6 +3095,9 @@ document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
   const hadMenu = !!document.querySelector('details.menu[open]');
   if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return calendarKey(e, t);
+  if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey) return overviewKey(e, t);
+  if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
+  if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); m.open = false; if (inside) m.querySelector('summary').focus();
   });
@@ -2799,6 +3119,25 @@ document.addEventListener('keydown', e => {
     const was = state.selDay; state.selDay = null; state.noteEdit = null; renderStudents(); focusDayCell(was);
   }
 });
+// Arrow keys move around the overview grid (one Tab stop for the whole grid); Enter opens a day, Escape closes it.
+function overviewKey(e, t){
+  const r = +t.dataset.r, c = +t.dataset.c, at = (rr, cc) => $(`#tab-overview .ovb[data-r="${rr}"][data-c="${cc}"]`);
+  const all = [...document.querySelectorAll('#tab-overview .ovb')];
+  let to = null;
+  if (e.key === 'Escape' && state.ovSel){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
+  const step = (dr, dc) => { for (let rr = r + dr, cc = c + dc, n = 0; n < 400; rr += dr, cc += dc, n++){ const b = at(rr, cc); if (b) return b; if (rr < 0 || cc < 0 || rr > 2000 || cc > 2000) break; } return null; };
+  if (e.key === 'ArrowRight') to = step(0, 1);
+  else if (e.key === 'ArrowLeft') to = step(0, -1);
+  else if (e.key === 'ArrowDown') to = step(1, 0);
+  else if (e.key === 'ArrowUp') to = step(-1, 0);
+  else if (e.key === 'Home') to = e.ctrlKey ? all[0] : all.find(b => +b.dataset.r === r);
+  else if (e.key === 'End') to = e.ctrlKey ? all[all.length - 1] : [...all].reverse().find(b => +b.dataset.r === r);
+  else return;
+  e.preventDefault();
+  if (!to) return;
+  all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
+  to.focus(); to.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
 // Arrow keys move between days in the calendar (one Tab stop for the whole calendar).
 function calendarKey(e, t){
   const all = [...document.querySelectorAll('#tab-students .scal .sbtn')], row = t.closest('tr');
@@ -2833,10 +3172,12 @@ document.addEventListener('toggle', e => {
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
   }
 }, true);
+document.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('ovscroll')) placeOvEditor(); }, true);
+window.addEventListener('resize', () => placeOvEditor());
 window.addEventListener('popstate', e => {
   const s = e.state || {}, leaving = state.student;
   navSeq = s.seq || 0;
-  state.tab = s.tab || 'reports'; state.student = s.student || null; state.studentFrom = s.from || null;
+  state.tab = s.tab || 'overview'; state.student = s.student || null; state.studentFrom = s.from || null;
   if (s.range) state.range = s.range;
   state.returnTo = s.returnTo || null; state.highlight = s.highlight || null; state.selDay = s.selDay || null;
   state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null;
