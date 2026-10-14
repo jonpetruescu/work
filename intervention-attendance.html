@@ -953,7 +953,7 @@ const overlap = (list, A, B) => list.reduce((t, [a, b]) => t + Math.max(0, Math.
 
 const sumIv = list => list.reduce((t, [a, b]) => t + b - a, 0);
 
-function evaluate(intervals, sections, at, S){
+function evaluate(intervals, sections, at, S, finished = false){
   const secs = sections.map(s => ({ type: s.type, a: at(s.startMin), b: at(s.endMin) })).sort((x, y) => x.a - y.a);
   const req = mergeIntervals(secs.map(s => [s.a, s.b]));
   const winStart = req[0][0], winEnd = req[req.length - 1][1];
@@ -966,14 +966,17 @@ function evaluate(intervals, sections, at, S){
     presentMin: mins(presentMs), reqMin: mins(reqMs), instrMin: mins(iPresMs), instrReqMin: mins(iReqMs) };
   // Support minutes are "everything that isn't instruction", so overlapping sections are never counted twice.
   out.suppMin = out.presentMin - out.instrMin; out.suppReqMin = out.reqMin - out.instrReqMin;
-  if (presentMs < 60000){ out.flags.push({ k: 'absent', label: 'Absent' }); return out; }
+  const G = S.lateGrace * 60000, L = S.leaveGrace * 60000, D = S.gapMin * 60000;
+  // Less than a minute in class is absent, unless the teacher marked the day as finished work (they came, and were let go).
+  if (presentMs < 60000 && !(finished && presentMs > 0)){ out.canFinish = presentMs > 0; out.flags.push({ k: 'absent', label: 'Absent' }); return out; }
   const rel = merged.filter(([a, b]) => b > winStart && a < winEnd);
   out.firstJoin = rel[0][0]; out.lastLeave = rel[rel.length - 1][1];
-  const G = S.lateGrace * 60000, L = S.leaveGrace * 60000, D = S.gapMin * 60000;
+  out.canFinish = out.lastLeave < winEnd - L;   // left before the end: the teacher can mark it as finished work
   const instr = secs.filter(s => s.type === 'instruction'), supp = secs.filter(s => s.type === 'support');
-  if (instrIv.length && iPresMs < 5 * 60000) out.flags.push({ k: 'missed', label: 'Missed instruction' });
+  if (instrIv.length && iPresMs < 5 * 60000 && !finished) out.flags.push({ k: 'missed', label: 'Missed instruction' });
   else if (out.firstJoin > winStart + G){ const m = mins(out.firstJoin - winStart); out.flags.push({ k: 'late', label: `Late ${m} min`, min: m }); }
-  if (out.lastLeave < winEnd - L){
+  if (out.lastLeave < winEnd - L && finished){ const m = mins(winEnd - out.lastLeave); out.flags.push({ k: 'fin', label: `Finished work, left ${m} min early`, min: m }); }
+  else if (out.lastLeave < winEnd - L){
     const m = mins(winEnd - out.lastLeave);
     const inSupport = supp.some(s => out.lastLeave >= s.a && out.lastLeave < s.b);
     const suppPresent = supp.reduce((t, s) => t + overlap(merged, s.a, s.b), 0);
@@ -1141,10 +1144,8 @@ function analyzeDay(g, sched, nameOf, matcher, ignored, S){
   }
   const students = [...plan.values()].map(p => {
     const e = seen.get(p.key);
-    const res = evaluate(e ? e.intervals : [], p.sections, at, S);
     const xkey = `${g.dk}|${p.key}`;
-    const soft = res.flags.find(f => f.k === 'soft');
-    if (soft && state.data.excused[xkey]){ soft.k = 'fin'; soft.label = `Finished work, left ${soft.min} min early`; }
+    const res = evaluate(e ? e.intervals : [], p.sections, at, S, !!state.data.excused[xkey]);
     const isAbsent = res.flags[0].k === 'absent';
     if (isAbsent && state.data.excusedAbsent[xkey]) res.flags[0] = { k: 'exc', label: 'Excused absence' };
     const sev = Math.max(...res.flags.map(f => SEVERITY[f.k]));
@@ -1153,7 +1154,7 @@ function analyzeDay(g, sched, nameOf, matcher, ignored, S){
       : kinds.has('instruction') ? 'Instruction' : 'Support hour only';
     const zoomNames = e ? [...e.zoom].filter(z => normKey(z) !== p.key) : [];
     const segs = e ? [...e.segs].sort((x, y) => x.a - y.a) : [];
-    return { ...p, ...res, dk: g.dk, xkey, sev, schedLabel, zoomNames, segs, hasSoft: !!soft, isAbsent,
+    return { ...p, ...res, dk: g.dk, xkey, sev, schedLabel, zoomNames, segs, isAbsent,
       note: state.data.notes[xkey] || '' };
   }).sort((a, b) => a.name.localeCompare(b.name));
   const extras = [...seen.values()].filter(e => !plan.has(e.key)).map(e => ({ ...e, merged: mergeIntervals(e.intervals) }))
@@ -1292,7 +1293,7 @@ function conflictNotices(A, period, key){
 // The action links under a student's status, shared by Reports and the student report.
 function rowActions(s){
   const editing = state.noteEdit === s.xkey;
-  return `${s.hasSoft ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}
+  return `${s.canFinish || state.data.excused[s.xkey] ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work'}</button>` : ''}
     ${s.isAbsent ? `<button class="linkish" data-excabs="${esc(s.xkey)}">${state.data.excusedAbsent[s.xkey] ? 'Undo excused' : 'Mark excused'}</button>` : ''}
     ${editing ? '' : `<button class="linkish" data-noteedit="${esc(s.xkey)}">${s.note ? 'Edit note' : 'Add note'}</button>`}`;
 }
@@ -1376,14 +1377,20 @@ const isWhole = s => !s.isAbsent && s.flags.every(f => f.k === 'full' || f.k ===
 const worstFlag = s => s.flags.reduce((w, x) => SEVERITY[x.k] > SEVERITY[w.k] ? x : w);
 const isExcused = s => s.flags[0].k === 'exc';
 // Minutes a student left early after finishing their work. They come out of the "scheduled" total.
-function finMinOf(s){
-  if (!s.flags.some(x => x.k === 'fin')) return 0;
-  // The support-hour minutes missed, less any missed before joining or mid-class, so the rounded minutes always add up.
-  const iIv = mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
-  let other = 0;
-  for (const g of segsOf(s)) if (g.k !== 'in' && g.k !== 'fin') other += (g.b - g.a) - overlap(iIv, g.a, g.b);
-  return Math.max(0, Math.min(s.suppReqMin - s.suppMin - mins(other), s.reqMin - s.presentMin));
+function finSplit(s){
+  if (s._fin) return s._fin;
+  let r = { fin: 0, finI: 0, finS: 0 };
+  if (s.flags.some(x => x.k === 'fin')){
+    // Everything missed after leaving, less what was missed before joining or mid-class, so the rounded minutes always add up.
+    const iIv = mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
+    let iOther = 0, sOther = 0;
+    for (const g of segsOf(s)) if (g.k !== 'in' && g.k !== 'fin'){ const i = overlap(iIv, g.a, g.b); iOther += i; sOther += (g.b - g.a) - i; }
+    const finI = Math.max(0, s.instrReqMin - s.instrMin - mins(iOther)), finS = Math.max(0, s.suppReqMin - s.suppMin - mins(sOther));
+    r = { fin: finI + finS, finI, finS };
+  }
+  return (s._fin = r);
 }
+const finMinOf = s => finSplit(s).fin;
 
 // A student's scheduled sections on one date, from the schedule version in effect that day
 // (or, with `at`, from the version in effect on another date).
@@ -1459,7 +1466,7 @@ function apportion(total, W){
 }
 // One held, not-excused day in whole minutes, anchored to the day's own rounded numbers.
 function dayParts(s){
-  const fin = finMinOf(s), z = () => ({ in: 0, before: 0, out: 0, after: 0, absent: 0 });
+  const { fin, finI, finS } = finSplit(s), z = () => ({ in: 0, before: 0, out: 0, after: 0, absent: 0 });
   const P = { instruction: z(), support: z(), fin, clamped: 0 };
   P.instruction.in = s.instrMin; P.support.in = s.suppMin;
   if (s.isAbsent){
@@ -1471,14 +1478,13 @@ function dayParts(s){
   const iIv = mergeIntervals(s.secs.filter(x => x.type === 'instruction').map(x => [x.a, x.b]));
   const W = { instruction: { before: 0, out: 0, after: 0 }, support: { before: 0, out: 0, after: 0 } };
   for (const g of segsOf(s)){
-    if (g.k === 'in') continue;
+    if (g.k === 'in' || g.k === 'fin') continue;   // finished-work minutes aren't counted
     const iMs = overlap(iIv, g.a, g.b), sMs = (g.b - g.a) - iMs;
-    W.instruction[g.k === 'fin' ? 'after' : g.k] += iMs;
-    if (g.k !== 'fin') W.support[g.k] += sMs;   // finished-work minutes aren't counted
+    W.instruction[g.k] += iMs; W.support[g.k] += sMs;
   }
-  let sT = s.suppReqMin - s.suppMin - fin;
+  let sT = s.suppReqMin - s.suppMin - finS;
   if (sT < 0){ P.clamped = -sT; sT = 0; }   // a rounding minute between presentMin and instrMin
-  Object.assign(P.instruction, apportion(s.instrReqMin - s.instrMin, W.instruction));
+  Object.assign(P.instruction, apportion(s.instrReqMin - s.instrMin - finI, W.instruction));
   Object.assign(P.support, apportion(sT, W.support));
   return P;
 }
@@ -1515,9 +1521,9 @@ function summarize(p){
   for (const { s } of p.rec){
     c.sessions++;
     if (isExcused(s)){ c.excused++; continue; }
-    const fin = finMinOf(s);
+    const { fin, finI, finS } = finSplit(s);
     c.req += s.reqMin - fin; c.pres += s.presentMin; c.finMin += fin;
-    c.iReq += s.instrReqMin; c.iPres += s.instrMin; c.sReq += s.suppReqMin - fin; c.sPres += s.suppMin;
+    c.iReq += s.instrReqMin - finI; c.iPres += s.instrMin; c.sReq += s.suppReqMin - finS; c.sPres += s.suppMin;
     if (s.isAbsent) c.absent++; else c.attended++;
     if (hasFlag(s, 'late')) c.late++;
     if (hasFlag(s, 'missed')) c.missed++;
@@ -1755,7 +1761,8 @@ function ovEditor(A, c, name){
     <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
     <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Sent a message home about this day</label>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" maxlength="300" value="${esc(c.note)}" placeholder="Optional"></label>
-    <div class="ovpop-f">${Object.keys(c.ov).length ? '<button class="linkish" data-ovreset>Back to automatic</button>' : ''}
+    <div class="ovpop-f">${s && (s.canFinish || state.data.excused[s.xkey]) ? `<button class="linkish" data-excuse="${esc(s.xkey)}">${state.data.excused[s.xkey] ? 'Undo finished work' : 'Mark finished work (let go early)'}</button>` : ''}
+      ${Object.keys(c.ov).length ? '<button class="linkish" data-ovreset>Back to automatic</button>' : ''}
       ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open in ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
 }
 function placeOvEditor(){
@@ -1799,15 +1806,20 @@ function supportWeek(A){
       if (!people.has(k)) people.set(k, { key: k, name: A.nameOf[k] || n, days: [] });
       const P = people.get(k); if (P.days.some(e => e.dk === dk)) continue;
       const rec = rep ? rep.students.find(r => r.key === k) : null;
-      const kind = rec ? (hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full')
+      const kind = rec ? (hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') || (rec.canFinish && leftInSupport(rec)) ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full')
         : state.data.noClass[dk] ? 'noclass' : dk < today ? 'missing' : dk === today ? 'today' : 'later';
       P.days.push({ dk, kind, rec });
     }
   }
   return { today, wk, days, people: [...people.values()].sort((a, b) => a.name.localeCompare(b.name)) };
 }
+// Whether the student's last time in Zoom ended during a support hour (for a day that was only a moment in Zoom, too).
+function leftInSupport(rec){
+  const inWin = rec.merged.filter(([a, b]) => b > rec.winStart && a < rec.winEnd), t = rec.lastLeave ?? (inWin.length ? inWin[inWin.length - 1][1] : null);
+  return t !== null && rec.secs.some(x => x.type === 'support' && t > x.a && t <= x.b);
+}
 const supDay = dk => `${shortDate(dk).replace(/,.*/, '')} ${parseDk(dk).getDate()}`;
-const supLeft = d => d.rec && d.rec.lastLeave ? `left ${hm(d.rec.lastLeave)}` : '';
+const supLeft = d => { const r = d.rec; if (!r) return ''; const iw = r.merged.filter(([a, b]) => b > r.winStart && a < r.winEnd), t = r.lastLeave ?? (iw.length ? iw[iw.length - 1][1] : null); return t ? `left ${hm(t)}` : ''; };
 // One support day with its mark button. Marking (or undoing) changes the row in place, so nothing moves under the pointer.
 function supItem(d){
   const on = d.kind === 'fin';
@@ -2324,7 +2336,7 @@ function dayDetail(ctx){
   const ev = L.filter(l => kept.has(l)).map(l => `<span class="a-${l.align}" style="left:${l.x.toFixed(2)}%">${esc(l.text)}</span>`).join('');
   const extra = L.filter(l => !kept.has(l)).map(l => ` · ${esc(l.text)}`).join('');
   const mline = isExcused(s) ? `Excused, not counted (${s.reqMin} min)`
-    : `${s.presentMin} of ${s.reqMin - fin} min${s.instrReqMin && s.suppReqMin ? ` · instruction ${s.instrMin} of ${s.instrReqMin} · support hour ${s.suppMin} of ${s.suppReqMin - fin}` : ''}${fin ? ` · ${fin} min finished work early, not counted` : ''}`;
+    : `${s.presentMin} of ${s.reqMin - fin} min${s.instrReqMin - finSplit(s).finI > 0 && s.suppReqMin - finSplit(s).finS > 0 ? ` · instruction ${s.instrMin} of ${s.instrReqMin - finSplit(s).finI} · support hour ${s.suppMin} of ${s.suppReqMin - finSplit(s).finS}` : ''}${fin ? ` · ${fin} min finished work early, not counted` : ''}`;
   // The old facts sentence becomes the picture's text for screen readers.
   const facts = [];
   if (s.firstJoin) facts.push(`Joined ${fmt(s.firstJoin)}`, `Left ${fmt(s.lastLeave)}`);
