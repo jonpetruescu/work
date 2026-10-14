@@ -236,7 +236,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .ovsw{display:inline-flex;align-items:center;justify-content:center;width:16px;height:12px;border-radius:2px;font-style:normal;font-size:.7rem;border:1px solid var(--line)}
 .ovsw.ovnote-k{background:linear-gradient(225deg,var(--ink) 0 4px,var(--surface) 4px)}
 .ovwrap{position:relative;margin-top:8px}
-.ovscroll{position:relative;overflow:auto;max-height:calc(100vh - 230px);border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.ovblock{position:relative;width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:14px}
 table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovt th,.ovt td{padding:0;border-right:1px solid var(--surface);border-bottom:1px solid var(--surface)}
 .ovt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--muted);font-weight:600;text-align:center;white-space:nowrap;padding:2px 3px;font-size:.72rem}
@@ -271,7 +271,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
 @media print{
-  .ovscroll{overflow:visible;max-height:none;border:0}
+  .ovblock{border:0;break-inside:avoid}
   .ovt thead th,.ovt th.ovname{position:static}
   .ovpop,#tab-overview .toolbar{display:none !important}
   .ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -760,7 +760,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovScroll: null, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1628,7 +1628,6 @@ function renderOverview(){
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">The overview needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> to know who is expected each day.</p></div>`; return; }
-  const old = $('#tab-overview .ovscroll'); if (old) state.ovScroll = { x: old.scrollLeft, y: old.scrollTop };
   const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
@@ -1650,31 +1649,39 @@ function renderOverview(){
     <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>
     <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}.` : 'No Formative exports in the folder yet.'} Click a day to change it.</span></div>`;
   if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
-  // Header: month, weekday and date. A thicker line starts each week.
-  const wkStart = dates.map((dk, i) => i === 0 || weekKey(dk) !== weekKey(dates[i - 1]));
-  let months = '', i = 0;
-  while (i < dates.length){ let j = i; const m = parseDk(dates[i]).getMonth(); while (j < dates.length && parseDk(dates[j]).getMonth() === m) j++;
-    months += `<th colspan="${j - i}" class="ovmo${wkStart[i] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[i])))}</th>`; i = j; }
-  const today = todayDk();
-  const head = dates.map((dk, n) => `<th scope="col" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`).join('');
-  const sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
-  const tabDk = selCell ? sel : null;
-  let first = true;
-  const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></th>${r.cells.map((c, ci) => {
-    const words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`;
-    const letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
-    const stop = tabDk ? c.xk === tabDk : first && (first = false, true);
-    if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
-    return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
-      c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
-  }).join('')}</tr>`).join('');
-  h += `<div class="ovwrap"><div class="ovscroll"><table class="ovt"><caption class="sr">Attendance overview: ${plural(rows.length, 'student')} by ${plural(dates.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
-    <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+  // No scrolling box: the grid is as tall as the class list, and when the days don't fit across the page,
+  // whole weeks wrap into another block below (newest weeks on top), each with its own dates and names.
+  const wkStart = dates.map((dk, n) => n === 0 || weekKey(dk) !== weekKey(dates[n - 1]));
+  const perBlock = Math.max(5, Math.floor(((el.clientWidth || 1140) - 230) / 42));
+  const weeks = [];
+  dates.forEach((dk, n) => { if (wkStart[n]) weeks.push([]); weeks[weeks.length - 1].push(n); });
+  // Fill blocks from the newest week back, so the top block is full and the oldest block takes what's left.
+  const blocks = [];
+  for (const wk of weeks.reverse()){
+    const last = blocks[blocks.length - 1];
+    if (!last || last.length + wk.length > perBlock) blocks.push([...wk]); else last.unshift(...wk);
+  }
+  const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
+  let first = !selCell;
+  const table = (idx, bi) => {
+    let months = '', m0 = 0;
+    while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
+      months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
+    const head = idx.map(n => { const dk = dates[n];
+      return `<th scope="col" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button></th>${idx.map(ci => {
+      const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
+      if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
+      const stop = selCell ? c.xk === sel : first && (first = false, true);
+      return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
+        c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+    }).join('')}</tr>`).join('');
+    return `<div class="ovblock"><table class="ovt"><caption class="sr">Attendance, ${esc(fmtPeriod({ from: dates[idx[0]], to: dates[idx[idx.length - 1]] }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
+      <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  h += `<div class="ovwrap">${blocks.map(table).join('')}
     ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}</div>`;
   el.innerHTML = h;
-  // Keep the scroll position across redraws; the first time, show the latest days.
-  const sc = $('#tab-overview .ovscroll');
-  if (state.ovScroll){ sc.scrollLeft = state.ovScroll.x; sc.scrollTop = state.ovScroll.y; } else sc.scrollLeft = sc.scrollWidth;
   placeOvEditor();
 }
 // The editor for one day, next to its cell.
@@ -3130,13 +3137,16 @@ function overviewKey(e, t){
   else if (e.key === 'ArrowLeft') to = step(0, -1);
   else if (e.key === 'ArrowDown') to = step(1, 0);
   else if (e.key === 'ArrowUp') to = step(-1, 0);
-  else if (e.key === 'Home') to = e.ctrlKey ? all[0] : all.find(b => +b.dataset.r === r);
-  else if (e.key === 'End') to = e.ctrlKey ? all[all.length - 1] : [...all].reverse().find(b => +b.dataset.r === r);
+  else if (e.key === 'Home' || e.key === 'End'){
+    // Earliest or latest day in the student's row (Ctrl: in the whole grid), wherever its block is drawn.
+    const pool = (e.ctrlKey ? all : all.filter(b => +b.dataset.r === r)).sort((x, y) => (+x.dataset.r - +y.dataset.r) || (+x.dataset.c - +y.dataset.c));
+    to = e.key === 'Home' ? pool[0] : pool[pool.length - 1];
+  }
   else return;
   e.preventDefault();
   if (!to) return;
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
-  to.focus(); to.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  to.focus(); to.scrollIntoView({ block: 'nearest' });
 }
 // Arrow keys move between days in the calendar (one Tab stop for the whole calendar).
 function calendarKey(e, t){
@@ -3172,8 +3182,9 @@ document.addEventListener('toggle', e => {
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
   }
 }, true);
-document.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('ovscroll')) placeOvEditor(); }, true);
-window.addEventListener('resize', () => placeOvEditor());
+// The grid wraps its weeks to the page width, so redraw it after the window changes size.
+let ovResize = null;
+window.addEventListener('resize', () => { clearTimeout(ovResize); ovResize = setTimeout(() => { if (state.tab === 'overview' && state.loaded) renderOverview(); }, 150); });
 window.addEventListener('popstate', e => {
   const s = e.state || {}, leaving = state.student;
   navSeq = s.seq || 0;
