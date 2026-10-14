@@ -257,7 +257,10 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovm{font-size:.72rem;color:var(--ov-ink)}
 .ovlegend .ovm{color:var(--ink)}
 .ovn{position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--ov-ink);border-left:6px solid transparent}
-.ovpop{position:absolute;z-index:10;width:340px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:.86rem}
+.ovmarkbar{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:.88rem}
+.ovwrap.marking .ovb{cursor:copy}
+.ovwrap.marking .ovb:hover{box-shadow:inset 0 0 0 2px var(--focus)}
+.ovpop{position:absolute;z-index:10;width:340px;max-height:calc(100vh - 16px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:.86rem}
 .ovpop p{margin:6px 0 8px}
 .ovpop-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
 .ovx{margin-left:auto}
@@ -760,7 +763,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: false, ovMarkN: 0, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1593,6 +1596,13 @@ function formOf(A, key, dk){
   return { answered, total, pct, inFile: !!t, share, files: g.files };
 }
 const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day === dk);
+// A message about a class day is kept in the student's follow-up log, tied to that day.
+function setMsg(xk, on){
+  const dk = xk.slice(0, 10), key = xk.slice(11), list = state.data.followUps[key] || [];
+  if (on){ if (!list.some(f => f.day === dk)) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: `Attendance message about ${shortDate(dk)}`, day: dk }]; }
+  else { const rest = list.filter(f => f.day !== dk); if (rest.length) state.data.followUps[key] = rest; else delete state.data.followUps[key]; }
+  changed();
+}
 function cellState(A, key, dk, recs){
   const plan = planFor(A, key, dk), rec = (recs.get(dk) || new Map()).get(key) || null;
   const xk = `${dk}|${key}`, ov = state.data.dayStatus[xk] || {}, auto = { L: false, D: false };
@@ -1634,7 +1644,9 @@ function renderOverview(){
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <button class="btn small ghost" data-printlist>Print</button></div>`;
+    <button class="btn small${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done checking' : '✓ Check off messages sent'}</button>
+    <button class="btn small ghost" data-printlist>Print</button></div>
+    ${state.ovMark ? `<div class="ovmarkbar" role="status"><b>✓ Check-mark mode.</b> Click any day to check or uncheck “message sent home.” <span data-ovmarkn>${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far.' : ''}</span> Click <b>Done checking</b> when you’re finished.</div>` : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Formative names that didn't match anyone on the schedule can be linked once, like Zoom names.
   const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
@@ -1679,7 +1691,7 @@ function renderOverview(){
     return `<div class="ovblock"><table class="ovt"><caption class="sr">Attendance, ${esc(fmtPeriod({ from: dates[idx[0]], to: dates[idx[idx.length - 1]] }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  h += `<div class="ovwrap">${blocks.map(table).join('')}
+  h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}
     ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}</div>`;
   el.innerHTML = h;
   placeOvEditor();
@@ -1713,7 +1725,10 @@ function placeOvEditor(){
   let left = r.left - w.left + r.width + 8;
   if (left + pop.offsetWidth > w.width) left = Math.max(0, r.left - w.left - pop.offsetWidth - 8);
   pop.style.left = left + 'px';
-  pop.style.top = Math.max(0, Math.min(r.top - w.top - 20, w.height - pop.offsetHeight)) + 'px';
+  // Line it up with the day, but keep the whole editor inside the window (it moves up for days low on the screen).
+  let top = r.top - 20;
+  if (top + pop.offsetHeight > innerHeight - 8) top = innerHeight - 8 - pop.offsetHeight;
+  pop.style.top = (Math.max(8, top) - w.top) + 'px';
 }
 function setOverride(xk, patch){
   const o = { ...(state.data.dayStatus[xk] || {}), ...patch };
@@ -2875,7 +2890,7 @@ document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) m.open = false; });
   if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){ state.ovSel = null; renderOverview(); }
   const t = e.target.closest('button'); if (!t) return;
-  if (e.detail > 1 && t.dataset.supmark !== undefined) return;   // a double-click marks once
+  if (e.detail > 1 && (t.dataset.supmark !== undefined || (state.ovMark && t.dataset.ovcell !== undefined))) return;   // a double-click marks once
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
   const sel = focusSelector(t);
   await onClick(t);
@@ -2896,6 +2911,18 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
+  if (has('data-ovmark')){ state.ovMark = !state.ovMark; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
+  if (d.ovcell !== undefined && state.ovMark){
+    // Check-mark mode: a click checks or unchecks "message sent" right in the cell, without opening the editor.
+    const on = !t.querySelector('.ovm');
+    setMsg(d.ovcell, on); state.ovMarkN = (state.ovMarkN || 0) + 1;
+    if (on) t.insertAdjacentHTML('beforeend', '<b class="ovm">✓</b>'); else t.querySelector('.ovm').remove();
+    const lab = t.getAttribute('aria-label').replace(', Message sent', ''), i = lab.indexOf(', Has a note');
+    const next = on ? (i < 0 ? lab + ', Message sent' : lab.slice(0, i) + ', Message sent' + lab.slice(i)) : lab;
+    t.setAttribute('aria-label', next); t.title = next;
+    const n = $('#tab-overview [data-ovmarkn]'); if (n) n.textContent = plural(state.ovMarkN, 'change') + ' so far.';
+    return;
+  }
   if (d.ovcell !== undefined){ state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(d.ovcell); return; }
   if (has('data-ovclose')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
   if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
@@ -3067,11 +3094,7 @@ document.addEventListener('change', e => {
   }
   // Notes are saved on focusout and Enter, not here: "change" fires before focusout, and redrawing here would swallow the click that moved focus.
   if (d.ovmsg){
-    // A message about a class day is kept in the student's follow-up log, tied to that day.
-    const dk = d.ovmsg.slice(0, 10), key = d.ovmsg.slice(11), list = state.data.followUps[key] || [];
-    if (t.checked) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: `Attendance message about ${shortDate(dk)}`, day: dk }];
-    else { const rest = list.filter(f => f.day !== dk); if (rest.length) state.data.followUps[key] = rest; else delete state.data.followUps[key]; }
-    changed(); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return;
+    setMsg(d.ovmsg, t.checked); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return;
   }
   if (d.ovnote){
     const v = t.value.trim().slice(0, 300);
@@ -3132,6 +3155,7 @@ function overviewKey(e, t){
   const all = [...document.querySelectorAll('#tab-overview .ovb')];
   let to = null;
   if (e.key === 'Escape' && state.ovSel){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
+  if (e.key === 'Escape' && state.ovMark){ const was = t.dataset.ovcell; state.ovMark = false; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
   const step = (dr, dc) => { for (let rr = r + dr, cc = c + dc, n = 0; n < 400; rr += dr, cc += dc, n++){ const b = at(rr, cc); if (b) return b; if (rr < 0 || cc < 0 || rr > 2000 || cc > 2000) break; } return null; };
   if (e.key === 'ArrowRight') to = step(0, 1);
   else if (e.key === 'ArrowLeft') to = step(0, -1);
