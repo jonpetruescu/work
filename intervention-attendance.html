@@ -64,7 +64,7 @@ nav.tabs button{flex:none}
 nav.tabs button{background:none;border:0;padding:10px 0 11px;cursor:pointer;color:var(--muted);font-weight:600;border-bottom:3px solid transparent}
 nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bar)}
 .savebar{font-size:.84rem;color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
-.savebar.warn{color:var(--late)}
+.savebar .linkish{color:var(--muted)}
 .tabrow{display:flex;flex-wrap:wrap;gap:10px}
 
 main.wrap{padding:22px 20px 60px}
@@ -231,9 +231,9 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .dropform input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px}
 .ovdrop{display:block;font-size:.66rem;font-weight:500;color:var(--late)}
 /* Overview grid: the teacher's spreadsheet colors */
-:root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-camera:#F6B26B; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
-@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-camera:#C27E3C; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
-.c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)} .c-camera{background:var(--ov-camera)}
+:root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
+@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
+.c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)}
 .c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)} .c-nosched{background:var(--ov-nosched)}
 .c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
 .ovlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);margin:0 0 6px}
@@ -670,7 +670,7 @@ const LETTER_FAMILY = { full:'whole class', fin:'finished work early', late:'lat
 const LETTER_ORDER = ['full','fin','late','missed','early','soft','drop','absent','exc','noclass','missing'];
 const NOCLASS_REASONS = { holiday:'School holiday', testing:'Testing', canceled:'Class canceled', other:'Other' };
 // The Overview grid's colors and letters, in the teacher's own words.
-const OV_CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle: 'Likely present but not engaging', camera: 'Camera off',
+const OV_CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle: 'Likely present but not engaging',
   away: 'Likely not actually present', absent: 'Did not attend', nosched: 'Not scheduled' };
 const OV_LET = { L: 'Late or left early', D: 'Disengaged', C: 'Camera off' };
 const FU_HOW = { call:'Called home', message:'Emailed or texted home', student:'Talked with the student', meeting:'Meeting (team or family)', other:'Other' };
@@ -748,6 +748,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
     if (x.cat in OV_CAT) o.cat = x.cat;
+    if (x.cat === 'camera' && typeof x.C !== 'boolean') o.C = true;   // the old orange "camera off" color is now just the C letter
     for (const l of ['L', 'D', 'C']) if (typeof x[l] === 'boolean') o[l] = x[l];
     if (isDk(k.split('|')[0]) && Object.keys(o).length) out.dayStatus[k] = o;
   }
@@ -1645,11 +1646,11 @@ function cellState(A, key, dk, recs){
     else {
       const eng = state.data.settings.engagedPct / 100;
       base = !f ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
-      auto.L = ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));
+      auto.L = !hasFlag(rec, 'fin') && ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));   // finished work: let go, so no L
       auto.D = !!f && f.share < eng;
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
-  const cat = ov.cat || base;
+  const cat = ov.cat in OV_CAT ? ov.cat : base;
   return { dk, key, xk, plan, rec, f, base, cat, auto, ov, L: ov.L ?? auto.L, D: ov.D ?? auto.D, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
 }
 const OV_STATE = { noclass: 'No class', missing: 'No Zoom report yet', later: 'Not yet' };
@@ -1728,7 +1729,7 @@ function renderOverview(){
 }
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it.
 const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'],
-  ...['engaged', 'idle', 'away', 'camera', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
+  ...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
 function ovMarkBar(){
   return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.</span>
     <div class="ovbrushes">${BRUSHES.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
@@ -2755,7 +2756,11 @@ function renderSettings(){
     </div>
     <div class="panel"><h2>Your data</h2>
       <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
-      <div class="actions"><button class="btn ghost" id="dlData">Download data file</button></div>
+      ${state.canWrite ? `<p class="small">Changes save automatically into ${DATA_FILE} in your folder.</p>`
+        : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
+        : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
+      <div class="actions">${state.dirHandle && !state.canWrite ? '<button class="btn" id="grantSave">Allow saving to folder</button>' : ''}
+        <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download data file</button></div>
       <p class="small muted">For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
     </div></div>`;
 }
@@ -2772,14 +2777,12 @@ function renderFolderBar(){
   } else h = `<button class="btn" id="pick">Open attendance folder</button>`;
   b.innerHTML = h;
 }
+// One quiet line. With folder access saving is automatic and the line never changes;
+// without it, a small link points to Settings, where the data file can be downloaded.
 function renderSaveState(){
-  const el = $('#saveBar');
-  if (state.saving){ el.className = 'savebar'; el.textContent = 'Saving…'; return; }
-  if (!state.dirty){ el.className = 'savebar'; el.innerHTML = state.loaded && state.canWrite ? 'All changes saved to the folder' : ''; return; }
-  el.className = 'savebar warn';
-  el.innerHTML = state.dirHandle && !state.canWrite
-    ? `Changes not saved. <button class="btn small" id="grantSave">Allow saving to folder</button> <button class="btn small ghost" id="dlData2">Download data file</button>`
-    : `Changes not saved to the folder. <button class="btn small" id="dlData2">Download data file</button> <span class="small">and put it in your attendance folder</span>`;
+  const el = $('#saveBar'), h = !state.loaded ? '' : state.canWrite ? '<span>Saves automatically</span>'
+    : state.dirty ? '<button class="linkish" data-goto="settings">Unsaved changes</button>' : '';
+  if (el.innerHTML !== h) el.innerHTML = h;
 }
 function renderStatus(){
   const el = $('#status');
@@ -2982,8 +2985,8 @@ async function onClick(t){
   if (t.id === 'pick') return pickFolder();
   if (t.id === 'reopen') return reopen();
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
-  if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
-  if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
+  if (t.id === 'dlData'){ downloadData(); if (!state.canWrite){ state.dirty = false; renderSaveState(); renderSettings(); } return; }
+  if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); renderCurrent(); } } catch (err){} return; }
   if (d.dropstart){ state.dropEdit = d.dropstart; renderStudents(); const i = $('#tab-students [data-dropdate]'); if (i) i.focus(); return; }
   if (has('data-dropcancel')){ state.dropEdit = null; renderStudents(); const b = $('#tab-students [data-dropstart]'); if (b) b.focus(); return; }
   if (d.dropsave){
