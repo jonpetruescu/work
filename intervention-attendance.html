@@ -224,6 +224,12 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
 
+.dropnote{margin:2px 0 6px;font-size:.88rem;color:var(--late);font-weight:600}
+.dropnote .linkish{font-weight:400}
+.dropbtn{font-size:.8rem;margin:0 0 4px}
+.dropform{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0 8px;font-size:.88rem}
+.dropform input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px}
+.ovdrop{display:block;font-size:.66rem;font-weight:500;color:var(--late)}
 /* Overview grid: the teacher's spreadsheet colors */
 :root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-camera:#F6B26B; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
 @media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-camera:#C27E3C; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
@@ -721,6 +727,7 @@ function defaultData(){
     aliases: {}, ignored: [], excused: {}, excusedAbsent: {}, notes: {},
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid
+    drops: {},       // { studentKey: { date } } dropped from the class starting that date
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], engagedPct: [1, 100] };
@@ -731,12 +738,13 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
   for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
+  for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
     if (x.cat in OV_CAT) o.cat = x.cat;
@@ -764,7 +772,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1042,7 +1050,19 @@ function analyze(){
   for (const v of versions) for (const r of v.sched.roster) nameOf[r.key] = r.name;   // latest spelling wins
   const roster = Object.keys(nameOf).map(key => ({ key, name: nameOf[key] })).sort((a, b) => a.name.localeCompare(b.name));
   const verFor = dk => { let s = versions[0]; for (const v of versions) if (v.from <= dk) s = v; return s; };
-  const schedFor = dk => verFor(dk).sched;
+  // A student dropped from the class is taken off every schedule from the drop date on; their earlier days stay as they were.
+  const drops = Object.entries(state.data.drops).map(([k, v]) => [k, v.date]), dropCache = new Map();
+  const schedFor = dk => {
+    const v = verFor(dk), gone = drops.filter(([, d]) => d <= dk).map(([k]) => k).sort();
+    if (!gone.length) return v.sched;
+    const ck = `${v.from}|${gone.join(',')}`;
+    if (!dropCache.has(ck)){
+      const out = new Set(gone), days = {};
+      for (const [w, secs] of Object.entries(v.sched.days)) days[w] = secs.map(x => ({ ...x, students: x.students.filter(n => !out.has(normKey(n))) }));
+      dropCache.set(ck, { ...v.sched, days, roster: v.sched.roster.filter(r => !out.has(r.key)) });
+    }
+    return dropCache.get(ck);
+  };
   // Zoom names are matched against that day's schedule first, so adding "Ben Carter" later can't make "ben c" ambiguous
   // on days Ben Carter wasn't scheduled. Everyone from every version is the fallback, for students who joined but weren't scheduled.
   const anyone = buildMatcher(roster, state.data.aliases);
@@ -1557,8 +1577,9 @@ function planChanged(A, key, from){
 }
 // The student's weekly schedule as of the end of the period, e.g. "Mondays 2–4 PM (instruction 2–3, support hour 3–4)".
 function scheduleInfo(A, key, period){
-  // Every weekday is read from the one schedule in effect at the end of the period.
-  const end = isDk(period.to) ? period.to : todayDk(), endW = parseDk(end).getDay(), byW = [];
+  // Every weekday is read from the one schedule in effect at the end of the period (for a dropped student, their last day).
+  const end0 = isDk(period.to) ? period.to : todayDk(), drop = dropOf(key);
+  const end = drop && drop <= end0 ? addDays(drop, -1) : end0, endW = parseDk(end).getDay(), byW = [];
   for (const w of [1, 2, 3, 4, 5, 6, 0]){
     const plan = planFor(A, key, addDays(end, -((endW - w + 7) % 7)), end);
     if (plan) byW.push({ w, plan });
@@ -1596,6 +1617,8 @@ function formOf(A, key, dk){
   const share = total ? Math.min(1, answered / total) : pct !== null ? (pct > 0 ? 1 : 0) : t ? 1 : 0;
   return { answered, total, pct, inFile: !!t, share, files: g.files };
 }
+const dropOf = key => (state.data.drops[key] || {}).date || null;
+const isDropped = key => { const d = dropOf(key); return !!d && d <= todayDk(); };
 const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day === dk);
 // A message about a class day is kept in the student's follow-up log, tied to that day.
 function setMsg(xk, on){
@@ -1641,12 +1664,12 @@ function renderOverview(){
   if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">The overview needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> to know who is expected each day.</p></div>`; return; }
   const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
-  const rows = A.roster.map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
+  const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <button class="btn small${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
-    <button class="btn small ghost" data-printlist>Print</button></div>
+    <button class="btn small ghost" data-printlist>Print</button>${droppedToggle(A)}</div>
     ${state.ovMark ? ovMarkBar() : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Formative names that didn't match anyone on the schedule can be linked once, like Zoom names.
@@ -1682,7 +1705,7 @@ function renderOverview(){
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
     const head = idx.map(n => { const dk = dates[n];
       return `<th scope="col" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button></th>${idx.map(ci => {
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
       if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
       const stop = selCell ? c.xk === sel : first && (first = false, true);
@@ -1753,6 +1776,12 @@ function setOverride(xk, patch){
   for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
   if (Object.keys(o).length) state.data.dayStatus[xk] = o; else delete state.data.dayStatus[xk];
   changed();
+}
+
+// "Show dropped students" appears only when someone has been dropped.
+function droppedToggle(A){
+  const n = A.roster.filter(r => isDropped(r.key)).length;
+  return n ? `<label class="sortby"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped students (${n})</label>` : '';
 }
 
 /* ---------------- Support hour tab ----------------
@@ -1848,7 +1877,7 @@ function letterLegend(kinds, words = LETTER_TEAM){
 }
 function studentList(A){
   const days = daysInRange(A.days), period = periodOf(A), q = normKey(state.query);
-  const all = sortStudents(studentSummary(days));
+  const all = sortStudents(studentSummary(days)).filter(s => state.showDropped || !isDropped(s.key));
   const list = all.filter(s => !q || s.key.includes(q));
   return { days, period, all, list };
 }
@@ -1882,7 +1911,7 @@ function renderStudents(){
       ['dose', 'Minutes received, lowest first'], ['absent', 'Most absences']]
       .map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" id="exportSummary">Export CSV</button>
-    ${printMenu(all.length)}</div>`;
+    ${printMenu(all.length)}${droppedToggle(A)}</div>`;
   h += missingNotice(A, period);
   if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
   h += `<p class="listinfo">${plural(days.length, 'class day')} with Zoom reports · ${plural(all.length, 'student')}<span class="printonly"> · ${esc(fmtPeriod(period))}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</span></p>`;
@@ -1897,7 +1926,8 @@ function renderStudents(){
     const info = scheduleInfo(A, s.key, period);
     const chips = [];
     if (info.addedOn && info.addedOn > period.from) chips.push(`<span class="chip k-extra">Added to the schedule ${esc(monDay(info.addedOn))}</span>`);
-    if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on the current schedule</span>`);
+    if (dropOf(s.key)) chips.push(`<span class="chip k-extra">Dropped ${esc(monDay(dropOf(s.key)))}</span>`);
+    else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on the current schedule</span>`);
     const leftEarly = s.early + s.soft;
     h += `<tr>
       <td class="c-name"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
@@ -1967,9 +1997,18 @@ function reportBar(ctx, o){
 function reportHeader(ctx){
   const { period, info, p } = ctx, S = state.data.settings;
   const nWeeks = Math.round((parseDk(weekKey(period.to)) - parseDk(weekKey(period.from))) / 6048e5) + 1;
-  const roster = [info.addedOn && info.addedOn > period.from ? `on the schedule since ${monDay(info.addedOn)}` : '', info.inLatest ? '' : 'not on the current schedule'].filter(Boolean);
+  const drop = dropOf(ctx.key);
+  const roster = [info.addedOn && info.addedOn > period.from ? `on the schedule since ${monDay(info.addedOn)}` : '', info.inLatest || drop ? '' : 'not on the current schedule'].filter(Boolean);
+  // Dropped from the class: a line saying so (with Undo), or a small control to record it.
+  const dropLine = drop ? `<p class="dropnote">Dropped from the class starting ${esc(longDate(drop))}. Days from then on aren’t counted.
+      <button class="linkish noprint" data-undrop="${esc(ctx.key)}">Undo</button></p>`
+    : state.dropEdit === ctx.key ? `<div class="dropform noprint" role="group" aria-label="Dropped from the class"><span>Not in the class starting</span>
+      <input type="date" data-dropdate value="${esc(todayDk())}" aria-label="First day not in the class">
+      <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button>
+      <span class="small muted">Days from then on aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</span></div>`
+    : `<button class="linkish noprint dropbtn" data-dropstart="${esc(ctx.key)}">Dropped from the class?</button>`;
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
-    <h2 tabindex="-1">${esc(ctx.name)}</h2>
+    <h2 tabindex="-1">${esc(ctx.name)}</h2>${dropLine}
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
     ${scheduleChart(info)}
     ${p ? minutesBlock(ctx) : ''}</header>`;
@@ -2622,6 +2661,10 @@ function renderSchedule(){
         ${changed ? '<button class="btn ghost" id="revertSched">Discard changes</button>' : ''}
         <span class="small muted">${changed ? 'Not saved yet' : (state.data.scheduleText ? 'Saved' : '')}</span></div>`}
       ${history}
+      ${(() => { const ds = Object.entries(state.data.drops).sort((a, b) => b[1].date.localeCompare(a[1].date)); if (!ds.length) return '';
+        const nameOf = (state.lastAnalysis || analyze()).nameOf, nm = k => nameOf[k] || k;
+        return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
+          `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })()}
     </div>
     <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'What the page found'}</h2>
       ${viewing !== null ? `<div class="notice info">Viewing the schedule used ${esc(versionLabel(viewing))}. <button class="linkish" data-viewversion="">Back to current</button></div>` : ''}
@@ -2929,6 +2972,15 @@ async function onClick(t){
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData' || t.id === 'dlData2') return downloadData();
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); } } catch (err){} return; }
+  if (d.dropstart){ state.dropEdit = d.dropstart; renderStudents(); const i = $('#tab-students [data-dropdate]'); if (i) i.focus(); return; }
+  if (has('data-dropcancel')){ state.dropEdit = null; renderStudents(); const b = $('#tab-students [data-dropstart]'); if (b) b.focus(); return; }
+  if (d.dropsave){
+    const v = t.parentElement.querySelector('[data-dropdate]').value;
+    if (!isDk(v)){ t.parentElement.querySelector('[data-dropdate]').focus(); return; }
+    state.data.drops[d.dropsave] = { date: v }; state.dropEdit = null; changed(); renderCurrent();
+    const b = $(`#tab-${state.tab} [data-undrop]`); if (b) b.focus(); return;
+  }
+  if (d.undrop){ delete state.data.drops[d.undrop]; changed(); renderCurrent(); return; }
   if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
@@ -3116,6 +3168,7 @@ document.addEventListener('change', e => {
     if (b){ const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove(); }
     return;
   }
+  if ('showdropped' in d){ state.showDropped = t.checked; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
   // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
