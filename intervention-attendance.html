@@ -226,6 +226,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 
 .dropnote{margin:2px 0 6px;font-size:.88rem;color:var(--late);font-weight:600}
 .dropnote .linkish{font-weight:400}
+.dropbtns{display:inline-flex;gap:16px}
 .dropbtn{font-size:.8rem;margin:0 0 4px}
 .dropform{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0 8px;font-size:.88rem}
 .dropform input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px}
@@ -779,6 +780,7 @@ function defaultData(){
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid (an excused absence goes in excusedAbsent)
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
+    deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
     extraDays: {},   // { 'YYYY-MM-DD': { like: 'monday' } } class days added by hand, with that weekday's students and times
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
 }
@@ -790,13 +792,14 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, extraDays: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, extraDays: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
   for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
   for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
+  for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
   for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && DAYS.includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
@@ -1123,12 +1126,14 @@ function analyze(){
   const sched = versions[versions.length - 1].sched;
   const nameOf = {};
   for (const v of versions) for (const r of v.sched.roster) nameOf[r.key] = r.name;   // latest spelling wins
-  const roster = Object.keys(nameOf).map(key => ({ key, name: nameOf[key] })).sort((a, b) => a.name.localeCompare(b.name));
+  const deleted = new Set(Object.keys(state.data.deleted));
+  const roster = Object.keys(nameOf).filter(key => !deleted.has(key)).map(key => ({ key, name: nameOf[key] })).sort((a, b) => a.name.localeCompare(b.name));
   const verFor = dk => { let s = versions[0]; for (const v of versions) if (v.from <= dk) s = v; return s; };
   // A student dropped from the class is taken off every schedule from the drop date on; their earlier days stay as they were.
+  // A deleted student is taken off every schedule on every date.
   const drops = Object.entries(state.data.drops).map(([k, v]) => [k, v.date]), dropCache = new Map();
   const weekSched = dk => {
-    const v = verFor(dk), gone = drops.filter(([, d]) => d <= dk).map(([k]) => k).sort();
+    const v = verFor(dk), gone = [...new Set([...deleted, ...drops.filter(([, d]) => d <= dk).map(([k]) => k)])].sort();
     if (!gone.length) return v.sched;
     const ck = `${v.from}|${gone.join(',')}`;
     if (!dropCache.has(ck)){
@@ -1163,7 +1168,7 @@ function analyze(){
     }
   }
   const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk))
-    .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S));
+    .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S, deleted));
   // Formative results by class day: per student, questions answered of the questions they were given. Files with the same
   // questions are one Formative (a second export, or one file per group), where a student counts once, with their best file.
   // A student's total adds up only the Formatives whose files list them.
@@ -1177,6 +1182,7 @@ function analyze(){
     for (const r of F.rows){
       const m = match(r.name, r.email);
       if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
+      if (deleted.has(m.key)) continue;
       const e = seen.get(m.key) || { answered: 0, pct: null };
       e.answered = Math.max(e.answered, r.answered); if (r.pct !== null) e.pct = Math.max(e.pct ?? 0, r.pct);
       seen.set(m.key, e);
@@ -1190,7 +1196,7 @@ function analyze(){
   return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
 }
 
-function analyzeDay(g, sched, nameOf, matcher, ignored, S){
+function analyzeDay(g, sched, nameOf, matcher, ignored, S, deleted){
   const date = parseDk(g.dk);
   // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
   const at = m => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, m).getTime();
@@ -1208,6 +1214,7 @@ function analyzeDay(g, sched, nameOf, matcher, ignored, S){
     if (ignored.has(rk)) continue;
     const iv = [r.join.getTime(), r.leave.getTime()];
     const m = matcher(r.name, r.email);
+    if (m && deleted.has(m.key)) continue;   // a deleted student's Zoom rows aren't listed anywhere
     if (m){
       if (!seen.has(m.key)) seen.set(m.key, { key: m.key, name: m.name, intervals: [], zoom: new Set(), segs: [] });
       const e = seen.get(m.key); e.intervals.push(iv); e.zoom.add(r.name); e.segs.push({ a: iv[0], b: iv[1], name: r.name });
@@ -2221,7 +2228,8 @@ function reportHeader(ctx){
       <input type="date" data-dropdate value="${esc(todayDk())}" aria-label="First day not in the class">
       <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button>
       <span class="small muted">Days from then on aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</span></div>`
-    : `<button class="linkish noprint dropbtn" data-dropstart="${esc(ctx.key)}">Dropped from the class?</button>`;
+    : `<span class="noprint dropbtns"><button class="linkish dropbtn" data-dropstart="${esc(ctx.key)}">Dropped from the class?</button>
+      <button class="linkish dropbtn" data-delstudent="${esc(ctx.key)}">Delete student</button></span>`;
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
     <h2 tabindex="-1">${esc(ctx.name)}</h2>${dropLine}
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
@@ -2850,6 +2858,8 @@ function renderSchedule(){
   const text = state.draft ?? state.data.scheduleText;
   const P = parseSchedule(viewing !== null ? vs[viewing].text : text);
   const warn = viewing !== null ? [] : [...P.warnings];
+  const delIn = viewing !== null ? [] : P.roster.filter(r => state.data.deleted[r.key]).map(r => r.name);
+  if (delIn.length) warn.push(`Still in this schedule but deleted, so not counted: ${listJoin(delIn, 6)}. To count ${delIn.length === 1 ? 'them' : 'one'} again, use “Bring back” under Deleted students.`);
   if (viewing === null && P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, make the spelling match in your sheet: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
   const changed = state.draft !== null && state.draft !== state.data.scheduleText;
   let step = '';
@@ -2882,6 +2892,9 @@ function renderSchedule(){
         const nameOf = (state.lastAnalysis || analyze()).nameOf, nm = k => nameOf[k] || k;
         return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
           `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })()}
+      ${(() => { const ds = Object.entries(state.data.deleted).sort((a, b) => a[1].name.localeCompare(b[1].name)); if (!ds.length) return '';
+        return `<div class="small" style="margin-top:14px"><b>Deleted students</b> <span class="muted">(not on any tab or report)</span><ul class="hist-list">${ds.map(([k, v]) =>
+          `<li><span>${esc(v.name)}${v.date ? `, deleted ${esc(monDay(v.date))}` : ''}</span><button class="btn small ghost" data-undelete="${esc(k)}">Bring back</button></li>`).join('')}</ul></div>`; })()}
       ${(() => { const l = addedDaysList(analyze()); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
         <span class="muted">(add one with “+ Add a day” on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
     </div>
@@ -2962,7 +2975,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, the Overview’s colors, letters and “message sent” marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
+      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, dropped and deleted students, the Overview’s colors, letters and “message sent” marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically into ${DATA_FILE} in your folder.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
@@ -3214,6 +3227,18 @@ async function onClick(t){
     const b = $(`#tab-${state.tab} [data-undrop]`); if (b) b.focus(); return;
   }
   if (d.undrop){ delete state.data.drops[d.undrop]; changed(); renderCurrent(); return; }
+  if (d.delstudent){
+    const k = d.delstudent, A = state.lastAnalysis || analyze(), name = A.nameOf[k] || k, first = firstName(name);
+    if (!confirm(`Delete ${name}?\n\n${first} will be taken off every date, tab, report and export, and their Zoom and Formative names won’t be flagged. Their notes and marks are kept, so you can bring ${first} back from the Schedule tab.`)) return;
+    state.data.deleted[k] = { date: todayDk(), name };
+    state.student = null; state.studentFrom = null; state.dropEdit = null; changed(); render(); navReplace();
+    const s0 = $('#tab-students [data-search]'); if (s0) s0.focus(); return;
+  }
+  if (d.undelete){
+    const all = [...document.querySelectorAll('[data-undelete]')], i = all.indexOf(t);
+    delete state.data.deleted[d.undelete]; changed(); renderCurrent();
+    const left = [...document.querySelectorAll('[data-undelete]')], f = left[Math.min(Math.max(i, 0), left.length - 1)]; if (f) f.focus(); return;
+  }
   if (has('data-adddaygo')) return addDay();
   if (d.deladdday){
     // Focus stays in the list (the next day down), or goes to "Add day" when the list is empty.
