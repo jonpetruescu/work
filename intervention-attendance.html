@@ -300,7 +300,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .addday label{display:grid;gap:3px}
 .addday input,.addday select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font:inherit;color:var(--ink)}
 .addday .actions{margin-top:2px}
-.addmsg{min-height:2.7em}
+.addmsg{min-height:3em}
 .ovxd{color:var(--focus);font-weight:700;margin-left:1px}
 @media print{
   .ovblock{border:0;break-inside:avoid}
@@ -1097,8 +1097,8 @@ function analyze(){
   const extra = state.data.extraDays, extraCache = new Map();
   const schedFor = dk => {
     const base = weekSched(dk), x = extra[dk];
-    if (!x) return base;
-    if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: base.days[x.like] || [] } });
+    if (!x || !(base.days[x.like] || []).some(sec => sec.students.length)) return base;   // no such class in that day's schedule: it keeps its own
+    if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: base.days[x.like] } });
     return extraCache.get(dk);
   };
   // Zoom names are matched against that day's schedule first, so adding "Ben Carter" later can't make "ben c" ambiguous
@@ -1276,7 +1276,7 @@ function daysInRange(days){
 // The dates a person reads: an open start becomes the oldest report, an open end becomes today.
 function periodOf(A){
   const b = rangeBounds(), today = todayDk();
-  const oldest = [A.days.length ? A.days[A.days.length - 1].dk : today, ...Object.keys(state.data.extraDays)].sort()[0];
+  const oldest = A.days.length ? A.days[A.days.length - 1].dk : [today, ...Object.keys(state.data.extraDays)].sort()[0];
   const from = b.from || oldest, to = b.to || (A.days.length && A.days[0].dk > today ? A.days[0].dk : today);
   return { from, to, calcTo: to < today ? to : today, open: to >= today };
 }
@@ -1347,9 +1347,9 @@ function renderDay(day){
   const sub = day.secs.length
     ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
     : `No ${cap(day.dayName)} schedule`;
-  const xd = state.data.extraDays[day.dk], open = state.openDays.has(day.dk);
+  const xd = !!state.data.extraDays[day.dk], open = state.openDays.has(day.dk);
   return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
-    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}${xd ? ` · day you added, ${esc(cap(xd.like))}’s class` : ''}</span>
+    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}${xd ? ` · day you added, ${esc(addedLabel(state.lastAnalysis, day.dk))}` : ''}</span>
       <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
       ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
     </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
@@ -1364,6 +1364,7 @@ function dayBody(day){
   const came = day.students.filter(s => !s.isAbsent).length;
   const rows = day.students.filter(s => !q || s.key.includes(q));
   let h = '';
+  const xd = day.secs.length && state.data.extraDays[day.dk];   // a day added with another weekday's class
   if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
   if (day.students.length){
     h += `<div class="daybar"><span class="rate">${came} of ${expected} attended</span></div>`;
@@ -1388,7 +1389,7 @@ function dayBody(day){
   }
   const extras = day.extras.filter(e => !q || e.key.includes(q));
   if (extras.length){
-    h += `<h3 class="subhead">${day.secs.length ? `Joined but not on the ${cap(day.dayName)} schedule` : 'Joined'}</h3>`;
+    h += `<h3 class="subhead">${xd ? `Joined but not in ${cap(xd.like)}’s class` : day.secs.length ? `Joined but not on the ${cap(day.dayName)} schedule` : 'Joined'}</h3>`;
     for (const e of extras) h += `<div class="mini"><div class="who"><b>${esc(e.name)}</b></div><div>${timeline(day, e.merged)}</div><div class="small muted">${esc(rangeText(e.merged))}</div></div>`;
   }
   if (day.unmatched.length){
@@ -1697,7 +1698,7 @@ function overviewDates(A, period){
   const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
   for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
     const secs = A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || [];
-    if (A.dayByDk.has(dk) || A.formByDk.has(dk) || state.data.noClass[dk] || secs.some(x => x.students.length)) out.push(dk);
+    if (A.dayByDk.has(dk) || A.formByDk.has(dk) || state.data.noClass[dk] || state.data.extraDays[dk] || secs.some(x => x.students.length)) out.push(dk);
   }
   return out;
 }
@@ -1749,7 +1750,7 @@ function renderOverview(){
     while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
     const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk];
-      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${xd ? ` title="Day you added, with ${esc(cap(xd.like))}’s class"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
+      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${xd ? ` title="Day you added: ${esc(addedLabel(A, dk))}"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
@@ -1795,7 +1796,7 @@ function ovEditor(A, c, name){
   const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(cap(state.data.extraDays[c.dk].like))}’s class` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
+    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
     <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}</p>
     <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip ovauto" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
     <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
@@ -1827,8 +1828,8 @@ function setOverride(xk, patch){
 
 /* Days added by hand: a make-up class, or a day that follows another weekday's schedule.
    The day gets the students and times of the class picked for it. */
-function classWeekdays(A){
-  const sched = A.weekSched(todayDk()), len = state.data.settings.sectionLen, out = [];
+function classWeekdays(A, dk){
+  const sched = A.weekSched(isDk(dk) ? dk : todayDk()), len = state.data.settings.sectionLen, out = [];
   for (const w of [1, 2, 3, 4, 5, 6, 0]){
     const secs = (sched.days[DAYS[w]] || []).filter(x => x.students.length);
     if (!secs.length) continue;
@@ -1838,30 +1839,46 @@ function classWeekdays(A){
   }
   return out;
 }
-function addedDaysList(){
+// "Monday’s class", plus a fact when the schedule in use that day has no such class (the day then keeps its own).
+function addedLabel(A, dk){
+  const x = state.data.extraDays[dk]; if (!x) return '';
+  return `${cap(x.like)}’s class${(A.weekSched(dk).days[x.like] || []).some(sec => sec.students.length) ? '' : ', which the schedule for that day doesn’t have'}`;
+}
+function addedDaysList(A){
   const xs = Object.keys(state.data.extraDays).sort().reverse();
-  return xs.length ? `<ul class="hist-list">${xs.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(cap(state.data.extraDays[dk].like))}’s class</span>
+  return xs.length ? `<ul class="hist-list">${xs.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(addedLabel(A, dk))}</span>
     <button class="btn small ghost" data-deladdday="${dk}" aria-label="Remove ${esc(shortDate(dk))}">Remove</button></li>`).join('')}</ul>` : '';
 }
+const addLikeOptions = (ws, like) => { like = ws.some(w => w.like === like) ? like : (ws[0] || {}).like;
+  return ws.map(w => `<option value="${w.like}"${w.like === like ? ' selected' : ''}>${esc(w.label)}</option>`).join(''); };
 function addDayMenu(A){
-  const ws = classWeekdays(A), x = state.addDay, msg = x.msg;
+  const x = state.addDay, msg = x.msg, first = A.days.length ? A.days[A.days.length - 1].dk : '';
   x.msg = '';   // a message shows once
-  if (!ws.length) return '';
-  const like = ws.some(w => w.like === x.like) ? x.like : ws[0].like, list = addedDaysList();
+  if (!classWeekdays(A).length) return '';
+  const list = addedDaysList(A);
   return `<details class="menu addday" data-addday${x.open ? ' open' : ''}><summary class="btn small ghost">+ Add a day</summary>
     <div class="pop" role="group" aria-label="Add a class day">
       <p class="small muted">For a make-up class or a schedule swap. The day gets the students and times of the class you pick. Then mark who came here, or save that day’s Zoom report in the folder.</p>
-      <label>Date <input type="date" data-adddate value="${esc(x.date)}"></label>
-      <label>Students and times <select data-addlike>${ws.map(w => `<option value="${w.like}"${w.like === like ? ' selected' : ''}>${esc(w.label)}</option>`).join('')}</select></label>
+      <label>Date <input type="date" data-adddate value="${esc(x.date)}"${first ? ` min="${first}"` : ''}></label>
+      <label>Students and times <select data-addlike>${addLikeOptions(classWeekdays(A, x.date), x.like)}</select></label>
       <div class="actions"><button class="btn small" data-adddaygo>Add day</button></div>
       <p class="small addmsg" role="status">${msg}</p>
       ${list ? `<div class="small"><b>Days you added</b>${list}</div>` : ''}</div></details>`;
 }
 function addDay(){
-  const A = state.lastAnalysis || analyze(), x = state.addDay, dk = x.date, ws = classWeekdays(A);
+  const A = state.lastAnalysis || analyze(), x = state.addDay, dk = x.date, ws = classWeekdays(A, dk);
   const like = ws.some(w => w.like === x.like) ? x.like : (ws[0] || {}).like;
-  const say = (m, sel = '[data-adddaygo]') => { x.msg = m; x.open = true; renderOverview(); const f = $(`#tab-overview ${sel}`); if (f) f.focus(); };
+  const say = (m, sel = '[data-adddaygo]') => {
+    const box = $('#tab-overview [data-addday]');
+    // With the menu open, only the message changes, so a half-typed date stays where it is.
+    if (box && box.open){ box.querySelector('.addmsg').innerHTML = m; const f = $(sel, box); if (f) f.focus(); return; }
+    x.msg = m; x.open = true; renderOverview(); const f = $(`#tab-overview ${sel}`); if (f) f.focus();
+  };
   if (!isDk(dk) || dk < '1990' || dk > '2200') return say('Pick a date first.', '[data-adddate]');
+  // A date before the first Zoom report would make every scheduled day back to it a day with no report.
+  const first = A.days.length ? A.days[A.days.length - 1].dk : '';
+  if (first && dk < first) return say(`That’s before your first Zoom report (${esc(shortDate(first))}, ${parseDk(first).getFullYear()}).`, '[data-adddate]');
+  if (!like) return say(`The schedule in use on ${esc(shortDate(dk))} has no classes.`, '[data-adddate]');
   const own = DAYS[parseDk(dk).getDay()], hasClass = w => (A.weekSched(dk).days[w] || []).some(sec => sec.students.length);
   if (like === own && hasClass(own)){
     if (!state.data.extraDays[dk]) return say(`${esc(shortDate(dk))} already has ${esc(cap(own))}’s class.`, '[data-adddate]');
@@ -2262,7 +2279,7 @@ function stripCalendar(ctx, o){
     const ds = dates.filter(d => parseDk(d.dk).getDay() === wd), wins = ds.map(winOf).filter(Boolean);
     const lo = Math.min(...wins.map(x => x[0])), hi = Math.max(...wins.map(x => x[1]));
     const last = [...ds].reverse().find(d => d.plan);
-    return { wd, lo, hi, ribbon: last ? last.plan.secs : [], weight: Math.max(45, hi - lo) };
+    return { wd, lo, hi, ribbon: last ? (planFor(A, ctx.key, last.dk, last.dk) || last.plan).secs : [], weight: Math.max(45, hi - lo) };
   });
   const W = cols.reduce((t, c) => t + c.weight, 0), showWk = weeks.length > 1;
   const roomy = !o.print && weeks.length <= 10, dprint = o.print && weeks.length > 22;
@@ -2770,7 +2787,7 @@ function renderSchedule(){
         const nameOf = (state.lastAnalysis || analyze()).nameOf, nm = k => nameOf[k] || k;
         return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
           `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })()}
-      ${(() => { const l = addedDaysList(); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
+      ${(() => { const l = addedDaysList(analyze()); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
         <span class="muted">(add one with “+ Add a day” on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
     </div>
     <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'What the page found'}</h2>
@@ -3062,11 +3079,14 @@ document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
   if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){
     // Closing the day editor redraws the page; a click that was opening "+ Add a day" opens the redrawn one.
-    if (e.target.closest('[data-addday] > summary')){ state.addDay.open = true; e.preventDefault(); }
+    const add = e.target.closest('[data-addday] > summary');
+    if (add){ state.addDay.open = true; e.preventDefault(); }
     state.ovSel = null; renderOverview();
+    if (add){ const sm = $('#tab-overview [data-addday] > summary'); if (sm) sm.focus({ preventScroll: true }); }
   }
   const t = e.target.closest('button'); if (!t) return;
-  if (e.detail > 1 && (t.dataset.supmark !== undefined || (state.ovMark && t.dataset.ovcell !== undefined))) return;   // a double-click marks once
+  // A double-click acts once (and a second click can't land on whatever moved under the pointer).
+  if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday'].some(k => t.dataset[k] !== undefined)) return;
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
   const sel = focusSelector(t);
   await onClick(t);
@@ -3245,7 +3265,12 @@ async function onClick(t){
 }
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset || {};
-  if ('adddate' in d){ state.addDay.date = t.value; return; }
+  if ('adddate' in d){
+    state.addDay.date = t.value;
+    const sel = t.closest('[data-addday]').querySelector('[data-addlike]');
+    sel.innerHTML = addLikeOptions(classWeekdays(state.lastAnalysis || analyze(), t.value), sel.value); state.addDay.like = sel.value;
+    return;
+  }
   if ('addlike' in d){ state.addDay.like = t.value; return; }
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
@@ -3317,7 +3342,7 @@ document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
   const hadMenu = !!document.querySelector('details.menu[open]');
   if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return calendarKey(e, t);
-  if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey) return overviewKey(e, t);
+  if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
   if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
@@ -3394,7 +3419,7 @@ document.addEventListener('toggle', e => {
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
   if (el.dataset && 'supunm' in el.dataset) state.supUnmOpen = el.open;
   if (el.dataset && 'daytable' in el.dataset) state.dayTableOpen = el.open;
-  if (el.dataset && 'addday' in el.dataset) state.addDay.open = el.open;
+  if (el.dataset && 'addday' in el.dataset){ state.addDay.open = el.open; if (!el.open) el.querySelector('.addmsg').textContent = ''; }
   if (el.classList && el.classList.contains('menu') && el.open){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
