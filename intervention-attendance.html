@@ -295,6 +295,13 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:.86rem}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
+.addday .pop{width:360px;padding:12px 14px;gap:8px;font-size:.86rem}
+.addday .pop p{margin:0}
+.addday label{display:grid;gap:3px}
+.addday input,.addday select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font:inherit;color:var(--ink)}
+.addday .actions{margin-top:2px}
+.addmsg{min-height:2.7em}
+.ovxd{color:var(--focus);font-weight:700;margin-left:1px}
 @media print{
   .ovblock{border:0;break-inside:avoid}
   .ovt thead th,.ovt th.ovname{position:static}
@@ -309,6 +316,8 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .sup-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:4px 0 12px}
 .sup-head h2{font-size:1.4rem}
 .sup-head h2:focus{outline:none}
+#tab-overview .toolbar{column-gap:10px}
+#tab-overview .search{min-width:0;width:160px}
 .sup .search{width:100%;max-width:none;font-size:1rem;padding:9px 12px}
 .sup-h{font-size:1.05rem;margin:18px 0 6px}
 .sup-list{list-style:none;margin:0;padding:0}
@@ -743,6 +752,7 @@ function defaultData(){
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
+    extraDays: {},   // { 'YYYY-MM-DD': { like: 'monday' } } class days added by hand, with that weekday's students and times
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], engagedPct: [1, 100] };
@@ -753,13 +763,14 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, extraDays: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
   for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
   for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
+  for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && DAYS.includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
     if (x.cat in OV_CAT) o.cat = x.cat;
@@ -788,7 +799,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1071,7 +1082,7 @@ function analyze(){
   const verFor = dk => { let s = versions[0]; for (const v of versions) if (v.from <= dk) s = v; return s; };
   // A student dropped from the class is taken off every schedule from the drop date on; their earlier days stay as they were.
   const drops = Object.entries(state.data.drops).map(([k, v]) => [k, v.date]), dropCache = new Map();
-  const schedFor = dk => {
+  const weekSched = dk => {
     const v = verFor(dk), gone = drops.filter(([, d]) => d <= dk).map(([k]) => k).sort();
     if (!gone.length) return v.sched;
     const ck = `${v.from}|${gone.join(',')}`;
@@ -1081,6 +1092,14 @@ function analyze(){
       dropCache.set(ck, { ...v.sched, days, roster: v.sched.roster.filter(r => !out.has(r.key)) });
     }
     return dropCache.get(ck);
+  };
+  // A day added by hand has the students and times of the weekday picked for it, in the schedule in effect that day.
+  const extra = state.data.extraDays, extraCache = new Map();
+  const schedFor = dk => {
+    const base = weekSched(dk), x = extra[dk];
+    if (!x) return base;
+    if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: base.days[x.like] || [] } });
+    return extraCache.get(dk);
   };
   // Zoom names are matched against that day's schedule first, so adding "Ben Carter" later can't make "ben c" ambiguous
   // on days Ben Carter wasn't scheduled. Everyone from every version is the fallback, for students who joined but weren't scheduled.
@@ -1120,7 +1139,7 @@ function analyze(){
       g.byKey.set(k, t);
     }
   }
-  return { sched, versions, schedFor, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
+  return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
 }
 
 function analyzeDay(g, sched, nameOf, matcher, ignored, S){
@@ -1257,7 +1276,7 @@ function daysInRange(days){
 // The dates a person reads: an open start becomes the oldest report, an open end becomes today.
 function periodOf(A){
   const b = rangeBounds(), today = todayDk();
-  const oldest = A.days.length ? A.days[A.days.length - 1].dk : today;
+  const oldest = [A.days.length ? A.days[A.days.length - 1].dk : today, ...Object.keys(state.data.extraDays)].sort()[0];
   const from = b.from || oldest, to = b.to || (A.days.length && A.days[0].dk > today ? A.days[0].dk : today);
   return { from, to, calcTo: to < today ? to : today, open: to >= today };
 }
@@ -1328,9 +1347,9 @@ function renderDay(day){
   const sub = day.secs.length
     ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
     : `No ${cap(day.dayName)} schedule`;
-  const open = state.openDays.has(day.dk);
+  const xd = state.data.extraDays[day.dk], open = state.openDays.has(day.dk);
   return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
-    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span>
+    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}${xd ? ` · day you added, ${esc(cap(xd.like))}’s class` : ''}</span>
       <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
       ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
     </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
@@ -1409,11 +1428,11 @@ function finSplit(s){
 }
 const finMinOf = s => finSplit(s).fin;
 
-// A student's scheduled sections on one date, from the schedule version in effect that day
-// (or, with `at`, from the version in effect on another date).
+// A student's scheduled sections on one date, from the schedule version in effect that day, days added by hand included.
+// With `at`, the regular weekly plan for that weekday in the version in effect on `at` (days added by hand left out).
 const planCache = new WeakMap();
 function planFor(A, key, dk, at){
-  const sched = A.schedFor(at || dk), w = DAYS[parseDk(dk).getDay()], len = state.data.settings.sectionLen;
+  const sched = at ? A.weekSched(at) : A.schedFor(dk), w = DAYS[parseDk(dk).getDay()], len = state.data.settings.sectionLen;
   let m = planCache.get(sched); if (!m) planCache.set(sched, m = new Map());
   const ck = `${w}|${key}|${len}`;
   if (!m.has(ck)){
@@ -1595,7 +1614,8 @@ function weekRows(dates, period, hasPlan = () => true){
 // Whether a schedule version starting on `from` changed this student's days or times
 // (the same weekday is compared the week before and the week of the change).
 function planChanged(A, key, from){
-  for (let i = 0; i < 7; i++) if (JSON.stringify(planFor(A, key, addDays(from, i - 7))) !== JSON.stringify(planFor(A, key, addDays(from, i)))) return true;
+  const p = dk => JSON.stringify(planFor(A, key, dk, dk));
+  for (let i = 0; i < 7; i++) if (p(addDays(from, i - 7)) !== p(addDays(from, i))) return true;
   return false;
 }
 // The student's weekly schedule as of the end of the period, e.g. "Mondays 2–4 PM (instruction 2–3, support hour 3–4)".
@@ -1671,7 +1691,8 @@ function cellState(A, key, dk, recs){
 }
 const OV_STATE = { noclass: 'No class', missing: 'No Zoom report yet', later: 'Not yet' };
 const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'D', 'C'].filter(l => c[l] && OV_LET[l] !== OV_CAT[c.cat]).map(l => OV_LET[l]), c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
-// Class days in the dates shown: any day with a report, a no-class mark, or someone on the schedule. An open range runs to the end of this week.
+// Class days in the dates shown: any day with a report, a no-class mark, or someone on the schedule (days added by hand included).
+// An open range runs to the end of this week.
 function overviewDates(A, period){
   const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
   for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
@@ -1692,6 +1713,7 @@ function renderOverview(){
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
+    ${addDayMenu(A)}
     <button class="btn small ghost" data-printlist>Print</button>${droppedToggle(A)}</div>
     ${state.ovMark ? ovMarkBar() : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
@@ -1705,7 +1727,7 @@ function renderOverview(){
   }
   if (!state.ovMark) h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
     <span><i class="ovsw c-noclass">–</i>No class</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span></div>
-    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>
+    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>${Object.keys(state.data.extraDays).length ? '<span><b class="ovxd">+</b> Day you added</span>' : ''}
     <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}.` : 'No Formative exports in the folder yet.'} Click a day to change it.</span></div>`;
   if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
   // No scrolling box: the grid is as tall as the class list, and when the days don't fit across the page,
@@ -1726,8 +1748,9 @@ function renderOverview(){
     let months = '', m0 = 0;
     while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
-    const head = idx.map(n => { const dk = dates[n];
-      return `<th scope="col" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
+    const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk];
+      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${xd ? ` title="Day you added, with ${esc(cap(xd.like))}’s class"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
+        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
       if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
@@ -1772,7 +1795,7 @@ function ovEditor(A, c, name){
   const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
+    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(cap(state.data.extraDays[c.dk].like))}’s class` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
     <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}</p>
     <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip ovauto" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
     <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
@@ -1800,6 +1823,58 @@ function setOverride(xk, patch){
   for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
   if (Object.keys(o).length) state.data.dayStatus[xk] = o; else delete state.data.dayStatus[xk];
   changed();
+}
+
+/* Days added by hand: a make-up class, or a day that follows another weekday's schedule.
+   The day gets the students and times of the class picked for it. */
+function classWeekdays(A){
+  const sched = A.weekSched(todayDk()), len = state.data.settings.sectionLen, out = [];
+  for (const w of [1, 2, 3, 4, 5, 6, 0]){
+    const secs = (sched.days[DAYS[w]] || []).filter(x => x.students.length);
+    if (!secs.length) continue;
+    const n = new Set(secs.flatMap(x => x.students.map(normKey))).size;
+    const span = shortRange(Math.min(...secs.map(x => x.startMin)), Math.max(...secs.map(x => x.endMin ?? x.startMin + len)));
+    out.push({ like: DAYS[w], label: `${cap(DAYS[w])}’s class (${span}, ${plural(n, 'student')})` });
+  }
+  return out;
+}
+function addedDaysList(){
+  const xs = Object.keys(state.data.extraDays).sort().reverse();
+  return xs.length ? `<ul class="hist-list">${xs.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(cap(state.data.extraDays[dk].like))}’s class</span>
+    <button class="btn small ghost" data-deladdday="${dk}" aria-label="Remove ${esc(shortDate(dk))}">Remove</button></li>`).join('')}</ul>` : '';
+}
+function addDayMenu(A){
+  const ws = classWeekdays(A), x = state.addDay, msg = x.msg;
+  x.msg = '';   // a message shows once
+  if (!ws.length) return '';
+  const like = ws.some(w => w.like === x.like) ? x.like : ws[0].like, list = addedDaysList();
+  return `<details class="menu addday" data-addday${x.open ? ' open' : ''}><summary class="btn small ghost">+ Add a day</summary>
+    <div class="pop" role="group" aria-label="Add a class day">
+      <p class="small muted">For a make-up class or a schedule swap. The day gets the students and times of the class you pick. Then mark who came here, or save that day’s Zoom report in the folder.</p>
+      <label>Date <input type="date" data-adddate value="${esc(x.date)}"></label>
+      <label>Students and times <select data-addlike>${ws.map(w => `<option value="${w.like}"${w.like === like ? ' selected' : ''}>${esc(w.label)}</option>`).join('')}</select></label>
+      <div class="actions"><button class="btn small" data-adddaygo>Add day</button></div>
+      <p class="small addmsg" role="status">${msg}</p>
+      ${list ? `<div class="small"><b>Days you added</b>${list}</div>` : ''}</div></details>`;
+}
+function addDay(){
+  const A = state.lastAnalysis || analyze(), x = state.addDay, dk = x.date, ws = classWeekdays(A);
+  const like = ws.some(w => w.like === x.like) ? x.like : (ws[0] || {}).like;
+  const say = (m, sel = '[data-adddaygo]') => { x.msg = m; x.open = true; renderOverview(); const f = $(`#tab-overview ${sel}`); if (f) f.focus(); };
+  if (!isDk(dk) || dk < '1990' || dk > '2200') return say('Pick a date first.', '[data-adddate]');
+  const own = DAYS[parseDk(dk).getDay()], hasClass = w => (A.weekSched(dk).days[w] || []).some(sec => sec.students.length);
+  if (like === own && hasClass(own)){
+    if (!state.data.extraDays[dk]) return say(`${esc(shortDate(dk))} already has ${esc(cap(own))}’s class.`, '[data-adddate]');
+    delete state.data.extraDays[dk];   // picking its own weekday puts a swapped day back to its usual class
+  } else if (!hasClass(like)) return say(`The schedule in use on ${esc(shortDate(dk))} has no ${esc(cap(like))} class.`, '[data-addlike]');
+  else state.data.extraDays[dk] = { like };
+  changed(); x.date = ''; x.open = false; renderOverview();
+  // Show the day: focus its first student. When it isn't in the dates shown, say so and keep the box open.
+  const cell = [...document.querySelectorAll('#tab-overview .ovb')].find(b => b.dataset.ovcell.startsWith(dk + '|'));
+  if (cell){ cell.scrollIntoView({ block: 'nearest', inline: 'nearest' }); focusOvCell(cell.dataset.ovcell); return; }
+  const P = periodOf(state.lastAnalysis), end = P.open ? addDays(weekKey(todayDk()), 6) : P.to, what = `${state.data.extraDays[dk] ? 'Added' : 'Changed'} ${esc(shortDate(dk))}.`;
+  say(P.open && dk > end ? `${what} It shows on the Overview when its week comes.`
+    : state.range.preset !== 'all' && (dk < P.from || dk > end) ? `${what} It isn’t in the dates shown. <button class="linkish" data-range="all">Show all dates</button>` : what);
 }
 
 // "Show dropped students" appears only when someone has been dropped.
@@ -2695,6 +2770,8 @@ function renderSchedule(){
         const nameOf = (state.lastAnalysis || analyze()).nameOf, nm = k => nameOf[k] || k;
         return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
           `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })()}
+      ${(() => { const l = addedDaysList(); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
+        <span class="muted">(add one with “+ Add a day” on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
     </div>
     <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'What the page found'}</h2>
       ${viewing !== null ? `<div class="notice info">Viewing the schedule used ${esc(versionLabel(viewing))}. <button class="linkish" data-viewversion="">Back to current</button></div>` : ''}
@@ -2772,7 +2849,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
+      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically into ${DATA_FILE} in your folder.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
@@ -2979,9 +3056,15 @@ function focusSelector(t){
 }
 
 /* ---------------- Events ---------------- */
+// A menu closed here is marked closed in state right away (its toggle event comes later), so a redraw doesn't reopen it.
+const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; };
 document.addEventListener('click', async e => {
-  document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) m.open = false; });
-  if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){ state.ovSel = null; renderOverview(); }
+  document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
+  if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){
+    // Closing the day editor redraws the page; a click that was opening "+ Add a day" opens the redrawn one.
+    if (e.target.closest('[data-addday] > summary')){ state.addDay.open = true; e.preventDefault(); }
+    state.ovSel = null; renderOverview();
+  }
   const t = e.target.closest('button'); if (!t) return;
   if (e.detail > 1 && (t.dataset.supmark !== undefined || (state.ovMark && t.dataset.ovcell !== undefined))) return;   // a double-click marks once
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
@@ -3013,6 +3096,14 @@ async function onClick(t){
     const b = $(`#tab-${state.tab} [data-undrop]`); if (b) b.focus(); return;
   }
   if (d.undrop){ delete state.data.drops[d.undrop]; changed(); renderCurrent(); return; }
+  if (has('data-adddaygo')) return addDay();
+  if (d.deladdday){
+    // Focus stays in the list (the next day down), or goes to "Add day" when the list is empty.
+    const sel = `#tab-${state.tab} [data-deladdday]`, i = [...document.querySelectorAll(sel)].indexOf(t);
+    delete state.data.extraDays[d.deladdday]; changed(); renderCurrent();
+    const left = [...document.querySelectorAll(sel)], f = left[Math.min(Math.max(i, 0), left.length - 1)] || $(`#tab-${state.tab} [data-adddaygo]`);
+    if (f) f.focus(); return;
+  }
   if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
@@ -3154,6 +3245,8 @@ async function onClick(t){
 }
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset || {};
+  if ('adddate' in d){ state.addDay.date = t.value; return; }
+  if ('addlike' in d){ state.addDay.like = t.value; return; }
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
@@ -3227,8 +3320,9 @@ document.addEventListener('keydown', e => {
   if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey) return overviewKey(e, t);
   if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
+  if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
-    const inside = m.contains(document.activeElement); m.open = false; if (inside) m.querySelector('summary').focus();
+    const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
   });
   if (d.note){
     const k = d.note;
@@ -3300,6 +3394,7 @@ document.addEventListener('toggle', e => {
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
   if (el.dataset && 'supunm' in el.dataset) state.supUnmOpen = el.open;
   if (el.dataset && 'daytable' in el.dataset) state.dayTableOpen = el.open;
+  if (el.dataset && 'addday' in el.dataset) state.addDay.open = el.open;
   if (el.classList && el.classList.contains('menu') && el.open){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
