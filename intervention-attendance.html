@@ -232,10 +232,11 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .ovdrop{display:block;font-size:.66rem;font-weight:500;color:var(--late)}
 /* Overview grid: the teacher's spreadsheet colors */
 :root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
-@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
+@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#5A82CC; --ov-idle:#C2A23A; --ov-away:#B0709A; --ov-absent:#C86060; --ov-nosched:#262F3D; --ov-ink:#10151E } }
 .c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)}
 .c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)} .c-nosched{background:var(--ov-nosched)}
 .c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
+.c-noclass,.c-missing,.c-later,.c-nosched{--ov-ink:var(--ink)}   /* marks on these days use the page ink, so they show in dark mode too */
 .ovlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);margin:0 0 6px}
 .ovlegend > span{display:inline-flex;align-items:center;gap:6px}
 .ovlegend b{color:var(--ink)}
@@ -252,13 +253,15 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .ovwd{display:block;font-weight:400;font-size:.66rem}
 .ovt .wk{border-left:2px solid var(--muted)}
 .ovt th.ovname{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px 0 8px;min-width:170px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink);border-right:1px solid var(--line)}
+.ovt th.ovname .name-btn{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}   /* a long name ends in "…" */
 .ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px}
 .ovt tbody tr:hover th.ovname{background:var(--paper)}
 .ovc{width:38px;min-width:38px;height:24px}
 .ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:24px;cursor:pointer;color:var(--ov-ink);font-size:.68rem;font-weight:700;letter-spacing:.04em}
 .ovb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
-.ovb:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
-.ovc.sel .ovb{outline:3px solid var(--focus);outline-offset:-3px}
+/* Two-tone ring (ink outside, page color inside), so the focused or open day shows on every color in both themes */
+.ovb:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--surface)}
+.ovc.sel .ovb{outline:3px solid var(--ink);outline-offset:-3px;box-shadow:inset 0 0 0 5px var(--surface)}
 .c-noclass .ovb,.c-missing .ovb,.c-later .ovb{color:inherit}
 .ovm{font-size:.72rem;color:var(--ov-ink)}
 .ovlegend .ovm{color:var(--ink)}
@@ -302,13 +305,35 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .addday .actions{margin-top:2px}
 .addmsg{min-height:3em}
 .ovxd{color:var(--focus);font-weight:700;margin-left:1px}
+/* F marks: over a date, a Formative export that day; in a day, answered on Formative though not in Zoom. Placed in a corner, so no column gets wider. */
+.ovfd,.ovfa{position:absolute;top:1px;font-size:.58rem;font-weight:700;line-height:1;font-style:normal}
+.ovfd{right:2px;color:var(--ink)}
+.ovfa{left:2px;color:var(--ov-ink)}
+.ovfin{font-size:.62rem;font-weight:700;letter-spacing:0}
+.ovlegend .ovfd,.ovlegend .ovfa{position:static;font-size:.72rem;color:var(--ink)}
 @media print{
-  .ovblock{border:0;break-inside:avoid}
-  .ovt thead th,.ovt th.ovname{position:static}
+  .ovblock{border:0}
+  .ovt tr{break-inside:avoid}   /* a long class list goes on to the next page between rows, under the dates again */
+  .ovt tbody tr:nth-child(-n+3){break-before:avoid}   /* and a block doesn't start at the foot of a page with just one row */
+  .ovt thead th,.ovt thead tr:nth-child(2) th,.ovt th.ovname{position:relative;top:auto}   /* relative, not sticky: holds the F marks */
   .ovpop,#tab-overview .toolbar{display:none !important}
   .ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ovc{width:24px;min-width:24px}
+  /* Paper sizes: a block fits the page width, so it prints full size instead of shrunk */
+  .ovt thead th{font-size:.56rem;padding:2px 0}
+  .ovt th.ovmo{height:auto}
+  .ovt th.ovname{min-width:0;width:140px;max-width:140px}
+  .ovc{width:24px;min-width:24px;height:17px}
+  .ovb{height:17px;font-size:.6rem}
   table.ovt{font-size:.62rem}
+  .ovwd{font-size:.5rem}
+  .ovb .ovm{font-size:.6rem}
+  .ovt .ovfd,.ovb .ovfa{font-size:.45rem}   /* small enough to keep clear of the weekday and the ✓ in the narrower days */
+  .ovt .ovfd{right:0} .ovb .ovfa{left:0}
+  /* Line patterns, so these three still differ on a black-and-white printer (the legend uses the same classes) */
+  .c-absent{background:repeating-linear-gradient(45deg,rgba(0,0,0,.5) 0 1px,transparent 1px 4px),repeating-linear-gradient(135deg,rgba(0,0,0,.5) 0 1px,transparent 1px 4px),var(--ov-absent)}
+  .c-away{background:repeating-linear-gradient(45deg,rgba(0,0,0,.5) 0 1px,transparent 1px 4px),var(--ov-away)}
+  .c-excused{background:repeating-linear-gradient(0deg,rgba(0,0,0,.5) 0 1px,transparent 1px 4px),var(--ov-excused)}
+  p.ovprint{margin:0 0 6px;font-weight:600}
 }
 
 /* Support hour tab */
@@ -593,9 +618,11 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
     --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
     --loss-before:#CB7E6B; --loss-out:#5346A7; --loss-after:#837120; --loss-absent:#8E3642;
     --instr-edge:#8FAEE6; --support-edge:#D9B44A;
+    --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433;
   }
   @page{margin:.5in}
   body{background:#fff}
+  main.wrap{padding-bottom:0}   /* the screen's bottom space would push the last row of a list onto a page of its own */
   header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice, .daybar button, .noprint, .rbar, .backbar, #status{display:none !important}
   .printonly{display:block}
   span.printonly{display:inline}
@@ -750,7 +777,7 @@ function defaultData(){
                 teacherName: '', className: 'our intervention class', contactLine: '' },
     aliases: {}, ignored: [], excused: {}, excusedAbsent: {}, notes: {},
     noClass: {},     // { 'YYYY-MM-DD': { reason } }
-    dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid
+    dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid (an excused absence goes in excusedAbsent)
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     extraDays: {},   // { 'YYYY-MM-DD': { like: 'monday' } } class days added by hand, with that weekday's students and times
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
@@ -799,7 +826,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovMark: null, ovMarkN: 0, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -902,13 +929,14 @@ function parseZoomTime(s){
     mo = +m[1]; d = +m[2]; y = +m[3]; if (y < 100) y += 2000; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
   } else if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
     y = +m[1]; mo = +m[2]; d = +m[3]; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
-  } else { const t = Date.parse(s); return isNaN(t) ? null : new Date(t); }
+  } else { const t = /\d{1,2}:\d{2}/.test(s) ? Date.parse(s) : NaN; return isNaN(t) ? null : new Date(t); }   // other formats need a time of day: "8" isn't a date
   if (ap){ ap = ap.toLowerCase(); if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0; }
   return new Date(y, mo - 1, d, h, mi, se);
 }
 function parseZoomFile(name, text){
   const rows = parseCSV(String(text).replace(/^\uFEFF/, ''));
-  const hi = rows.findIndex(r => r.some(c => /join/i.test(c)) && r.some(c => /leave/i.test(c)));
+  // Zoom's own "Join Time" and "Leave Time" headers, not any cell that mentions joining or leaving (a Formative question can).
+  const hi = rows.findIndex(r => r.some(c => /^join time/i.test(c.trim())) && r.some(c => /^leave time/i.test(c.trim())));
   if (hi < 0){
     const looksUnique = rows.some(r => r.some(c => /duration/i.test(c)) && r.some(c => /name/i.test(c)));
     return { error: looksUnique
@@ -918,8 +946,8 @@ function parseZoomFile(name, text){
   const h = rows[hi].map(c => c.trim().toLowerCase());
   let nameIdx = h.findIndex(c => c.startsWith('name') || c.includes('participant'));
   if (nameIdx < 0) nameIdx = 0;
-  const joinIdx = h.findIndex(c => c.includes('join'));
-  const leaveIdx = h.findIndex(c => c.includes('leave'));
+  const joinIdx = h.findIndex(c => c.startsWith('join time'));
+  const leaveIdx = h.findIndex(c => c.startsWith('leave time'));
   const waitIdx = h.findIndex(c => c.includes('waiting'));
   let emailIdx = h.findIndex((c, i) => c.includes('email') && i > nameIdx);
   if (emailIdx < 0) emailIdx = h.findIndex(c => c.includes('email'));
@@ -1026,48 +1054,65 @@ function evaluate(intervals, sections, at, S, finished = false){
    A Formative results export (CSV) saved into the folder: one row per student, columns for each question.
    For each class day this gives, per student, how many questions they answered and of how many. */
 const F_NAME = /^(student( full)?( name)?|name|full name|(student )?(first|last)( name)?|first|last)$/;
-const F_META = /e-?mail|^(class(es)?|section|period|teacher|id|student id|sis\b.*|grade( level)?|status|progress|returned|feedback|total.*|score.*|.*percent.*|%.*|.*points?( earned| possible)?|.*standards?.*|.*mastery.*)$|submitted|started|updated|modified|^(date|time)\b|\bdate$|\btime$/;
+// Columns that aren't questions. A header must be one of these labels as a whole, since a question's own text can say "percent" or "total".
+const F_META = /^(e-?mail( address)?|class(es)?|section|period|teacher|(student )?id|sis\b.*|grade( level)?|status|progress|returned|feedback|total|((total|possible|max) )?(score|points?)( earned| possible)?( ?\(%\)| ?%)?|percent(age)?( correct)?|%( correct)?|% ?score|standards?|mastery|((date|time|last) )?(submitted|started|updated|modified|completed)( at| on| date| time)?|submission( date| time)?|((due|assigned) )?date|time( spent)?( \(min(utes)?\))?)$/;
+// A header that starts with a question number ("1.", "2)", "Q3", "Question 4") is a question, except that question's own score or feedback ("Q1 Points").
+const F_QNUM = /^(q(uestion)?\s*)?\d+\s*[.):]|^q(uestion)?\s*\d+\b/;
+const fMeta = c => F_QNUM.test(c) ? /^q(uestion)?\s*\d+\s+(score|points?|pts|feedback)$/.test(c) : F_NAME.test(c) || F_META.test(c);
+// Dates in a file name: a full numeric date (10-14-2026, 10_14_2026, 2026-10-14), or a whole month name and day ("October 14").
+// Words like "Decimals 4" and lesson numbers like "6.2.12" aren't dates, and neither is an impossible one like 02-30-2026.
 function dateInName(name, year){
-  let m;
-  if ((m = name.match(/(20\d\d)[-_. ](\d{1,2})[-_. ](\d{1,2})/))) return dkOf(new Date(+m[1], +m[2] - 1, +m[3]));
-  if ((m = name.match(/(?:^|\D)(\d{1,2})[-_. ](\d{1,2})[-_. ](\d{2}|\d{4})(?:\D|$)/))){ let y = +m[3]; if (y < 100) y += 2000; return dkOf(new Date(y, +m[1] - 1, +m[2])); }
-  const mon = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  if ((m = name.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?[ _-]?(\d{1,2})\b/))) return dkOf(new Date(year, mon.indexOf(m[1]), +m[2]));
-  return null;
+  const real = (y, mo, d) => { const t = new Date(y, mo - 1, d); return t.getMonth() === mo - 1 && t.getDate() === d ? dkOf(t) : null; };
+  const mon = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  let m, num = null, month = null;
+  if ((m = name.match(/(?:^|\D)(20\d\d)([-_])(\d{1,2})\2(\d{1,2})(?!\d)/))) num = real(+m[1], +m[3], +m[4]);
+  else if ((m = name.match(/(?:^|\D)(\d{1,2})([-_])(\d{1,2})\2(20\d\d)(?!\d)/))) num = real(+m[4], +m[1], +m[3]);
+  if ((m = name.toLowerCase().match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)[ _-]?(\d{1,2})(?!\d)/))) month = real(year, mon.indexOf(m[1]) + 1, +m[2]);
+  return { num, month };
 }
 function parseFormativeFile(name, text, modified){
   const rows = parseCSV(String(text).replace(/^﻿/, '')).filter(r => r.some(c => c.trim()));
-  const hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(c.trim().toLowerCase())));
-  if (hi < 0) return null;
+  const named = /formative/i.test(name), hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(c.trim().toLowerCase())));
+  if (hi < 0) return named ? { error: 'This looks like a Formative export, but no student name column (like “Student Name” or “First Name”) was found in it.' } : null;
   const h = rows[hi].map(c => c.trim().toLowerCase()), col = re => h.findIndex(c => re.test(c));
-  // Only a file named for Formative, or one with score or question columns, counts. Any other CSV keeps its Zoom error.
-  if (!/formative/i.test(name) && !h.some(c => /score|points|percent|question|response|answer/.test(c))) return null;
+  // Only a file named for Formative, or one with score or question columns, counts. Any other file with a student column
+  // gets a hint, except Zoom's "unique users" export (a Name column and a duration), which keeps Zoom's own message.
+  if (!named && !h.some(c => /score|points|percent|question|response|answer/.test(c)))
+    return h.some(c => /duration/.test(c)) ? null : { error: 'This doesn’t look like a Zoom participant report (no “Join Time” column). If it’s a Formative export, put the word “formative” in its file name.' };
   const first = col(/^(student )?first( name)?$|^first$/), last = col(/^(student )?last( name)?$|^last$/), full = col(/^(student( full)?( name)?|name|full name)$/);
-  const email = col(/e-?mail/), pctCol = col(/percent|^%|score %|% score|^score \(%\)/);
+  const email = col(/^(student )?e-?mail( address)?$/), pctCol = col(/^((total )?score ?(%|\(%\))|% ?score|percent(age)?( correct)?|%( correct)?)$/);
   const meta = new Set([first, last, full, email].filter(i => i >= 0));
-  h.forEach((c, i) => { if (!c || F_NAME.test(c) || F_META.test(c)) meta.add(i); });
+  h.forEach((c, i) => { if (!c || fMeta(c)) meta.add(i); });
   const qCols = h.map((c, i) => i).filter(i => !meta.has(i));
-  const stamps = h.map((c, i) => /submitted|started|updated|modified|\bdate\b|\btime\b/.test(c) ? i : -1).filter(i => i >= 0);
+  const stamps = h.map((c, i) => meta.has(i) && /submitted|started|completed|updated|modified|submission|^(date|time)$/.test(c) ? i : -1).filter(i => i >= 0);
   const out = [], dates = {};
   for (const r of rows.slice(hi + 1)){
     const nm = (full >= 0 && r[full] ? r[full] : [first >= 0 ? r[first] : '', last >= 0 ? r[last] : ''].join(' ')).trim();
     if (!nm || /^(average|class average|total|mean|median)s?$/i.test(nm)) continue;
-    const answered = qCols.filter(i => (r[i] || '').trim() && !/^(-|—|n\/a|not answered|no response|unanswered|0\/\d+)$/i.test((r[i] || '').trim())).length;
+    const answered = qCols.filter(i => (r[i] || '').trim() && !/^(-|—|n\/a|not answered|no response|unanswered)$/i.test((r[i] || '').trim())).length;
     const pv = pctCol >= 0 ? parseFloat(String(r[pctCol]).replace('%', '')) : NaN;
     out.push({ name: nm, email: email >= 0 ? (r[email] || '').trim() : '', answered, pct: Number.isFinite(pv) ? pv : null });
     for (const i of stamps){ const t = parseZoomTime(r[i]); if (t) dates[dkOf(t)] = (dates[dkOf(t)] || 0) + 1; }
   }
   if (!out.length) return { error: 'This looks like a Formative export, but no student rows were found in it.' };
-  // The class day: a date in the file name, else the date most answers were submitted, else the day the file was saved.
-  const year = new Date(modified || Date.now()).getFullYear();
-  const dk = dateInName(name, year) || Object.entries(dates).sort((a, b) => b[1] - a[1])[0]?.[0] || (modified ? dkOf(new Date(modified)) : null);
+  // The class day: a full date in the file name, else the day most answers were submitted, else a month and day in the file name,
+  // else the day the file was saved. The Overview's day editor says which.
+  const nd = dateInName(name, new Date(modified || Date.now()).getFullYear()), sub = Object.entries(dates).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const [dk, dated] = nd.num ? [nd.num, 'the file name'] : sub ? [sub, 'submission times'] : nd.month ? [nd.month, 'the file name']
+    : modified ? [dkOf(new Date(modified)), 'the day the file was saved'] : [];
   if (!dk) return { error: 'This Formative export has no date. Put the class date in the file name, like formative-10-14-2026.csv.' };
-  return { formative: true, dk, questions: qCols.length, rows: out };
+  return { formative: true, dk, dated, questions: qCols.length, qs: qCols.map(i => h[i]), rows: out };
 }
 
-// Each file is read once: a Zoom participant report, or else a Formative export, or else an error.
+// Each file is read once: a Zoom participant report or a Formative export, or else an error. A file named for Formative
+// is read as one first, so a question that mentions joining or leaving can't make it look like a Zoom report.
 function parsedFile(f){
-  if (!f.parsed){ const z = parseZoomFile(f.name, f.text); f.parsed = z.error ? (parseFormativeFile(f.name, f.text, f.modified) || z) : z; }
+  if (!f.parsed){
+    const form = () => parseFormativeFile(f.name, f.text, f.modified);
+    let p = /formative/i.test(f.name) ? form() : null;
+    if (!p || p.error){ const z = parseZoomFile(f.name, f.text); p = !z.error ? z : p || form() || z; }
+    f.parsed = p;
+  }
   return f.parsed;
 }
 
@@ -1119,13 +1164,16 @@ function analyze(){
   }
   const days = [...byDate.values()].sort((a, b) => b.dk.localeCompare(a.dk))
     .map(g => analyzeDay(g, schedFor(g.dk), nameOf, matchFor(g.dk), ignored, S));
-  // Formative results by class day: per student, questions answered of the day's total (several files in a day add up).
+  // Formative results by class day: per student, questions answered of the questions they were given. Files with the same
+  // questions are one Formative (a second export, or one file per group), where a student counts once, with their best file.
+  // A student's total adds up only the Formatives whose files list them.
   const formByDk = new Map();
   for (const F of forms){
-    if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], questions: 0, byKey: new Map(), unmatched: new Map() });
-    const g = formByDk.get(F.dk), match = matchFor(F.dk);
-    g.files.push(F.name); g.questions += F.questions;
-    const seen = new Map();
+    if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], dated: new Set(), questions: 0, sets: new Map(), byKey: new Map(), unmatched: new Map() });
+    const g = formByDk.get(F.dk), match = matchFor(F.dk), qk = F.qs.join('\u0001');
+    g.files.push(F.name); g.dated.add(F.dated);
+    if (!g.sets.has(qk)){ g.sets.set(qk, { questions: F.questions, byKey: new Map() }); g.questions += F.questions; }
+    const seen = g.sets.get(qk).byKey;
     for (const r of F.rows){
       const m = match(r.name, r.email);
       if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
@@ -1133,11 +1181,11 @@ function analyze(){
       e.answered = Math.max(e.answered, r.answered); if (r.pct !== null) e.pct = Math.max(e.pct ?? 0, r.pct);
       seen.set(m.key, e);
     }
-    for (const [k, e] of seen){
-      const t = g.byKey.get(k) || { answered: 0, pcts: [] };
-      t.answered += e.answered; if (e.pct !== null) t.pcts.push(e.pct);
-      g.byKey.set(k, t);
-    }
+  }
+  for (const g of formByDk.values()) for (const set of g.sets.values()) for (const [k, e] of set.byKey){
+    const t = g.byKey.get(k) || { answered: 0, total: 0, pcts: [] };
+    t.answered += e.answered; t.total += set.questions; if (e.pct !== null) t.pcts.push(e.pct);
+    g.byKey.set(k, t);
   }
   return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
 }
@@ -1656,9 +1704,9 @@ function scheduleInfo(A, key, period){
 function formOf(A, key, dk){
   const g = A.formByDk.get(dk); if (!g) return null;
   const t = g.byKey.get(key), pct = t && t.pcts.length ? Math.round(t.pcts.reduce((a, b) => a + b, 0) / t.pcts.length) : null;
-  const answered = t ? t.answered : 0, total = g.questions;
-  // Share of the questions answered. With no question columns, any score counts as taking part.
-  const share = total ? Math.min(1, answered / total) : pct !== null ? (pct > 0 ? 1 : 0) : t ? 1 : 0;
+  const answered = t ? t.answered : 0, total = t ? t.total : g.questions;
+  // Share of the questions answered. With no question columns, any score (0% too) counts as taking part, and no score doesn't.
+  const share = !t ? 0 : total ? Math.min(1, answered / total) : pct !== null ? 1 : 0;
   return { answered, total, pct, inFile: !!t, share, files: g.files };
 }
 const dropOf = key => (state.data.drops[key] || {}).date || null;
@@ -1667,31 +1715,46 @@ const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day ==
 // A message about a class day is kept in the student's follow-up log, tied to that day.
 function setMsg(xk, on){
   const dk = xk.slice(0, 10), key = xk.slice(11), list = state.data.followUps[key] || [];
-  if (on){ if (!list.some(f => f.day === dk)) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: `Attendance message about ${shortDate(dk)}`, day: dk }]; }
-  else { const rest = list.filter(f => f.day !== dk); if (rest.length) state.data.followUps[key] = rest; else delete state.data.followUps[key]; }
+  const autoText = `Attendance message about ${shortDate(dk)}`;
+  if (on){ if (!list.some(f => f.day === dk)) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: autoText, day: dk }]; }
+  else {
+    // Only the message this box added is taken out. One you've rewritten stays in the log, no longer tied to the day.
+    const rest = list.filter(f => !(f.day === dk && f.how === 'message' && f.text === autoText)).map(f => { if (f.day !== dk) return f; const r = { ...f }; delete r.day; return r; });
+    if (rest.length) state.data.followUps[key] = rest; else delete state.data.followUps[key];
+  }
   changed();
 }
 function cellState(A, key, dk, recs){
   const plan = planFor(A, key, dk), rec = (recs.get(dk) || new Map()).get(key) || null;
-  const xk = `${dk}|${key}`, ov = state.data.dayStatus[xk] || {}, auto = { L: false, D: false };
-  let base, f = null;
+  const xk = `${dk}|${key}`, ov = { ...state.data.dayStatus[xk] }, auto = { L: false, D: false };
+  let base, f = null, fact = '';
   if (!plan && !rec) base = 'nosched';
   else if (rec){
     f = formOf(A, key, dk);
-    if (isExcused(rec)) base = 'excused';
-    else if (rec.isAbsent) base = 'absent';
-    else {
+    // An excused absence (marked here or on Reports) is a color chosen by hand; the automatic one is what Zoom shows.
+    if (isExcused(rec)) ov.cat = 'excused';
+    if (rec.isAbsent){
+      base = 'absent';
+      if (f && f.share > 0) fact = f.total ? `Answered ${f.answered} of ${f.total} on Formative` : 'Has a Formative score';
+    } else {
       const eng = state.data.settings.engagedPct / 100;
-      base = !f ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
+      // Formative counts for a student who had instruction that day or answered something. A student who only had
+      // the support hour may not have been given it, so their day is colored from Zoom alone.
+      const useF = !!f && (plan?.secs.some(s => s.type === 'instruction') || f.share > 0);
+      base = !useF ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
       auto.L = !hasFlag(rec, 'fin') && ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));   // finished work: let go, so no L
-      auto.D = !!f && f.share < eng;
+      auto.D = useF && f.share > 0 && f.share < eng;   // answering none is the purple color, without a D as well
+      fact = !f ? 'No Formative that day' : useF ? '' : f.inFile ? 'Answered none on Formative' : 'Not in the Formative export';
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
   const cat = ov.cat in OV_CAT ? ov.cat : base;
-  return { dk, key, xk, plan, rec, f, base, cat, auto, ov, L: ov.L ?? auto.L, D: ov.D ?? auto.D, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
+  // Automatic letters go with the color: no D on a color chosen by hand that says engaged or not there, no L on a day not attended.
+  if (cat !== 'idle' && cat !== 'away') auto.D = false;
+  if (['absent', 'excused', 'nosched'].includes(cat)) auto.L = false;
+  return { dk, key, xk, plan, rec, fin: !!state.data.excused[xk], early: !rec && !!plan && !!state.data.excused[xk], f, fact, fx: !!rec && rec.isAbsent && !!fact, base, cat, auto, ov, L: ov.L ?? auto.L, D: ov.D ?? auto.D, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
 }
 const OV_STATE = { noclass: 'No class', missing: 'No Zoom report yet', later: 'Not yet' };
-const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'D', 'C'].filter(l => c[l] && OV_LET[l] !== OV_CAT[c.cat]).map(l => OV_LET[l]), c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
+const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'D', 'C'].filter(l => c[l] && OV_LET[l] !== OV_CAT[c.cat]).map(l => OV_LET[l]), c.fact, c.early ? 'Finished work, let go early' : '', c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
 // Class days in the dates shown: any day with a report, a no-class mark, or someone on the schedule (days added by hand included).
 // An open range runs to the end of this week.
 function overviewDates(A, period){
@@ -1711,6 +1774,8 @@ function renderOverview(){
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
+  const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
+  if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
@@ -1718,18 +1783,28 @@ function renderOverview(){
     <button class="btn small ghost" data-printlist>Print</button>${droppedToggle(A)}</div>
     ${state.ovMark ? ovMarkBar() : ''}`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
-  // Formative names that didn't match anyone on the schedule can be linked once, like Zoom names.
-  const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
-  if (unm.size){
-    const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
-    h += `<div class="notice"><b>Formative names that didn’t match a student.</b> Link each one once and it’s matched from then on.
-      ${[...unm.values()].map(u => `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b>${u.email ? ` <span class="muted small">${esc(u.email)}</span>` : ''}
-        <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`).join('')}</div>`;
+  // Zoom names (on the days shown) and Formative names that didn't match anyone on the schedule can be linked once, or ignored.
+  const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+  const linkRows = us => us.map(u => `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b>${u.facts ? ` <span class="muted small">${esc(u.facts)}</span>` : ''}
+        <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`).join('');
+  const shown = new Set(dates), zun = new Map();
+  for (const d of A.days) if (shown.has(d.dk)) for (const u of d.unmatched){
+    if (!zun.has(u.rk)) zun.set(u.rk, { ...u, when: [] });
+    zun.get(u.rk).when.push(`${shortDate(d.dk)}: ${rangeText(u.merged)}`);
   }
+  if (zun.size) h += `<div class="notice"><b>Zoom names that didn’t match a student.</b> Link each one once and it’s matched from then on. Ignore names that aren’t students.
+      ${linkRows([...zun.values()].map(u => ({ ...u, facts: [u.email, ...u.when.slice(0, 3), u.when.length > 3 ? `and ${plural(u.when.length - 3, 'more day')}` : ''].filter(Boolean).join('; ') })))}</div>`;
+  const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
+  if (unm.size) h += `<div class="notice"><b>Formative names that didn’t match a student.</b> Link each one once and it’s matched from then on.
+      ${linkRows([...unm.values()].map(u => ({ ...u, facts: u.email })))}</div>`;
+  if (dates.length && rows.length) h += `<p class="printonly ovprint">Attendance, ${esc(fmtPeriod({ from: dates[0], to: dates[dates.length - 1] }))} · ${plural(rows.length, 'student')}${
+    state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
   if (!state.ovMark) h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
     <span><i class="ovsw c-noclass">–</i>No class</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span></div>
-    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>${Object.keys(state.data.extraDays).length ? '<span><b class="ovxd">+</b> Day you added</span>' : ''}
-    <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}.` : 'No Formative exports in the folder yet.'} Click a day to change it.</span></div>`;
+    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>${rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early (no Zoom report yet)</span>' : ''}${Object.keys(state.data.extraDays).length ? '<span><b class="ovxd">+</b> Day you added</span>' : ''}
+    ${A.formByDk.size ? '<span><b class="ovfd">F</b> over a date: Formative results that day</span>' : ''}${rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}
+    <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}. ` : ''}Click a day to change it.</span></div>
+    ${A.formByDk.size ? '' : '<p class="small muted ovfhint">No Formative exports in the folder yet. To add one, save its results CSV in this folder with the class date in the file name, then click Refresh. <button class="linkish" data-goto="settings">More in Settings</button></p>'}`;
   if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
   // No scrolling box: the grid is as tall as the class list, and when the days don't fit across the page,
   // whole weeks wrap into another block below (newest weeks on top), each with its own dates and names.
@@ -1743,21 +1818,21 @@ function renderOverview(){
     const last = blocks[blocks.length - 1];
     if (!last || last.length + wk.length > perBlock) blocks.push([...wk]); else last.unshift(...wk);
   }
-  const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   let first = !selCell;
-  const table = (idx, bi) => {
+  const table = idx => {
     let months = '', m0 = 0;
     while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
-    const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk];
-      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${xd ? ` title="Day you added: ${esc(addedLabel(A, dk))}"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
-        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}"${bi ? ' tabindex="-1"' : ''}>${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
+    const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk], fd = A.formByDk.has(dk);
+      const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? 'Formative results that day' : ''].filter(Boolean).join('. ');
+      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
+        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
       if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
-        c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+        c.cat === 'noclass' ? '–' : c.early ? '<span class="ovfin">fin</span>' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}${c.fx ? '<b class="ovfa" aria-hidden="true">F</b>' : ''}</button></td>`;
     }).join('')}</tr>`).join('');
     return `<div class="ovblock"><table class="ovt"><caption class="sr">Attendance, ${esc(fmtPeriod({ from: dates[idx[0]], to: dates[idx[idx.length - 1]] }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
@@ -1768,7 +1843,7 @@ function renderOverview(){
   placeOvEditor();
 }
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it.
-const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'],
+const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'], ['fin', 'fin', 'Finished work, let go early'],
   ...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
 function ovMarkBar(){
   return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.
@@ -1777,32 +1852,52 @@ function ovMarkBar(){
       sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('')}</div></div>`;
 }
 function applyBrush(xk, brush){
-  const A = state.lastAnalysis || analyze(), dk = xk.slice(0, 10), key = xk.slice(11);
-  const c = cellState(A, key, dk, new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))])));
+  const c = ovCell(xk);
   if (brush === 'msg') setMsg(xk, !c.msg);
-  else if (brush === 'auto') setOverride(xk, { cat: undefined });
+  else if (brush === 'fin'){   // a scheduled day, before its report or when the report shows the student left early
+    if (!(c.rec ? c.rec.canFinish || c.fin : c.plan)) return;
+    if (c.fin) delete state.data.excused[xk]; else state.data.excused[xk] = true;
+    changed();
+  }
+  else if (brush === 'auto') setCat(c, undefined);
   else if (brush in OV_LET){ const now = !c[brush], auto = brush === 'C' ? false : c.auto[brush]; setOverride(xk, { [brush]: now === auto ? undefined : now }); }
-  else setOverride(xk, { cat: c.ov.cat === brush ? undefined : brush });
+  else setCat(c, c.ov.cat === brush ? undefined : brush);
+}
+// One day's cell, from the last analysis.
+function ovCell(xk){
+  const A = state.lastAnalysis || analyze(), dk = xk.slice(0, 10), day = A.dayByDk.get(dk);
+  return cellState(A, xk.slice(11), dk, new Map([[dk, new Map((day ? day.students : []).map(x => [x.key, x]))]]));
+}
+// A color chosen by hand. On a day Zoom shows as absent, "Excusable absence" is kept as the excused absence the reports,
+// summaries and family notes count, and any other choice (Automatic too) takes that excuse back.
+function setCat(c, cat){
+  if (c.rec && c.rec.isAbsent){
+    delete state.data.excusedAbsent[c.xk];
+    if (cat === 'excused'){ state.data.excusedAbsent[c.xk] = true; cat = undefined; }
+  }
+  setOverride(c.xk, { cat });
 }
 // The editor for one day, next to its cell.
 function ovEditor(A, c, name){
   const s = c.rec, fin = s ? finMinOf(s) : 0;
-  const zoom = s ? (s.isAbsent ? `Zoom: ${isExcused(s) ? 'excused absence' : 'not in Zoom during class'}` : `Zoom: in ${fmt(s.firstJoin)}–${fmt(s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
+  const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: in ${fmt(s.firstJoin)}–${fmt(s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
     : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
-  const f = c.f, form = A.formByDk.get(c.dk);
-  const formLine = !form ? 'Formative: no export for this day.' : !f.inFile ? `Formative: not in the export (${plural(f.total, 'question')}).`
-    : `Formative: answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}.`;
-  const autoName = OV_CAT[c.base] || OV_STATE[c.base];
+  const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), dated = form ? ` Dated from ${[...form.dated].join(' and ')}.` : '';
+  const score = f && f.pct !== null ? `score ${f.pct}%` : '';
+  const formLine = !form ? 'Formative: no export for this day.' : !f.inFile ? `Formative: not in the export${f.total ? ` (${plural(f.total, 'question')})` : ''}.${dated}`
+    : `Formative: ${f.total ? `answered ${f.answered} of ${plural(f.total, 'question')}${score ? `, ${score}` : ''}` : score || 'no score'}.${dated}`;
+  const autoName = OV_CAT[c.base] || OV_STATE[c.base], day = A.dayByDk.get(c.dk), others = c.fx && day ? day.unmatched.map(u => `“${u.raw}”`) : [];
+  const clash = c.fx ? `Answered on Formative, but not found in Zoom.${others.length ? ` Zoom names that didn’t match a student that day: ${others.join(', ')}.` : ''}` : '';
   const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
-    <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}</p>
+    <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${clash ? `<br>${esc(clash)}` : ''}</p>
     <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip ovauto" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
     <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
     <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Sent a message home about this day</label>
-    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" maxlength="300" value="${esc(c.note)}" placeholder="Optional"></label>
-    ${s && (s.canFinish || state.data.excused[s.xkey]) ? `<div class="ovgrp">${tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early')}</div>` : ''}
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" placeholder="Optional"></label>
+    ${(s ? s.canFinish || c.fin : !!c.plan) ? `<div class="ovgrp">${tgl('data-excuse', c.xk, c.fin, 'Finished work, let go early')}</div>` : ''}
     <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
       ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open in ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
 }
@@ -1916,8 +2011,8 @@ function supportWeek(A){
       const P = people.get(k); if (P.days.some(e => e.dk === dk)) continue;
       const rec = rep ? rep.students.find(r => r.key === k) : null;
       const kind = rec ? (hasFlag(rec, 'fin') ? 'fin' : hasFlag(rec, 'soft') || (rec.canFinish && leftInSupport(rec)) ? 'soft' : rec.isAbsent ? (isExcused(rec) ? 'exc' : 'absent') : hasFlag(rec, 'early') ? 'early' : 'full')
-        : state.data.noClass[dk] ? 'noclass' : dk < today ? 'missing' : dk === today ? 'today' : 'later';
-      P.days.push({ dk, kind, rec });
+        : state.data.excused[`${dk}|${k}`] ? 'fin' : state.data.noClass[dk] ? 'noclass' : dk < today ? 'missing' : dk === today ? 'today' : 'later';   // marked before the report
+      P.days.push({ dk, kind, rec, xk: `${dk}|${k}` });
     }
   }
   return { today, wk, days, people: [...people.values()].sort((a, b) => a.name.localeCompare(b.name)) };
@@ -1932,7 +2027,7 @@ const supLeft = d => { const r = d.rec; if (!r) return ''; const iw = r.merged.f
 // One support day with its mark button. Marking (or undoing) changes the row in place, so nothing moves under the pointer.
 function supItem(d){
   const on = d.kind === 'fin';
-  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span>${tgl('data-supmark', d.rec.xkey, on, 'Finished work, let go early')}</span>`;
+  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span>${tgl('data-supmark', d.xk, on, 'Finished work, let go early')}</span>`;
 }
 function supportResults(W){
   const q = normKey(state.supQuery || ''), of = (p, k) => p.days.filter(d => d.kind === k);
@@ -2460,10 +2555,10 @@ function dayDetail(ctx){
       ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
-    ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${f.inFile ? `answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}` : 'not in the export'}</p>` : ''; })()}
+    ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${!f.inFile ? 'not in the export' : f.total ? `answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}` : f.pct !== null ? `score ${f.pct}%` : 'no score'}</p>` : ''; })()}
     <div class="ddact">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
       ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
-      <label class="ddnote"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(s.xkey)}" maxlength="300" value="${esc(s.note)}" placeholder="Optional"></label></div></div>`;
+      <label class="ddnote"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(s.xkey)}" value="${esc(s.note)}" placeholder="Optional"></label></div></div>`;
 }
 // Every class day as a table: printed on request, and on screen under "Show every day as a table".
 function dayTableHTML(ctx, notes){
@@ -2843,9 +2938,10 @@ function renderSettings(){
         <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${esc(S.sectionLen)}">
       </div></div>
     <div class="panel"><h2>Overview colors from Formative</h2>
-      <p class="small muted" style="margin:0 0 10px">Save each day’s Formative results export (CSV) into the attendance folder, with the date in the file name (for example <b>formative-10-14-2026.csv</b>), and click Refresh.
+      <p class="small muted" style="margin:0 0 10px">On a day you export Formative results (CSV), save the export into the attendance folder with the date in the file name (for example <b>formative-10-14-2026.csv</b>), and click Refresh. You don’t need one every day.
         On days with a Formative export, a student who was in Zoom is <b>present and engaged</b> if they answered at least this share of the questions,
-        <b>likely present but not engaging</b> (D) if they answered some but less, and <b>likely not actually present</b> if they answered none. You can change any day by hand on the Overview.</p>
+        <b>likely present but not engaging</b> (D) if they answered some but less, and <b>likely not actually present</b> if they answered none. A student who only had the support hour that day is colored from Zoom alone unless they answered something.
+        Days without an export are colored from Zoom alone. You can change any day by hand on the Overview, or many days at once with Quick mark.</p>
       <div class="set">
         <label for="s-eng">Answered at least this percent of the questions to count as engaged</label><input id="s-eng" type="number" min="1" max="100" data-set="engagedPct" value="${esc(S.engagedPct)}">
       </div></div>
@@ -2866,7 +2962,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
+      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, the Overview’s colors, letters and “message sent” marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically into ${DATA_FILE} in your folder.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
@@ -2880,7 +2976,7 @@ function renderFolderBar(){
   const b = $('#folderBar');
   let h = '';
   if (state.loaded){
-    const nForm = state.files.filter(f => parsedFile(f).formative).length, nZoom = state.files.length - nForm;
+    const nForm = state.files.filter(f => parsedFile(f).formative).length, nZoom = state.files.filter(f => { const p = parsedFile(f); return !p.error && !p.formative; }).length;   // files that couldn't be read aren't counted
     h = `<span class="where">Folder: <b>${esc(state.folderName || 'selected')}</b>, ${plural(nZoom, 'Zoom report')}${nForm ? `, ${plural(nForm, 'Formative export')}` : ''}</span>
       <button class="btn ghost" id="refresh">Refresh</button><button class="btn ghost" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
@@ -3020,7 +3116,7 @@ function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e
 const navCanGoBack = () => !!(history.state && history.state.seq > 0);
 function openStudent(key, from){
   navReplace();
-  state.tab = 'students'; state.student = key; state.studentFrom = from || null;
+  state.tab = 'students'; state.student = key; state.studentFrom = from || null; state.ovFrom = null;
   state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.selDay = null; state.familyCopied = null; state.returnTo = null; state.highlight = null;
   navPush();
   render(); window.scrollTo(0, 0);
@@ -3075,15 +3171,17 @@ function focusSelector(t){
 /* ---------------- Events ---------------- */
 // A menu closed here is marked closed in state right away (its toggle event comes later), so a redraw doesn't reopen it.
 const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; };
+// Pressing anywhere outside the day editor closes it in place, without a redraw, so the box, date or menu being
+// clicked keeps its focus. A press that starts in the editor (a drag to select note text) never closes it.
+document.addEventListener('pointerdown', e => {
+  if (!state.ovSel || state.tab !== 'overview' || e.target.closest('.ovpop, .ovb')) return;
+  state.ovSel = null;
+  const pop = $('#tab-overview .ovpop');
+  if (pop){ if (pop.contains(document.activeElement)) document.activeElement.blur(); pop.remove(); }   // blur saves a note being typed
+  document.querySelectorAll('#tab-overview .ovc.sel').forEach(td => { td.classList.remove('sel'); td.querySelector('.ovb').setAttribute('aria-expanded', 'false'); });
+}, true);
 document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
-  if (state.ovSel && state.tab === 'overview' && !e.target.closest('.ovpop, .ovb')){
-    // Closing the day editor redraws the page; a click that was opening "+ Add a day" opens the redrawn one.
-    const add = e.target.closest('[data-addday] > summary');
-    if (add){ state.addDay.open = true; e.preventDefault(); }
-    state.ovSel = null; renderOverview();
-    if (add){ const sm = $('#tab-overview [data-addday] > summary'); if (sm) sm.focus({ preventScroll: true }); }
-  }
   const t = e.target.closest('button'); if (!t) return;
   // A double-click acts once (and a second click can't land on whatever moved under the pointer).
   if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday'].some(k => t.dataset[k] !== undefined)) return;
@@ -3132,17 +3230,21 @@ async function onClick(t){
   }
   if (d.ovcell !== undefined){ state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(d.ovcell); return; }
   if (has('data-ovclose')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
-  if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
+  if (d.ovcat !== undefined && state.ovSel){ setCat(ovCell(state.ovSel), d.ovcat || undefined); renderOverview(); return; }
   if (d.ovlet && state.ovSel){
     const now = t.getAttribute('aria-pressed') !== 'true', auto = d.auto === 'true';
     setOverride(state.ovSel, { [d.ovlet]: now === auto ? undefined : now }); renderOverview(); return;
   }
-  if (has('data-ovreset') && state.ovSel){ delete state.data.dayStatus[state.ovSel]; changed(); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
+  if (has('data-ovreset') && state.ovSel){ delete state.data.dayStatus[state.ovSel]; delete state.data.excusedAbsent[state.ovSel]; changed(); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
   if (has('data-ovopen') && state.ovSel){
-    const [dk, key] = [state.ovSel.slice(0, 10), state.ovSel.slice(11)];
-    state.ovSel = null; openStudent(key); state.selDay = dk; renderStudents(); navReplace();
-    const dd = $('#tab-students .daydetail'); if (dd) dd.scrollIntoView({ block: 'center' });
-    return;
+    const xk = state.ovSel, [dk, key] = [xk.slice(0, 10), xk.slice(11)];
+    state.ovSel = null; openStudent(key); state.ovFrom = xk;   // Back returns to this day on the Overview
+    // Open the day in the report and focus it there; a day the report's calendar doesn't have (still to come) leaves the report at the top.
+    if (dk <= todayDk()){ state.selDay = dk; renderStudents(); }
+    const dd = $('#tab-students .daydetail');
+    if (dd){ dd.scrollIntoView({ block: 'center' }); focusDayCell(dk); }
+    else { if (state.selDay){ state.selDay = null; renderStudents(); } const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
+    navReplace(); return;
   }
   if (d.supmark){
     // Support hour tab: change the row in place, so the list doesn't shift under the pointer. The lists catch up on the next redraw.
@@ -3310,12 +3412,16 @@ document.addEventListener('change', e => {
     setMsg(d.ovmsg, t.checked); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return;
   }
   if (d.ovnote){
-    const v = t.value.trim().slice(0, 300);
+    const v = t.value.trim();
     if (v) state.data.notes[d.ovnote] = v; else delete state.data.notes[d.ovnote];
     changed();
     // Show or hide the note mark in place (Overview cell or calendar day), so nothing redraws while you type or tab away.
     const b = $(`#tab-overview .ovb[data-ovcell="${CSS.escape(d.ovnote)}"]`);
-    if (b){ const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove(); }
+    if (b){
+      const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove();
+      const words = `${state.lastAnalysis.nameOf[d.ovnote.slice(11)]}, ${longDate(d.ovnote.slice(0, 10))}: ${cellWords(ovCell(d.ovnote))}`;
+      b.setAttribute('aria-label', words); b.title = words;
+    }
     const cal = $(`#tab-students .sbtn[data-selday="${d.ovnote.slice(0, 10)}"]`);
     if (cal && state.student === d.ovnote.slice(11)){ const dot = cal.lastElementChild; if (dot) dot.className = v ? 'nd' : ''; }
     return;
@@ -3343,7 +3449,10 @@ document.addEventListener('keydown', e => {
   const hadMenu = !!document.querySelector('details.menu[open]');
   if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return calendarKey(e, t);
   if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
-  if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){ const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return; }
+  if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){
+    if (d.ovnote !== undefined) t.blur();   // saves the note first, so the redrawn day shows its note mark
+    const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return;
+  }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
@@ -3389,6 +3498,9 @@ function overviewKey(e, t){
   if (!to) return;
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
   to.focus(); to.scrollIntoView({ block: 'nearest' });
+  // Keep the day clear of the date header that sticks to the top of the window.
+  const hb = to.closest('table').tHead.rows[1].cells[0].getBoundingClientRect().bottom, top = to.getBoundingClientRect().top;
+  if (top < hb) window.scrollBy(0, top - hb - 4);
 }
 // Arrow keys move between days in the calendar (one Tab stop for the whole calendar).
 function calendarKey(e, t){
@@ -3437,7 +3549,12 @@ window.addEventListener('popstate', e => {
   state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null;
   render();
   if (state.student){ const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
-  else if (leaving) focusStudentLink(leaving);
+  else if (leaving){
+    // Back from a report opened from a day's editor puts focus back on that day.
+    const xk = state.tab === 'overview' && state.ovFrom && state.ovFrom.slice(11) === leaving ? state.ovFrom : null;
+    const b = xk && $(`#tab-overview .ovb[data-ovcell="${CSS.escape(xk)}"]`);
+    if (b){ b.scrollIntoView({ block: 'center' }); focusOvCell(xk); } else focusStudentLink(leaving);
+  }
 });
 $('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
 let closedForPrint = [];
