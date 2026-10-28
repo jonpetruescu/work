@@ -861,7 +861,8 @@ function defaultData(){
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid (an excused absence goes in excusedAbsent)
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
-    extraDays: {},   // { 'YYYY-MM-DD': { like: 'monday' } } class days added by hand, with that weekday's students and times
+    extraDays: {},   // { 'YYYY-MM-DD': { like } } class days added by hand: like is a weekday (that day's students and times),
+                     // 'all' (every class combined) or 'none' (no schedule: every student starts "Not scheduled")
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], gapMin: [1, 60], sectionLen: [15, 180], engagedPct: [1, 100] };
@@ -880,7 +881,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
   for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
   for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
-  for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && DAYS.includes(obj(v).like)) out.extraDays[k] = { like: v.like };
+  for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && [...DAYS, 'all', 'none'].includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
     if (x.cat in OV_CAT) o.cat = x.cat;
@@ -1227,8 +1228,10 @@ function analyze(){
   const extra = state.data.extraDays, extraCache = new Map();
   const schedFor = dk => {
     const base = weekSched(dk), x = extra[dk];
-    if (!x || !(base.days[x.like] || []).some(sec => sec.students.length)) return base;   // no such class in that day's schedule: it keeps its own
-    if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: base.days[x.like] } });
+    if (!x) return base;
+    const secs = x.like === 'none' ? [] : x.like === 'all' ? allClasses(base) : base.days[x.like] || [];
+    if (x.like !== 'none' && !secs.some(sec => sec.students.length)) return base;   // no such class in that day's schedule: it keeps its own
+    if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: secs } });
     return extraCache.get(dk);
   };
   // Zoom names are matched against that day's schedule first, so adding "Ben Carter" later can't make "ben c" ambiguous
@@ -1276,6 +1279,16 @@ function analyze(){
   return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
 }
 
+// Every class in a week's schedule as one day: sections with the same kind and times are one section with all their students.
+function allClasses(sched){
+  const by = new Map();
+  for (const w of DAYS) for (const sec of sched.days[w] || []){
+    const k = `${sec.type}|${sec.startMin}|${sec.endMin ?? ''}`;
+    if (!by.has(k)) by.set(k, { ...sec, students: [] });
+    const m = by.get(k); for (const n of sec.students) if (!m.students.some(x => normKey(x) === normKey(n))) m.students.push(n);
+  }
+  return [...by.values()].sort((a, b) => a.startMin - b.startMin || a.type.localeCompare(b.type));
+}
 function analyzeDay(g, sched, nameOf, matcher, ignored, S, deleted){
   const date = parseDk(g.dk);
   // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
@@ -1527,7 +1540,7 @@ function dayBody(day){
   }
   const extras = day.extras.filter(e => !q || e.key.includes(q));
   if (extras.length){
-    h += `<h3 class="subhead">${xd ? `Joined but not in ${cap(xd.like)}’s class` : day.secs.length ? `Joined but not on the ${cap(day.dayName)} schedule` : 'Joined'}</h3>`;
+    h += `<h3 class="subhead">${xd ? `Joined but not in ${xd.like === 'all' ? 'any class' : `${cap(xd.like)}’s class`}` : day.secs.length ? `Joined but not on the ${cap(day.dayName)} schedule` : 'Joined'}</h3>`;
     for (const e of extras) h += `<div class="mini"><div class="who"><b>${esc(e.name)}</b></div><div>${timeline(day, e.merged)}</div><div class="small muted">${esc(rangeText(e.merged))}</div></div>`;
   }
   if (day.unmatched.length){
@@ -1864,6 +1877,8 @@ function renderOverview(){
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
+  // Days added with no schedule: each student on the class list that day gets a day to color.
+  const free = new Map(dates.filter(dk => (state.data.extraDays[dk] || {}).like === 'none').map(dk => [dk, new Set(A.weekSched(dk).roster.map(r => r.key))]));
   const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
   // What to show on the left, things to do on the right
@@ -1914,7 +1929,7 @@ function renderOverview(){
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
-      if (c.cat === 'nosched' && !c.ov.cat) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
+      if (c.cat === 'nosched' && !c.ov.cat && !(free.get(c.dk) || new Set()).has(c.key)) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
         c.cat === 'noclass' ? '–' : c.early ? '<span class="ovfin">fin</span>' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}${c.fx ? '<b class="ovfa" aria-hidden="true">F</b>' : ''}</button></td>`;
@@ -1983,7 +1998,7 @@ function ovEditor(A, c, name){
   const s = c.rec, fin = s ? finMinOf(s) : 0;
   const span = (a, b) => fmt(a).slice(-2) === fmt(b).slice(-2) ? `${hm(a)}–${fmt(b)}` : `${fmt(a)}–${fmt(b)}`;   // "2:00–3:00 PM"
   const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: ${span(s.firstJoin, s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
-    : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
+    : (state.data.extraDays[c.dk] || {}).like === 'none' ? noSchedZoom(A, c) : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
   // Where the export's date came from, said only when it was worked out some other way than from the file name
   // (a date from the file name is noted on the F over the date instead).
   const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), guessed = form ? [...form.dated].filter(x => x !== 'the file name') : [];
@@ -2006,6 +2021,11 @@ function ovEditor(A, c, name){
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}"></label>
     <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
       ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
+}
+// A day added with no schedule: when the student was in Zoom that day, if there's a report.
+function noSchedZoom(A, c){
+  const day = A.dayByDk.get(c.dk), e = day && day.extras.find(x => x.key === c.key);
+  return !day ? (c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'No Zoom report yet.') : e ? `Zoom: in ${rangeText(e.merged)}` : 'Zoom: not in the report.';
 }
 function placeOvEditor(){
   const pop = $('#tab-overview .ovpop'); if (!pop) return;
@@ -2038,12 +2058,19 @@ function classWeekdays(A, dk){
     const span = shortRange(Math.min(...secs.map(x => x.startMin)), Math.max(...secs.map(x => x.endMin ?? x.startMin + len)));
     out.push({ like: DAYS[w], label: `${cap(DAYS[w])}’s class (${span}, ${plural(n, 'student')})` });
   }
+  if (out.length > 1){
+    const secs = allClasses(sched), n = new Set(secs.flatMap(x => x.students.map(normKey))).size;
+    out.push({ like: 'all', label: `All classes combined (${shortRange(Math.min(...secs.map(x => x.startMin)), Math.max(...secs.map(x => x.endMin ?? x.startMin + len)))}, ${plural(n, 'student')})` });
+  }
+  if (out.length) out.push({ like: 'none', label: 'No schedule (you pick each student’s color)' });
   return out;
 }
+const classLabel = like => like === 'all' ? 'All classes combined' : like === 'none' ? 'No schedule' : `${cap(like)}’s class`;
 // "Monday’s class", plus a fact when the schedule in use that day has no such class (the day then keeps its own).
 function addedLabel(A, dk){
   const x = state.data.extraDays[dk]; if (!x) return '';
-  return `${cap(x.like)}’s class${(A.weekSched(dk).days[x.like] || []).some(sec => sec.students.length) ? '' : ', which the schedule for that day doesn’t have'}`;
+  const base = A.weekSched(dk), has = x.like === 'none' || (x.like === 'all' ? allClasses(base) : base.days[x.like] || []).some(sec => sec.students.length);
+  return `${classLabel(x.like)}${has ? '' : ', which the schedule for that day doesn’t have'}`;
 }
 function addedDaysList(A){
   const xs = Object.keys(state.data.extraDays).sort().reverse();
@@ -2059,9 +2086,9 @@ function addDayMenu(A){
   const list = addedDaysList(A);
   return `<details class="menu addday" data-addday${x.open ? ' open' : ''}><summary class="btn small ghost">+ Add a day</summary>
     <div class="pop" role="group" aria-label="Add a class day">
-      <p class="small muted">For a make-up class or a swapped day. Afterward, mark who came here, or save that day’s Zoom report in the folder.</p>
+      <p class="small muted">For a make-up class, a swapped day, or a day you fill in by hand. Afterward, mark who came here, or save that day’s Zoom report in the folder.</p>
       <label>Date <input type="date" data-adddate value="${esc(x.date)}"${first ? ` min="${first}"` : ''}></label>
-      <label>Same students and times as <select data-addlike>${addLikeOptions(classWeekdays(A, x.date), x.like)}</select></label>
+      <label>Students and times <select data-addlike>${addLikeOptions(classWeekdays(A, x.date), x.like)}</select></label>
       <div class="actions"><button class="btn small" data-adddaygo>Add day</button></div>
       <p class="small addmsg" role="status">${msg}</p>
       ${list ? `<div class="small"><b>Days you added</b>${list}</div>` : ''}</div></details>`;
@@ -2080,11 +2107,12 @@ function addDay(){
   const first = A.days.length ? A.days[A.days.length - 1].dk : '';
   if (first && dk < first) return say(`That’s before your first Zoom report (${esc(shortDate(first))}, ${parseDk(first).getFullYear()}).`, '[data-adddate]');
   if (!like) return say(`The schedule in use on ${esc(shortDate(dk))} has no classes.`, '[data-adddate]');
-  const own = DAYS[parseDk(dk).getDay()], hasClass = w => (A.weekSched(dk).days[w] || []).some(sec => sec.students.length);
+  const own = DAYS[parseDk(dk).getDay()], base = A.weekSched(dk);
+  const hasClass = w => w === 'none' || (w === 'all' ? allClasses(base) : base.days[w] || []).some(sec => sec.students.length);
   if (like === own && hasClass(own)){
     if (!state.data.extraDays[dk]) return say(`${esc(shortDate(dk))} already has ${esc(cap(own))}’s class.`, '[data-adddate]');
     delete state.data.extraDays[dk];   // picking its own weekday puts a swapped day back to its usual class
-  } else if (!hasClass(like)) return say(`The schedule in use on ${esc(shortDate(dk))} has no ${esc(cap(like))} class.`, '[data-addlike]');
+  } else if (!hasClass(like)) return say(`The schedule in use on ${esc(shortDate(dk))} has no ${like === 'all' ? 'classes' : `${esc(cap(like))} class`}.`, '[data-addlike]');
   else state.data.extraDays[dk] = { like };
   changed(); x.date = ''; x.open = false; renderOverview();
   // Show the day: focus its first student. When it isn't in the dates shown, say so and keep the box open.
