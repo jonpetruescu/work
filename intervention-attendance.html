@@ -1800,7 +1800,7 @@ function weeklyMessage(A, key){
     const P = dayParts(d.rec);
     for (const t of ['instruction', 'support']){ late += P[t].before; out += P[t].out; early += P[t].after; }
   }
-  const name = A.nameOf[key] || key, m = n => `${plural(Math.round(n), 'minute')} of instruction`;
+  const name = A.nameOf[key] || key, first = firstName(name), m = n => `${plural(Math.round(n), 'minute')} of instruction`;   // the full name once, then the first name
   const parts = [late >= 0.5 && `${m(late)} due to being tardy`, out >= 0.5 && `${m(out)} due to being out in the middle of class`,
     early >= 0.5 && `${m(early)} due to leaving early`].filter(Boolean);
   const and = xs => xs.length < 3 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`, missed = and(parts);
@@ -1811,13 +1811,13 @@ function weeklyMessage(A, key){
   // Only the colors they had, the first one "in x of y classes": "present and engaged in 2 of 3 classes and likely present but not engaging in 1".
   const engBits = [['engaged', 'present and engaged'], ['idle', 'likely present but not engaging'], ['away', 'likely not actually present']]
     .filter(([k]) => nCat(k)).map(([k, w], i) => `${w} in ${nCat(k)}${i ? '' : ` of ${plural(eng.length, 'class', 'classes')}`}`);
-  const engaged = eng.length ? `\n${name} was ${and(engBits)}${cam ? `, and had their camera off in ${plural(cam, 'class', 'classes')}` : ''}.` : '';
+  const engaged = eng.length ? `\n${first} was ${and(engBits)}${cam ? `, and had their camera off in ${plural(cam, 'class', 'classes')}` : ''}.` : '';
   return { when, n: ds.length, name, text: `Hello,
 
 This is an update regarding ${name}'s attendance ${when}.
-${name} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.${engaged}
+${first} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.${engaged}
 
-${name}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
+${first}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
 }
 function studentSummary(days){
   const map = new Map();
