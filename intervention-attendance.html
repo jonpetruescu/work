@@ -1970,7 +1970,8 @@ function cellState(A, key, dk, recs){
       // the support hour may not have been given it, so their day is colored from Zoom alone.
       const useF = !!f && ((plan ? plan.secs : rec.sections || []).some(s => s.type === 'instruction') || f.share > 0);
       base = !useF ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
-      auto.L = !hasFlag(rec, 'fin') && ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));   // finished work: let go, so no L
+      // Late is an L even on a day they finished work; leaving that day isn't, since they were let go.
+      auto.L = hasFlag(rec, 'late') || (!hasFlag(rec, 'fin') && ['early', 'soft'].some(k => hasFlag(rec, k)));
       fact = !f ? 'No Formative that day' : useF ? '' : f.inFile ? 'Answered none on Formative' : 'Not in the Formative export';
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
