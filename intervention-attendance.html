@@ -1208,12 +1208,38 @@ function parseFormativeFile(name, text, modified){
   return { formative: true, dk, dated, questions: qCols.length, qs: qCols.map(i => h[i]), rows: out };
 }
 
+// A gradebook export (a CSV with "grades" and the date in its name): each student's current grade.
+// The grade comes from the first column found, in this order: current/overall/final grade or score, then grade, percent,
+// score, average. A cell like "87%", "87" or "B+ (87%)" gives 87% (as written, not rounded); a letter alone is kept as written.
+const G_COLS = [/^current (grade|score|percent(age)?)( ?\(%\)| ?%)?$/, /^(overall|final|course|total)( grade| score| percent(age)?| %)?( ?\(%\)| ?%)?$/,
+  /^(grade|percent(age)?|%|score|average|avg)( ?\(%\)| ?%)?$/, /percent|%|grade(?! level)|score|average/];
+function parseGradesFile(name, text, modified){
+  const rows = parseCSV(String(text).replace(/^\ufeff/, '')).filter(r => r.some(c => c.trim()));
+  const hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(c.trim().toLowerCase())));
+  if (hi < 0) return { error: 'This looks like a grades file, but no student name column (like “Student Name” or “First Name”) was found in it.' };
+  const h = rows[hi].map(c => c.trim().toLowerCase()), col = re => h.findIndex(c => re.test(c));
+  const first = col(/^(student )?first( name)?$|^first$/), last = col(/^(student )?last( name)?$|^last$/), full = col(/^(student( full)?( name)?|name|full name)$/);
+  const email = col(/^(student )?e-?mail( address)?$/), names = new Set([first, last, full, email]);
+  let g = -1; for (const re of G_COLS){ g = h.findIndex((c, i) => !names.has(i) && re.test(c)); if (g >= 0) break; }
+  if (g < 0) return { error: 'This looks like a grades file, but no grade column (like “Grade”, “Percent” or “Current Score”) was found in it.' };
+  const out = [];
+  for (const r of rows.slice(hi + 1)){
+    const nm = (full >= 0 && r[full] ? r[full] : [first >= 0 ? r[first] : '', last >= 0 ? r[last] : ''].join(' ')).trim(), v = String(r[g] || '').trim();
+    if (!nm || !v || /^(average|class average|total|mean|median|points possible|due date)s?$/i.test(nm)) continue;
+    const m = v.match(/(\d+(?:\.\d+)?)\s*%/) || v.match(/^(\d+(?:\.\d+)?)$/);
+    out.push({ name: nm, email: email >= 0 ? (r[email] || '').trim() : '', grade: m ? `${m[1]}%` : v });
+  }
+  if (!out.length) return { error: 'This looks like a grades file, but no student grades were found in it.' };
+  const nd = dateInName(name, new Date(modified || Date.now()).getFullYear()), dk = nd.num || nd.month || (modified ? dkOf(new Date(modified)) : '');
+  return { grades: true, dk, column: rows[hi][g].trim(), rows: out };
+}
+
 // Each file is read once: a Zoom participant report or a Formative export, or else an error. A file named for Formative
 // is read as one first, so a question that mentions joining or leaving can't make it look like a Zoom report.
 function parsedFile(f){
   if (!f.parsed){
     const form = () => parseFormativeFile(f.name, f.text, f.modified);
-    let p = /formative/i.test(f.name) ? form() : null;
+    let p = /formative/i.test(f.name) ? form() : /grade/i.test(f.name) ? parseGradesFile(f.name, f.text, f.modified) : null;
     if (!p || p.error){ const z = parseZoomFile(f.name, f.text); p = !z.error ? z : p || form() || z; }
     f.parsed = p;
   }
@@ -1263,11 +1289,12 @@ function analyze(){
   const anyone = buildMatcher(roster, state.data.aliases);
   const matchFor = dk => { const v = verFor(dk); if (!v.match){ const m = buildMatcher(v.sched.roster, state.data.aliases); v.match = (r, e) => m(r, e) || anyone(r, e); } return v.match; };
   const ignored = new Set(state.data.ignored);
-  const fileErrors = [], byDate = new Map(), forms = [];
+  const fileErrors = [], byDate = new Map(), forms = [], gradeFiles = [];
   for (const f of state.files){
     const z = parsedFile(f);
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
     if (z.formative){ forms.push({ name: f.name, ...z }); continue; }
+    if (z.grades){ gradeFiles.push({ name: f.name, ...z }); continue; }
     for (const r of z.rows){
       const dk = dkOf(r.join);
       if (state.data.deletedDays[dk]) continue;   // a deleted day's Zoom report is set aside
@@ -1302,7 +1329,19 @@ function analyze(){
     t.answered += e.answered; t.total += set.questions; if (e.pct !== null) t.pcts.push(e.pct);
     g.byKey.set(k, t);
   }
-  return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk };
+  // Grades: each student's grade from the newest grades file that lists them (newest by the date in its name).
+  const grades = new Map(), gradeUnmatched = new Map();
+  gradeFiles.sort((a, b) => b.dk.localeCompare(a.dk) || b.name.localeCompare(a.name));
+  for (const G of gradeFiles){
+    const match = matchFor(G.dk || todayDk()), newest = G === gradeFiles[0];   // names that didn't match are listed from the newest file only
+    for (const r of G.rows){
+      const m = match(r.name, r.email);
+      if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk) && newest) gradeUnmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
+      if (!deleted.has(m.key) && !grades.has(m.key)) grades.set(m.key, { grade: r.grade, file: G.name, dk: G.dk });
+    }
+  }
+  return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk,
+    grades, gradeUnmatched, gradeFiles };
 }
 
 // Every class in a week's schedule as one day: sections with the same kind and times are one section with all their students.
@@ -1757,7 +1796,7 @@ function weeklyMessage(A, key){
 This is an update regarding ${name}'s attendance ${when}.
 ${name} attended ${ds.filter(d => !d.rec.isAbsent).length}/${ds.length} classes ${when}${parts.length ? `, and missed ${missed}` : ''}.
 
-${name}'s current grade in Math 1 Intervention is 00%.` };
+${name}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
 }
 function studentSummary(days){
   const map = new Map();
@@ -2376,6 +2415,10 @@ function renderStudents(){
   }
   if (state.student){ renderStudentReport(A, el); return; }
   const { days, period, all, list } = studentList(A);
+  const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+  const gradeNotice = A.gradeUnmatched.size ? `<div class="notice"><b>Unmatched names in ${esc(A.gradeFiles[0].name)}.</b> Link each to a student once, or Ignore it.
+    ${[...A.gradeUnmatched.values()].map(u => `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b>${u.email ? ` <span class="muted small">${esc(u.email)}</span>` : ''}
+      <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`).join('')}</div>` : '';
   // What to show on the left, things to do on the right (as on the Overview)
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
@@ -2384,7 +2427,7 @@ function renderStudents(){
       .map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" id="exportSummary">Export CSV</button>
     ${printMenu(all.length)}</span></div>`;
-  h += missingNotice(A, period);
+  h += missingNotice(A, period) + gradeNotice;
   if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
   h += `<p class="listinfo">${plural(days.length, 'class day')} with Zoom reports · ${plural(all.length, 'student')}<span class="printonly"> · ${esc(fmtPeriod(period))}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</span></p>`;
   const datesOf = new Map(all.map(s => [s.key, studentDates(A, s.key, period)]));
@@ -3234,7 +3277,8 @@ function renderSettings(){
         <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Ms. Lopez">
         <label for="s-class">What families call this class</label><input id="s-class" type="text" maxlength="120" data-settext="className" value="${esc(S.className)}" placeholder="our intervention class">
         <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="Email or phone">
-      </div></div>
+      </div>
+      <p class="small muted" style="margin:12px 0 0">Grades: save your gradebook export (CSV) in the folder with “grades” and the date in its name, like <b>grades-12-10-2026.csv</b>, then click Refresh. “Copy message” on the Students tab uses each student’s grade from the newest one.</p></div>
     <div class="panel"><h2>Days with no class</h2>
       ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${esc(dk)}">Undo</button></li>`).join('')}</ul>`
         : '<p class="small muted">None yet.</p>'}
@@ -3260,8 +3304,9 @@ function renderFolderBar(){
   const b = $('#folderBar');
   let h = '';
   if (state.loaded){
-    const nForm = state.files.filter(f => parsedFile(f).formative).length, nZoom = state.files.filter(f => { const p = parsedFile(f); return !p.error && !p.formative; }).length;   // files that couldn't be read aren't counted
-    const name = state.folderName || 'Your folder', counts = [plural(nZoom, 'Zoom report'), nForm ? plural(nForm, 'Formative export') : ''].filter(Boolean);
+    const nForm = state.files.filter(f => parsedFile(f).formative).length, nGrades = state.files.filter(f => parsedFile(f).grades).length;
+    const nZoom = state.files.filter(f => { const p = parsedFile(f); return !p.error && !p.formative && !p.grades; }).length;   // files that couldn't be read aren't counted
+    const name = state.folderName || 'Your folder', counts = [plural(nZoom, 'Zoom report'), nForm ? plural(nForm, 'Formative export') : '', nGrades ? plural(nGrades, 'grades file') : ''].filter(Boolean);
     h = `<span class="where" title="${esc([name, ...counts].join(' · '))}"><b>${esc(name)}</b> · ${counts.join(' · ')}</span>
       <button class="btn ghost" id="refresh">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
@@ -3649,7 +3694,8 @@ async function onClick(t){
     const msg = weeklyMessage(state.lastAnalysis || analyze(), d.weeklymsg);
     if (!msg.n) return setStatus(`${msg.name} has no class days with a Zoom report this week or last week, so there’s nothing to copy yet.`);
     const ok = await copyText(msg.text);
-    setStatus(ok ? `Copied a message about ${msg.name}’s attendance ${msg.when}.` : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
+    setStatus(!ok ? 'Copying didn’t work in this browser.' : `Copied a message about ${msg.name}’s attendance ${msg.when}${
+      msg.grade ? `, with the grade from ${msg.grade.file}` : '. No grade for them in a grades file, so it says 00%'}.`, ok ? 'info' : undefined);
     return;
   }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
