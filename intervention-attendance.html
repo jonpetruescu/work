@@ -9,7 +9,7 @@
 <style>
 :root{
   --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
-  --ink:#1C2433; --muted:#566074; --faint:#8790A0;
+  --ink:#1C2433; --muted:#566074; --faint:#6B7486; --rule:#A3ACBA;
   --instr:#C9DAF8; --support:#FFF2CC; --bar:#24324D;
   --ok:#1D6F47; --ok-bg:#DFF1E7;
   --late:#8F4B00; --late-bg:#FBE8D2;
@@ -23,11 +23,13 @@
   --instr-edge:#8FAEE6; --support-edge:#D9B44A;
   --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Five text sizes: notes, small text, body, headings, page titles */
+  --fs-xs:.75rem; --fs-sm:.8125rem; --fs-md:.9375rem; --fs-lg:1.125rem; --fs-xl:1.5rem;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
-    --ink:#E5E9F1; --muted:#A4AEBF; --faint:#7A8597;
+    --ink:#E5E9F1; --muted:#A4AEBF; --faint:#8C96A8; --rule:#4E5A6E;
     --instr:#2C3D61; --support:#4A4123; --bar:#A9C2F5;
     --ok:#74D3A2; --ok-bg:#163428; --late:#F2B36B; --late-bg:#3D2A12;
     --bad:#F28B82; --bad-bg:#40201D; --soft:#E8D27A; --soft-bg:#3A3315;
@@ -48,59 +50,77 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* Header */
 header.top{background:var(--surface);border-bottom:1px solid var(--line)}
-.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding:18px 0 12px}
-.brand h1{font-size:1.6rem;line-height:1.2}
-.brand p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
-.folder{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.folder .where{color:var(--muted);font-size:.88rem;margin-right:4px}
+/* One title row: name and privacy line on the left, the folder on the right. The folder gets the space that's left
+   (a zero basis, so it never wraps under the title on a computer), and a long folder name ends in "…". */
+.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:12px 0 4px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 12px;flex:none;max-width:100%}
+.brand h1{font-size:var(--fs-lg);line-height:1.2;white-space:nowrap}
+.brand p{margin:0;color:var(--muted);font-size:var(--fs-sm);white-space:nowrap}
+.folder{margin-left:auto;display:flex;flex:1 1 0;min-width:0;justify-content:flex-end;flex-wrap:nowrap;align-items:center;gap:12px;white-space:nowrap}
+.folder .where{color:var(--muted);font-size:var(--fs-sm);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .folder .where b{color:var(--ink);font-weight:600}
-.btn{border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:.9rem}
+.btn{border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:var(--fs-md)}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--muted)}
-.btn.small{padding:3px 9px;font-size:.8rem;font-weight:600}
+.btn.small{padding:3px 9px;font-size:var(--fs-sm);font-weight:600}
 .btn:disabled{opacity:.5;cursor:default}
+.folder .btn{height:32px;padding:0 14px;font-size:.875rem}
 nav.tabs{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none;max-width:100%}
 nav.tabs button{flex:none}
-nav.tabs button{background:none;border:0;padding:10px 0 11px;cursor:pointer;color:var(--muted);font-weight:600;border-bottom:3px solid transparent}
+nav.tabs button{background:none;border:0;padding:8px 0 9px;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-md);border-bottom:3px solid transparent}
 nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bar)}
-.savebar{font-size:.84rem;color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
+.savebar{font-size:var(--fs-sm);color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
 .savebar .linkish{color:var(--muted)}
 .tabrow{display:flex;flex-wrap:wrap;gap:10px}
 
 main.wrap{padding:22px 20px 60px}
-.notice{border:1px solid var(--line);border-left:4px solid var(--late);background:var(--surface);padding:10px 14px;border-radius:6px;margin:0 0 14px;font-size:.92rem}
+.notice{border:1px solid var(--line);border-left:4px solid var(--late);background:var(--surface);padding:10px 14px;border-radius:6px;margin:0 0 14px;font-size:var(--fs-md)}
 .notice.info{border-left-color:var(--bar)}
 .notice ul{margin:6px 0 0;padding-left:20px}
+.nc1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}   /* one date with no report: the sentence, then its select and button on the same line */
+/* Messages float over the bottom corner, so nothing on the page moves when one comes or goes. */
+#status{position:fixed;right:24px;bottom:24px;z-index:50;max-width:420px}
+#status .notice{display:flex;align-items:baseline;gap:12px;margin:0;box-shadow:0 6px 24px rgba(0,0,0,.14)}
+#status .linkish{margin-left:auto;flex:none}
 
 /* Onboarding */
 .start{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:26px 28px;max-width:760px}
-.start h2{font-size:1.45rem;margin-bottom:6px}
+.start h2{font-size:var(--fs-xl);margin-bottom:6px}
 .start ol{padding-left:22px;margin:14px 0 18px}
 .start li{margin:8px 0}
+.startsetup{margin-top:18px}
 .muted{color:var(--muted)}
-.small{font-size:.86rem}
+.small{font-size:var(--fs-sm)}
 
-/* Toolbar */
-.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:16px}
+/* Toolbar: one even 32px strip with one text size. Controls inside a popover keep their own sizes. */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.toolbar > *{flex:none}
+.toolbar .grow{flex:1 1 0}
+.toolbar .tbend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;max-width:100%}   /* the controls at the right end, kept together and at the right if the row wraps */
+.toolbar :is(.search,.btn,summary.btn,select):not(.pop *){height:32px;font-size:var(--fs-sm)}
+.toolbar :is(.btn,summary.btn):not(.pop *){display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
-.seg button{border:0;background:none;padding:6px 12px;cursor:pointer;font-size:.88rem;color:var(--muted);font-weight:600}
+.seg button{border:0;background:none;height:30px;padding:0 12px;cursor:pointer;font-size:var(--fs-sm);color:var(--muted);font-weight:600}
 .seg button[aria-pressed="true"]{background:var(--bar);color:var(--btn-ink)}
 .search{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 10px;min-width:220px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-left:auto}
+.toolbar .search{width:200px;min-width:0;padding:0 10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--muted);margin-left:auto}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{display:inline-block;width:18px;height:10px;border-radius:2px}
 .sw.i{background:var(--instr)} .sw.s{background:var(--support)} .sw.p{background:var(--bar);height:6px}
 
 /* Day */
-details.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:14px}
-details.day > summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px}
+/* A closed day is one line in three columns: the date, who came and when, and the counts. Dates on days with no
+   class line up under the other dates. */
+details.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+details.day > summary{list-style:none;cursor:pointer;padding:12px 20px;display:grid;grid-template-columns:10px 15rem minmax(0,22rem) 1fr;align-items:center;gap:6px 16px}
 details.day > summary::-webkit-details-marker{display:none}
 details.day > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);align-self:center;margin-right:2px;transition:transform .15s}
 details.day[open] > summary::before{transform:rotate(45deg)}
-.day h2{font-size:1.35rem}
-.day .sub{color:var(--muted);font-size:.88rem}
-.counts{display:flex;flex-wrap:wrap;gap:6px;width:100%;padding-left:20px}
-.count{font-size:.8rem;font-weight:600;border-radius:999px;padding:2px 10px}
+.day h2{font-size:var(--fs-lg)}
+.day .sub{color:var(--muted);font-size:var(--fs-sm)}
+.counts{display:flex;flex-wrap:wrap;gap:6px;width:auto;padding-left:0}
+.count{font-size:var(--fs-sm);font-weight:600;border-radius:999px;padding:2px 10px}
 .day-body{padding:0 20px 18px}
 
 /* Status colors */
@@ -116,12 +136,16 @@ details.day[open] > summary::before{transform:rotate(45deg)}
 .k-extra{background:var(--grid);color:var(--muted)}
 .k-exc{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
 
-/* Date range + day actions */
-.range{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
-.range label{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
-.range input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
-.daybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
-.daybar .rate{font-size:.86rem;color:var(--muted);margin-right:auto}
+/* Date range: three presets and a "Custom dates…" menu in one segmented control. The menu's label has a fixed
+   width and shows the chosen dates, so the control never changes size. The popover may hang below it. */
+.seg.range{overflow:visible;flex-wrap:wrap;max-width:100%}   /* wraps only in a window too narrow for it, instead of running off the page */
+.seg.range > :first-child{border-radius:6px 0 0 6px}
+.rangemenu > summary{display:block;width:10.5em;height:30px;line-height:30px;padding:0 12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-sm);border-radius:0 6px 6px 0}
+.rangemenu > summary.on{background:var(--bar);color:var(--btn-ink)}
+.seg.range .pop{flex-direction:row;align-items:center;gap:10px;padding:10px 12px;min-width:0}
+.range label{font-size:var(--fs-sm);color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.range input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm)}
+/* Day notes */
 .note-txt{display:block;font-size:.8rem;color:var(--ink);font-style:italic;line-height:1.35;margin-top:2px}
 input.note{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:.82rem;width:100%;margin-top:4px}
 
@@ -131,9 +155,9 @@ input.note{border:1px solid var(--line);background:var(--paper);border-radius:6p
 .tile .n{font-size:1.6rem;font-weight:600;line-height:1.15;font-variant-numeric:proportional-nums}
 .tile .l{font-size:.82rem;color:var(--muted)}
 .tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
-table.sum{width:100%;border-collapse:collapse;font-size:.88rem}
-table.sum th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-table.sum td{padding:9px 10px;border-bottom:1px solid var(--grid);vertical-align:middle}
+table.sum{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+table.sum th{font-size:var(--fs-sm);color:var(--muted);font-weight:600;text-align:left;padding:10px 12px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sum td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
 table.sum .num{text-align:right;white-space:nowrap}
 table.sum .zero{color:var(--faint)}
 .meter{display:flex;align-items:center;gap:8px;min-width:130px}
@@ -146,21 +170,22 @@ table.sum .zero{color:var(--faint)}
 
 /* Table */
 .grid-head,.row{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:0 14px;align-items:center}
-.grid-head{font-size:.78rem;color:var(--muted);padding:6px 0 6px;border-bottom:1px solid var(--line);font-weight:600}
+.grid-head{font-size:var(--fs-xs);color:var(--muted);padding:6px 0 6px;border-bottom:1px solid var(--line);font-weight:600}
 .row{padding:8px 0;border-bottom:1px solid var(--grid)}
 .row:last-child{border-bottom:0}
 .who b{font-weight:600}
-.who .meta{display:block;font-size:.78rem;color:var(--muted);line-height:1.35}
-.time{font-size:.86rem}
+.who .meta{display:block;font-size:var(--fs-sm);color:var(--muted);line-height:1.35}
+.time{font-size:var(--fs-md)}
 .time.none{color:var(--faint)}
 .chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.chip{font-size:.78rem;font-weight:600;border-radius:5px;padding:2px 8px;white-space:nowrap}
-.linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:.78rem}
+.chip{font-size:var(--fs-sm);font-weight:600;border-radius:5px;padding:2px 8px;white-space:nowrap}
+.quiet{font-size:var(--fs-sm);color:var(--muted)}   /* "Present full time" on a day's row, so the exceptions are what stand out */
+.linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:var(--fs-sm)}
 .linkish:hover{color:var(--ink)}
 
 /* Timeline: the class block drawn like a strip of graph paper */
 .axis{position:relative;height:16px}
-.axis span{position:absolute;transform:translateX(-50%);font-size:.74rem;color:var(--muted);white-space:nowrap}
+.axis span{position:absolute;transform:translateX(-50%);font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
 .tl{position:relative;height:22px;border-radius:4px;background:var(--paper);border:1px solid var(--grid);overflow:hidden}
 .tl .band{position:absolute;top:0;bottom:0}
 .tl .band.instruction{background:var(--instr)}
@@ -169,22 +194,22 @@ table.sum .zero{color:var(--faint)}
 .tl .tick.half{opacity:.45}
 .tl .bar{position:absolute;top:7px;height:8px;border-radius:2px;background:var(--bar)}
 
-.subhead{font-family:var(--serif);font-size:1.05rem;margin:20px 0 6px}
+.subhead{font-family:var(--serif);font-size:var(--fs-lg);margin:20px 0 6px}
 .mini{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:6px 14px;align-items:center;padding:7px 0;border-bottom:1px solid var(--grid)}
 .mini:last-child{border-bottom:0}
 .mini > :nth-child(3){grid-column:3 / -1}
 .mini .act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .mini select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;max-width:210px;font-size:.84rem}
-.files{font-size:.8rem;color:var(--faint);margin-top:12px}
+.files{font-size:var(--fs-sm);color:var(--faint);margin-top:12px}
 
 /* Schedule tab */
 .two{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1.2fr);gap:22px;align-items:start}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
-.panel h2{font-size:1.2rem;margin-bottom:6px}
-textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:10px;font-size:.85rem;line-height:1.4;resize:vertical}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 24px}
+.panel h2{font-size:var(--fs-lg);margin-bottom:6px}
+textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:10px;font-size:var(--fs-sm);line-height:1.4;resize:vertical}
 .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px}
-.dcol h3{font-size:1.02rem;border-bottom:2px solid var(--ink);padding-bottom:3px;margin-bottom:8px}
-.sec{border-radius:6px;padding:7px 9px;margin-bottom:8px;font-size:.84rem}
+.dcol h3{font-size:var(--fs-md);border-bottom:2px solid var(--ink);padding-bottom:3px;margin-bottom:8px}
+.sec{border-radius:6px;padding:7px 9px;margin-bottom:8px;font-size:var(--fs-sm)}
 .sec.instruction{background:var(--instr)} .sec.support{background:var(--support)}
 .sec b{display:block;font-weight:600}
 .sec details summary{cursor:pointer;color:var(--muted);font-size:.8rem}
@@ -192,43 +217,54 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
 
 /* Settings */
-.set{display:grid;grid-template-columns:auto 80px;gap:10px 14px;align-items:center;max-width:560px}
-.set input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;width:80px}
+.set{display:grid;grid-template-columns:max-content 64px max-content;gap:10px;align-items:center;max-width:none}   /* label, number, unit: the numbers line up */
+.set input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;width:64px}
+.set .unit{color:var(--muted);font-size:var(--fs-sm)}
+.fswatch{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.fswatch li{display:flex;align-items:center;gap:8px}
+.psub{font-family:var(--sans);font-size:var(--fs-sm);font-weight:600;margin:12px 0 0}   /* the Zoom names panel's two lists */
+.psub + p{margin:4px 0 0}
 .list{margin:6px 0 0;padding:0;list-style:none}
-.list li{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-size:.9rem}
+.list li{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-md)}
 .list li span{flex:1}
-.stack > * + *{margin-top:18px}
+.stack > * + *{margin-top:16px}
 
 /* Shared bits for student reports */
 .name-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer;font-weight:600;color:var(--ink);font-size:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .name-btn:hover{text-decoration-color:var(--ink)}
-.lc{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;font-size:.7rem;font-weight:700;line-height:1;flex:none}
+.lc{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;font-size:var(--fs-xs);font-weight:700;line-height:1;flex:none}
 .lc-noclass{color:var(--muted);border:1px dashed var(--line)}
 .lc-missing{color:var(--late);border:1px dashed var(--late)}
 .last10{display:flex;gap:3px;flex-wrap:wrap}
-.legend-line{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 8px}
+.legend-line{font-size:var(--fs-sm);color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 8px}
 .legend-line > span{display:inline-flex;gap:5px;align-items:center}
 .nclist{list-style:none;margin:6px 0 0;padding:0}
 .nclist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:3px 0}
 .nclist li > span:first-child{min-width:8.5em}
-.nclist select,.rsec select,.rsec input[type=date],.rsec input[type=text],.sched-step input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:.86rem}
-.noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px;margin-bottom:14px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.noclasscard b{color:var(--ink);font-family:var(--serif);font-size:1.1rem}
-.backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:.9rem}
+.nclist select,.nc1 select,.rsec select,.rsec input[type=date],.rsec input[type=text],.sched-step input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:.86rem}
+.noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px 12px 46px;margin-bottom:8px;color:var(--muted);display:grid;grid-template-columns:15rem max-content max-content;align-items:center;column-gap:16px}
+.noclasscard b{color:var(--ink);font-family:var(--serif);font-size:var(--fs-lg)}
+.noclasscard span{font-size:var(--fs-sm)}   /* the same size as the other days' lines */
+.backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:var(--fs-md)}
 .hl{outline:2px solid var(--focus);outline-offset:1px;border-radius:4px}
 .row.hl{background:var(--grid)}
 .row.slim{grid-template-columns:minmax(170px,1.25fr) 1fr}
 .tile .s{font-size:.8rem;color:var(--muted);line-height:1.35;margin-top:2px}
-.listinfo{font-size:.9rem;color:var(--muted);margin:0 0 10px}
+.listinfo{font-size:var(--fs-sm);color:var(--muted);margin:0 0 10px}
 .cardcounts{display:none}
-.sortby{font-size:.86rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
-.sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.86rem}
+.sortby{font-size:var(--fs-sm);color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm)}
 
 .dropnote{margin:2px 0 6px;font-size:.88rem;color:var(--late);font-weight:600}
 .dropnote .linkish{font-weight:400}
-.dropbtns{display:inline-flex;gap:16px}
-.dropbtn{font-size:.8rem;margin:0 0 4px}
-.dropform{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0 8px;font-size:.88rem}
+/* The report's name row: the name, then "Dropped from the class?" and "Delete student" at its right end. Recording a drop
+   opens in a small menu over the report (leftward, inside it), so nothing on the page moves. */
+.rname{display:flex;align-items:baseline;gap:16px}
+.rname .dropbtns{margin-left:auto}
+.dropbtns{display:inline-flex;align-items:baseline;gap:16px}
+.menu.dropmenu .pop{left:auto;right:0;width:490px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}
+.dropline{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.rhead .dropform p{margin:0;font-size:var(--fs-sm);color:var(--muted)}
 .dropform input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px}
 .ovdrop{display:block;font-size:.66rem;font-weight:500;color:var(--late)}
 /* Overview grid: the teacher's spreadsheet colors */
@@ -238,80 +274,109 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)} .c-nosched{background:var(--ov-nosched)}
 .c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
 .c-noclass,.c-missing,.c-later,.c-nosched{--ov-ink:var(--ink)}   /* marks on these days use the page ink, so they show in dark mode too */
-.ovlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);margin:0 0 6px}
-.ovlegend > span{display:inline-flex;align-items:center;gap:6px}
-.ovlegend b{color:var(--ink)}
-.ovsw{display:inline-flex;align-items:center;justify-content:center;width:16px;height:12px;border-radius:2px;font-style:normal;font-size:.7rem;border:1px solid var(--line)}
+/* The key above the grid: three labeled rows, 86px in all. Quick mark swaps its rows for the marks to pick from,
+   in the same panel, so the grid below doesn't move. A row only wraps in a window too narrow for it (or on paper),
+   so nothing in it is ever cut off. */
+.ovkey{min-height:86px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.ovkey.marking{border-left:4px solid var(--focus);padding-left:7px}
+.ovkrow{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;min-height:24px;font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
+.ovkrow > span{display:inline-flex;align-items:center;gap:5px}
+.ovkey b{color:var(--ink)}
+.ovkh{min-width:4.2em;color:var(--ink);font-weight:600}
+.ovkh2{margin-left:8px;color:var(--ink);font-weight:600}
+.ovkey.marking .ovkrow{gap:2px 6px}
+.ovkey .ovchip{height:24px;padding:0 7px}
+.ovkend{margin-left:auto}
+.ovsw{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:2px;font-style:normal;font-size:var(--fs-xs);border:1px solid var(--line)}
 .ovsw.ovnote-k{background:linear-gradient(225deg,var(--ink) 0 4px,var(--surface) 4px)}
 .ovwrap{position:relative;margin-top:8px}
 .ovblock{position:relative;width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:14px}
-table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
+table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovt th,.ovt td{padding:0;border-right:1px solid var(--surface);border-bottom:1px solid var(--surface)}
-.ovt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--muted);font-weight:600;text-align:center;white-space:nowrap;padding:2px 3px;font-size:.72rem}
+.ovt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--ink);font-weight:600;text-align:center;white-space:nowrap;padding:2px 1px;font-size:var(--fs-xs);font-variant-numeric:proportional-nums}
 .ovt thead tr:nth-child(2) th{top:22px}
 .ovt th.ovmo{text-align:left;color:var(--ink);padding-left:6px;height:22px}
-.ovt th.today{color:var(--focus)}
-.ovwd{display:block;font-weight:400;font-size:.66rem}
-.ovt .wk{border-left:2px solid var(--muted)}
+.ovt th.today,.ovt th.today .ovwd{color:var(--focus)}
+.ovwd{display:block;font-weight:400;font-size:var(--fs-xs);color:var(--muted)}
+.ovt .wk{border-left:2px solid var(--rule)}
 .ovt th.ovname{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px 0 8px;min-width:170px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink);border-right:1px solid var(--line)}
 .ovt th.ovname .name-btn{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}   /* a long name ends in "…" */
-.ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px}
+.ovt .name-btn{text-decoration-color:transparent}   /* underlined only under the pointer */
+.ovt .name-btn:hover{text-decoration-color:var(--ink)}
+.ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px;color:var(--muted)}
 .ovt tbody tr:hover th.ovname{background:var(--paper)}
-.ovc{width:38px;min-width:38px;height:24px}
-.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:24px;cursor:pointer;color:var(--ov-ink);font-size:.68rem;font-weight:700;letter-spacing:.04em}
+.ovc{width:38px;min-width:38px;height:26px}
+.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:26px;cursor:pointer;color:var(--ov-ink);font-size:var(--fs-xs);font-weight:700;letter-spacing:.02em}
 .ovb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
 /* Two-tone ring (ink outside, page color inside), so the focused or open day shows on every color in both themes */
 .ovb:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--surface)}
 .ovc.sel .ovb{outline:3px solid var(--ink);outline-offset:-3px;box-shadow:inset 0 0 0 5px var(--surface)}
 .c-noclass .ovb,.c-missing .ovb,.c-later .ovb{color:inherit}
-.ovm{font-size:.72rem;color:var(--ov-ink)}
-.ovlegend .ovm{color:var(--ink)}
+.ovm{font-size:var(--fs-xs);color:var(--ov-ink)}
+.ovkey .ovm{color:var(--ink)}
+.ovkey .ovxd{color:var(--focus)}
 .ovn{position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--ov-ink);border-left:6px solid transparent}
-.ovmarkbar{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:.88rem}
-.ovbrushes{display:flex;flex-wrap:wrap;gap:4px}
+/* Bigger names, months and note corners on screen; on paper the print block's sizes stay as they were. */
+@media screen{
+  .ovt th.ovmo{font-size:var(--fs-sm);line-height:17px}   /* keeps the month row 22px tall, where the row of dates sticks */
+  .ovt th.ovname{font-size:var(--fs-md)}
+  .ovdrop{font-size:var(--fs-xs)}
+  .ovn{border-top-width:7px;border-left-width:7px}
+}
 .ovwrap.marking .ovb{cursor:copy}
 .ovwrap.marking .ovb:hover{box-shadow:inset 0 0 0 2px var(--focus)}
-.ovpop{position:absolute;z-index:10;width:340px;max-height:calc(100vh - 16px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:.86rem}
-.ovpop p{margin:6px 0 8px}
+/* The day editor: the facts, then colors and letters side by side. Every part is there on every day (one that doesn't
+   apply is hidden, not left out), so the box is the same size on every day and when anything in it is pressed. */
+.ovpop{position:absolute;z-index:10;width:540px;max-height:calc(100vh - 16px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:14px 16px;font-size:var(--fs-sm)}
 .ovpop-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.ovpop-h b{font-size:var(--fs-md)}
 .ovx{margin-left:auto}
-.ovgrp{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
-.ovgrp > span{width:100%}
+.ovgrp{display:flex;flex-direction:column}
 .tgl{display:inline-flex;align-items:center;gap:7px;background:none;border:0;padding:2px 0;font:inherit;font-size:.86rem;color:var(--ink);cursor:pointer}
-.tgl .tbox{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:none}
-.tgl[aria-pressed="true"] .tbox{background:var(--focus);border-color:var(--focus)}
-.tgl[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+:is(.tgl,.ovlet) .tbox{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+:is(.tgl,.ovlet)[aria-pressed="true"] .tbox{background:var(--focus);border-color:var(--focus)}
+:is(.tgl,.ovlet)[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .tgl:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
 .ddact{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:8px}
 .ddnote{display:flex;align-items:center;gap:8px;flex:1;min-width:260px}
 .ddnote input{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 8px;font-size:.86rem}
 .ovset{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:2px}
 .ovset.on{background:var(--focus)}
-.ovauto{flex-basis:100%;justify-content:flex-start}
-.ovfacts{min-height:4.6em}
-.ovmarkbtn{min-width:8.6em}
-.ovmarkn{margin-left:8px}
+.ovfacts{min-height:4.5em;margin:6px 0 10px}
+.ovmarkbtn{min-width:9em}   /* fits "Done marking" too, so the button keeps its width */
 .linkish:disabled{color:var(--faint);cursor:default;text-decoration:none}
-.ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer;color:var(--ink)}
+.ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 8px;font-size:var(--fs-sm);cursor:pointer;color:var(--ink)}
 .ovchip[aria-pressed="true"],.ovlet[aria-pressed="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
-.ovmsg{display:flex;align-items:center;gap:8px;margin:8px 0}
-.ovnoteb{display:grid;gap:2px;margin:6px 0}
-.ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:.86rem}
+.ovcols{display:grid;grid-template-columns:290px 1fr;gap:0 20px}
+/* Full-width rows; a chosen color gets a ring (no bolder text, so nothing shifts) and a chosen letter its checked box */
+.ovcols .ovchip,.ovcols .ovlet{width:100%;height:26px;border:0;background:none;padding:0 6px;border-radius:5px;justify-content:flex-start}
+.ovcols .ovchip[aria-pressed="true"]{background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ovcols .ovlet[aria-pressed="true"]{box-shadow:none}
+.ovcols :is(.ovchip,.ovlet):hover{background:var(--grid)}
+.ovmsg{display:flex;align-items:center;height:26px;margin:10px 0 0;padding:0 6px;gap:7px}
+.ovmsg input{width:14px;height:14px;margin:0;accent-color:var(--focus)}
+@media (prefers-color-scheme: dark){ .ovmsg input{color-scheme:dark} }   /* a dark box, like the letters' boxes beside it */
+.ovfinrow{display:flex;align-items:center;height:26px;padding:0 6px}
+.ovfinrow .tgl{font-size:inherit}
+.ovfinrow.na{visibility:hidden}   /* kept in place on days it doesn't apply, and out of the tab order */
+.ovnoteb{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;margin:10px 0 6px}
+.ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:var(--fs-sm)}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
-.addday .pop{width:360px;padding:12px 14px;gap:8px;font-size:.86rem}
+.addday .pop{left:auto;right:0;width:360px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}   /* opens leftward from the right end of the toolbar */
 .addday .pop p{margin:0}
+.addday .hist-list{font-size:inherit}
 .addday label{display:grid;gap:3px}
 .addday input,.addday select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font:inherit;color:var(--ink)}
 .addday .actions{margin-top:2px}
 .addmsg{min-height:3em}
 .ovxd{color:var(--focus);font-weight:700;margin-left:1px}
 /* F marks: over a date, a Formative export that day; in a day, answered on Formative though not in Zoom. Placed in a corner, so no column gets wider. */
-.ovfd,.ovfa{position:absolute;top:1px;font-size:.58rem;font-weight:700;line-height:1;font-style:normal}
+.ovfd,.ovfa{position:absolute;top:1px;font-size:.625rem;font-weight:700;line-height:1;font-style:normal}
 .ovfd{right:2px;color:var(--ink)}
 .ovfa{left:2px;color:var(--ov-ink)}
-.ovfin{font-size:.62rem;font-weight:700;letter-spacing:0}
-.ovlegend .ovfd,.ovlegend .ovfa{position:static;font-size:.72rem;color:var(--ink)}
+.ovfin{font-size:.625rem;font-weight:700;letter-spacing:0}
+.ovkey .ovfd,.ovkey .ovfa,.ovkey .ovfin{position:static;font-size:var(--fs-xs);color:var(--ink)}
 @media print{
   .ovblock{border:0}
   .ovt tr{break-inside:avoid}   /* a long class list goes on to the next page between rows, under the dates again */
@@ -340,10 +405,8 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 /* Support hour tab */
 .sup{max-width:560px}
 .sup-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:4px 0 12px}
-.sup-head h2{font-size:1.4rem}
+.sup-head h2{font-size:var(--fs-lg)}
 .sup-head h2:focus{outline:none}
-#tab-overview .toolbar{column-gap:10px}
-#tab-overview .search{min-width:0;width:160px}
 .sup .search{width:100%;max-width:none;font-size:1rem;padding:9px 12px}
 .sup-h{font-size:1.05rem;margin:18px 0 6px}
 .sup-list{list-style:none;margin:0;padding:0}
@@ -357,8 +420,11 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .sup-unm{margin-top:18px}
 .sup-unm > summary{cursor:pointer;color:var(--muted);font-size:.9rem}
 .btn[data-supmark]{min-width:10.5em}
-.sup-cols li{display:grid;grid-template-columns:10em minmax(0,1fr);align-items:center}
-.sup-cols .sup-item{display:flex;justify-content:space-between;margin:2px 0}
+.sup-cols li,.sup-colh{display:grid;grid-template-columns:10em minmax(0,1fr);align-items:center}
+.sup-cols .sup-item,.sup-colh > :last-child{display:flex;justify-content:space-between;margin:2px 0}
+/* The default lists say "Finished work, let go early" once, over the boxes. A box keeps its size when it's ticked. */
+.sup-colh{padding:0 2px 2px;border-bottom:1px solid var(--grid);font-size:var(--fs-xs);color:var(--muted)}
+.sup-cols .tgl{min-width:24px;min-height:24px;justify-content:center}
 .sup-item{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-right:18px}
 .sup-yes,.sup-soft,.sup-no{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;width:100%}
 .sup-yes{font-weight:600}
@@ -371,24 +437,26 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .menu > summary{list-style:none}
 .menu > summary::-webkit-details-marker{display:none}
 .menu .pop{position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:6px;min-width:280px;display:flex;flex-direction:column;gap:2px}
-.menu .item{background:none;border:0;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:.88rem;color:var(--ink)}
+.menu .item{background:none;border:0;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:var(--fs-md);color:var(--ink)}
 .menu .item:hover,.menu .item:focus-visible{background:var(--paper)}
-.menu .inc{border-top:1px solid var(--grid);margin-top:4px;padding:8px 10px 4px;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.menu .inc{border-top:1px solid var(--grid);margin-top:4px;padding:8px 10px 4px;font-size:var(--fs-sm);color:var(--muted);display:flex;flex-direction:column;gap:4px}
 .inc label{display:inline-flex;gap:6px;align-items:center}
 
 /* Student report */
 .sreport{max-width:920px}
-.rbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
-.rbar .r1{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
-.rbar .pn{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:.86rem;color:var(--muted);min-width:0}
-.rbar .pn button{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rbar .r2{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
-.rhead,.rsec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 22px;margin-bottom:14px}
+/* The report's toolbar (a .toolbar above the report). Back, the other students and their place in the list keep fixed
+   widths, so stepping from student to student never moves the date control or the button under the pointer. */
+.rbar [data-studentback]{min-width:13.6em}   /* fits "← Back to Wed, May 12" as well as "← All students" */
+.rbar .pn{display:flex;gap:8px;align-items:center;font-size:var(--fs-sm);color:var(--muted);min-width:0}
+.rbar .pn > span{min-width:4.5em;text-align:center}
+.toolbar.rbar .pn .btn{display:block;width:130px;line-height:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}   /* a long name ends in "…"; the full name is in the title */
+.rbar .pnx{width:130px}   /* holds the place of "Previous" or "Next" at either end of the list */
+.rhead,.rsec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin-bottom:16px}
 .eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.rhead h2{font-size:1.75rem;margin:2px 0 6px}
+.rhead h2{font-size:var(--fs-xl);margin:0}
 .rhead h2:focus{outline:none}
-.rhead p{margin:2px 0;font-size:.9rem}
-.rsec h3{font-size:1.12rem;margin-bottom:8px}
+.rhead p{margin:2px 0;font-size:var(--fs-md)}
+.rsec h3{font-size:var(--fs-lg);margin-bottom:12px}
 .rsec h3 .small{font-family:var(--sans);font-weight:400}
 .mblock{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--grid)}
 .mfig{display:flex;flex-wrap:wrap;gap:6px 40px;margin:0}
@@ -402,31 +470,35 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .mbar{display:flex;gap:2px;height:14px}
 .mbar i{display:block;min-width:2px}
 .mbar i:last-child{border-radius:0 4px 4px 0}
-.mkey{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 20px;font-size:.82rem}
-.mkey li{display:inline-flex;flex-wrap:wrap;align-items:center;gap:3px 6px}
+/* Where the minutes went, one row each, in the order of the bars: swatch, name, minutes (lined up), and the days behind them */
+.mkey{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:12px max-content max-content minmax(0,1fr);column-gap:12px;row-gap:5px;align-items:center;font-size:var(--fs-sm)}
+.mkey li{display:grid;grid-column:1 / -1;grid-template-columns:subgrid;align-items:center}
+.mkey .kt{display:contents}
+.mkey .ksw{grid-column:1}
+.mkey .kt > b{grid-column:2}
 .mkey b{font-weight:600}
 .ksw{display:inline-block;width:12px;height:12px;border-radius:2px}
-.mkey .v{color:var(--muted)}
+.mkey .v{grid-column:3;text-align:right;color:var(--muted)}
+.mkey .kd{grid-column:4;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
 .mkey li.zero,.mkey li.zero .v{color:var(--faint)}
 .mkey li.zero .ksw{opacity:.5}
-.mkey .lc,.mnot .lc{width:16px;height:16px;font-size:.64rem}
-.mkey .kd .lc{margin-right:4px}
+.mkey .lc,.mnot .lc{width:16px;height:16px;font-size:var(--fs-xs)}
 .mnot{font-size:.8rem;color:var(--muted);margin:8px 0 0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 .wsched{margin:14px 0 0;max-width:640px}
-.ws-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.8rem;color:var(--muted);margin-bottom:2px}
-.ws-head b{color:var(--ink);font-weight:600;font-size:.9rem}
+.ws-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:var(--fs-sm);color:var(--muted);margin-bottom:2px}
+.ws-head b{color:var(--ink);font-weight:600;font-size:var(--fs-md)}
 .ws-row{display:grid;grid-template-columns:2.4em minmax(0,1fr) 3.9em;gap:8px;align-items:center;margin-top:4px}
 .ws-axis{margin-top:0}
 .ws-axis .ws-track{height:16px;background:none}
-.ws-axis .ws-track > span{position:absolute;top:0;transform:translateX(-50%);font-size:.72rem;color:var(--muted);white-space:nowrap}
-.ws-day{font-size:.8rem;font-weight:600;color:var(--muted)}
-.ws-min{font-size:.78rem;color:var(--muted);text-align:right;white-space:nowrap}
+.ws-axis .ws-track > span{position:absolute;top:0;transform:translateX(-50%);font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+.ws-day{font-size:var(--fs-sm);font-weight:600;color:var(--muted)}
+.ws-min{font-size:var(--fs-sm);color:var(--muted);text-align:right;white-space:nowrap}
 .ws-track{position:relative;height:28px;border-radius:4px;background:var(--paper)}
 .ws-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--grid)}
-.ws-blk{position:absolute;top:0;bottom:0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden}
+.ws-blk{position:absolute;top:0;bottom:0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden}
 .ws-blk.instruction,.ws-sw.instruction{background:var(--instr)}
 .ws-blk.support,.ws-sw.support{background:var(--support)}
-.ws-key{display:flex;gap:4px 16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin:6px 0 0 calc(2.4em + 8px)}
+.ws-key{display:flex;gap:4px 16px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--muted);margin:6px 0 0 calc(2.4em + 8px)}
 .ws-key > span{display:inline-flex;align-items:center;gap:6px}
 .ws-sw{display:inline-block;width:14px;height:12px;border-radius:3px}
 .ws-sw.instruction{box-shadow:inset 0 0 0 1px var(--instr-edge)}
@@ -434,7 +506,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:.78rem}
 .rtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
 .rtiles .tile{padding:10px 14px}
 
-.caption{font-size:.84rem;color:var(--muted);margin:4px 0 0}
+.caption{font-size:var(--fs-sm);color:var(--muted);margin:4px 0 0}
 /* Calendar: weeks down, weekdays across */
 .calwrap{max-width:760px}
 table.cal{border-collapse:separate;border-spacing:4px;width:100%;table-layout:fixed}
@@ -456,21 +528,21 @@ table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:midd
 .dd-min{margin:6px 0 2px}
 
 /* Class-strip calendar (student report) */
-table.scal{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 2px;font-size:.8rem;--gut:16px}
-table.scal.g2on{--gut:34px}
+table.scal{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 2px;font-size:.8rem;--gut:18px}
+table.scal.g2on{--gut:36px}
 .scal col.c-lab{width:7%}
 .scal col.c-wd{width:var(--wa)}
 .scal col.c-wk{width:24%}
 .scal th,.scal td{padding:0 2px}
 .scal thead th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:left;vertical-align:bottom;padding-bottom:2px}
-.scal th.lab{font-size:.72rem;font-weight:500;color:var(--muted);text-align:left;white-space:nowrap}
+.scal th.lab{font-size:var(--fs-xs);font-weight:500;color:var(--muted);text-align:left;white-space:nowrap}
 .colaxis{margin:3px 11px 0 calc(var(--gut) + 5px)}
-.colaxis.wkax{margin:3px calc(6.4 * .72rem + 4px) 0 14px}
+.colaxis.wkax{margin:3px calc(6.4 * .75rem + 4px) 0 14px}
 .rib{position:relative;height:5px;border-radius:2px}
 .rib span{position:absolute;top:0;bottom:0}
 .rib .instruction{background:var(--instr);box-shadow:inset 0 0 0 1px var(--instr-edge)}
 .rib .support{background:var(--support);box-shadow:inset 0 0 0 1px var(--support-edge)}
-.ticks{position:relative;height:13px;font-size:.66rem;font-weight:400;color:var(--muted)}
+.ticks{position:relative;height:15px;font-size:var(--fs-xs);font-weight:400;color:var(--muted)}
 .ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
 .ticks .s{left:0;transform:none}
 .ticks .e{right:0;transform:none}
@@ -483,7 +555,7 @@ table.scal.g2on{--gut:34px}
 .sbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .sbtn[aria-pressed="true"]{outline:2px solid var(--focus);outline-offset:1px;background:var(--paper)}
 .gut{display:flex;gap:2px}
-.g{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;font-size:.6rem;font-weight:700;line-height:1;flex:none}
+.g{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:var(--fs-xs);font-weight:700;line-height:1;flex:none}
 .g.lc-noclass{color:var(--muted);border:1px dashed var(--line)}
 .g.lc-missing{color:var(--late);border:1px dashed var(--late)}
 .ds{position:relative;display:block;height:10px}
@@ -495,27 +567,28 @@ table.scal.g2on{--gut:34px}
 .nd{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);justify-self:center}
 .fuk{font-size:.7rem}
 .scal tr.mo > *{border-top:1px solid var(--line)}
-.scal tr.chg td{height:auto;padding:6px 2px 1px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--line)}
-.scal tfoot th,.scal tfoot td{font-size:.72rem;font-weight:500;color:var(--muted);height:auto;text-align:center;line-height:1.3;padding-top:4px}
+.scal tr.chg td{height:auto;padding:6px 2px 1px;font-size:var(--fs-xs);color:var(--muted);border-top:1px solid var(--line)}
+.scal tfoot th,.scal tfoot td{font-size:var(--fs-xs);font-weight:500;color:var(--muted);height:auto;text-align:center;line-height:1.3;padding-top:4px}
 .scal tfoot th{text-align:left}
 .scal tr.ddrow td{height:auto;padding:4px 2px 10px}
-.wb{display:grid;grid-template-columns:10px minmax(0,1fr) 6.4em;column-gap:4px;align-items:center;font-size:.72rem;color:var(--muted)}
+.wb{display:grid;grid-template-columns:10px minmax(0,1fr) 6.4em;column-gap:4px;align-items:center;font-size:var(--fs-xs);color:var(--muted)}
 .wb .fu{font-size:.6rem;color:var(--ink);line-height:1}
 .wb .wt{display:block}
 .wb .tr{position:relative;display:block;height:8px;background:var(--line);border-radius:0 4px 4px 0}
 .wb .tr i{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:0 4px 4px 0}
 .wb b{font-weight:500;color:var(--ink);white-space:nowrap}
 .ddpic{position:relative;margin:4px 0 2px}
-.ddpic .ribl{position:relative;height:16px;font-size:.74rem;color:var(--muted)}
+.ddpic .ribl{position:relative;height:16px;font-size:var(--fs-xs);color:var(--muted)}
 .ddpic .ribl span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
 .ddpic .rib{height:6px;margin-bottom:3px}
 .ddpic .ds{height:18px}
 .ddpic .ev{position:relative;height:20px}
-.ddpic .ev span{position:absolute;top:4px;white-space:nowrap;font-size:.74rem}
+.ddpic .ev span{position:absolute;top:4px;white-space:nowrap;font-size:var(--fs-xs)}
 .ddpic .ev .a-center{transform:translateX(-50%)}
 .ddpic .ev .a-end{transform:translateX(-100%)}
 .cal-cap{margin:0 0 6px}
 .cal-cap + .legend-line{margin:0 0 8px}
+.cal-hint{margin-left:auto}
 details.daytable{margin-top:10px}
 details.daytable > summary{cursor:pointer;font-size:.86rem;color:var(--muted)}
 details.daytable .hist{margin-top:8px}
@@ -534,7 +607,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
 .notetext{white-space:pre-wrap;font-size:1rem;line-height:1.55;margin-top:14px}
 .sched-step{border:1px solid var(--line);border-left:4px solid var(--bar);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:.9rem;background:var(--paper)}
 .sched-step label{display:block;margin:6px 0}
-.hist-list{margin:10px 0 0;padding:0;list-style:none;font-size:.86rem}
+.hist-list{margin:10px 0 0;padding:0;list-style:none;font-size:var(--fs-md)}
 .hist-list li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--grid)}
 .hist-list li span{flex:1}
 .settext{display:grid;grid-template-columns:minmax(140px,auto) 1fr;gap:10px 14px;align-items:center;max-width:620px}
@@ -611,7 +684,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
 @media print{
   :root{
     --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
-    --ink:#1C2433; --muted:#566074; --faint:#8790A0;
+    --ink:#1C2433; --muted:#566074; --faint:#8790A0; --rule:#A3ACBA;
     --instr:#C9DAF8; --support:#FFF2CC; --bar:#24324D;
     --ok:#1D6F47; --ok-bg:#DFF1E7; --late:#8F4B00; --late-bg:#FBE8D2;
     --bad:#A8231A; --bad-bg:#FADFDB; --soft:#6E5800; --soft-bg:#FBF0BF;
@@ -666,7 +739,7 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
     <div class="top-row">
       <div class="brand">
         <h1>Intervention attendance</h1>
-        <p>Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>
+        <p>Runs only on this computer. Nothing is uploaded.</p>
       </div>
       <div class="folder" id="folderBar"></div>
     </div>
@@ -710,11 +783,11 @@ const HAS_FSA = typeof window.showDirectoryPicker === 'function';
 const SEVERITY = {absent:6, missed:5, early:5, late:4, drop:3, soft:2, fin:1, exc:1, full:0};
 const COUNT_ORDER = [
   ['full','present full time'], ['fin','finished work early'], ['late','late'], ['missed','missed instruction'],
-  ['early','left early'], ['soft','left support early'], ['drop','dropped off'], ['absent','absent'], ['exc','excused']
+  ['early','left early'], ['soft','left support early'], ['drop','out mid-class'], ['absent','absent'], ['exc','excused']
 ];
 const LETTER = { full:'✓', fin:'F', late:'L', missed:'M', early:'E', soft:'S', drop:'O', absent:'A', exc:'X', noclass:'–', missing:'?', off:'·' };
 const LETTER_TEAM = { full:'whole class', fin:'finished work early', late:'late', missed:'missed instruction', early:'left early',
-  soft:'left support hour early', drop:'out of Zoom mid-class', absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report', off:'not on the schedule' };
+  soft:'left support early', drop:'out mid-class', absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report', off:'not on the schedule' };
 const LETTER_SUPPORT = { full:'stayed to the end', fin:'finished work, let go early', soft:'left the support hour early, not marked', early:'left early',
   absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report' };
 const LETTER_FAMILY = { full:'whole class', fin:'finished work early', late:'late', missed:'missed the teaching part', early:'left early',
@@ -767,7 +840,7 @@ function listJoin(items, max = 4){
 }
 const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
 function fmtPeriod(p){
-  const a = parseDk(p.from), b = parseDk(p.to), o = { weekday: 'short', month: 'short', day: 'numeric' };
+  const a = parseDk(p.from), b = parseDk(p.to), o = { month: 'short', day: 'numeric' };
   if (a.getFullYear() !== b.getFullYear()) return `${dtf({ ...o, year: 'numeric' }).format(a)} – ${dtf({ ...o, year: 'numeric' }).format(b)}`;
   return `${dtf(o).format(a)} – ${dtf(o).format(b)}, ${b.getFullYear()}`;
 }
@@ -826,7 +899,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false,
   tab: 'overview', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
-  range: { preset: 'all', from: '', to: '' }, noteEdit: null,
+  range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
   selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
@@ -1294,7 +1367,7 @@ function renderReports(){
   const days = daysInRange(A.days), period = periodOf(A);
   h += `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button>
+    <button class="btn small ghost" id="exportDays"${days.length ? '' : ' disabled'}>Export CSV</button><span class="grow"></span>
     <div class="legend"><span><i class="sw i"></i>Instruction hour</span><span><i class="sw s"></i>Support hour</span><span><i class="sw p"></i>In Zoom</span></div>
   </div>`;
   h += missingNotice(A, period);
@@ -1335,14 +1408,18 @@ function periodOf(A){
   const from = b.from || oldest, to = b.to || (A.days.length && A.days[0].dk > today ? A.days[0].dk : today);
   return { from, to, calcTo: to < today ? to : today, open: to >= today };
 }
+// Three presets and a "Custom dates…" menu, in one control. Once dates are chosen, the menu's label shows them.
+// The menu stays open (state.rangeMenu) through the redraw each complete date makes.
 function rangeBar(){
-  const p = state.range.preset, b = rangeBounds();
-  return `<div class="range" role="group" aria-label="Dates">
-    <div class="seg"><button data-range="all" aria-pressed="${p === 'all'}">All dates</button>
-      <button data-range="14" aria-pressed="${p === '14'}">Past 2 weeks</button>
-      <button data-range="30" aria-pressed="${p === '30'}">Past 30 days</button></div>
-    <label>From <input type="date" data-rfrom value="${esc(b.from)}"></label>
-    <label>to <input type="date" data-rto value="${esc(b.to)}"></label></div>`;
+  const p = state.range.preset, b = rangeBounds(), on = p === 'custom' && !!(b.from || b.to);
+  const shown = !on ? 'Custom dates…' : b.from && b.to ? `${monDay(b.from)} – ${monDay(b.to)}` : b.from ? `From ${monDay(b.from)}` : `Until ${monDay(b.to)}`;
+  const said = !on ? 'Custom dates' : `Custom dates, ${b.from && b.to ? `${monDay(b.from)} to ${monDay(b.to)}` : b.from ? `from ${monDay(b.from)}` : `until ${monDay(b.to)}`}`;
+  return `<div class="seg range" role="group" aria-label="Dates"><button data-range="all" aria-pressed="${p === 'all'}">All dates</button>
+    <button data-range="14" aria-pressed="${p === '14'}">Past 2 weeks</button>
+    <button data-range="30" aria-pressed="${p === '30'}">Past 30 days</button>
+    <details class="menu rangemenu" data-rangemenu${state.rangeMenu ? ' open' : ''}><summary${on ? ` class="on" title="${esc(shown)}"` : ''} aria-label="${esc(said)}">${esc(shown)}</summary>
+      <div class="pop" role="group" aria-label="Custom dates"><label>From <input type="date" data-rfrom value="${esc(b.from)}"></label>
+        <label>to <input type="date" data-rto value="${esc(b.to)}"></label></div></details></div>`;
 }
 function stamp(){ const { from, to } = rangeBounds(); return from || to ? `${from || 'start'}_to_${to || 'latest'}` : 'all-dates'; }
 
@@ -1368,10 +1445,10 @@ function noClassItems(dks){
 function missingNotice(A, period){
   const miss = missingDates(A, period);
   let h = '';
-  if (miss.length){
-    const named = miss.slice(0, 5).map(dk => `<b>${esc(shortDate(dk))}</b>`);
-    h += `<div class="notice"><p style="margin:0">No Zoom report for ${listJoin(named, 5)}${miss.length > 5 ? ` and ${miss.length - 5} more` : ''}. If class met, save that Zoom report into this folder and click Refresh. If there was no class that day:</p>${noClassItems(miss)}</div>`;
-  }
+  // One date is one line, with its select and button. Several get a row each, under one sentence.
+  if (miss.length === 1) h += `<div class="notice nc1"><span>No Zoom report for <b>${esc(shortDate(miss[0]))}</b>. If class met, save its report in the folder and click Refresh. If not:</span>
+    ${reasonSelect()} <button class="btn small ghost" data-noclass="${miss[0]}">Mark no class</button></div>`;
+  else if (miss.length) h += `<div class="notice"><p style="margin:0">No Zoom report for ${plural(miss.length, 'day')}. If class met, save those reports in the folder and click Refresh. If not, mark each one:</p>${noClassItems(miss)}</div>`;
   return h + conflictNotices(A, period);
 }
 function conflictNotices(A, period, key){
@@ -1399,9 +1476,11 @@ function noteBlock(s){
 function renderDay(day){
   const counts = {}; for (const s of day.students) for (const f of s.flags) counts[f.k] = (counts[f.k] || 0) + 1;
   const title = longDate(day.date);
+  // Who came (counted as the open day counts it) and when, so a closed day can be read without opening it.
+  const expected = day.students.filter(s => s.flags[0].k !== 'exc').length, came = day.students.filter(s => !s.isAbsent).length;
   const sub = day.secs.length
-    ? `${day.students.length} scheduled, ${day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${fmtMin(s.startMin).replace(':00', '')}`).join(' and ')}`
-    : `No ${cap(day.dayName)} schedule`;
+    ? `${came} of ${expected} attended · ${cap(day.secs.map(s => `${s.type === 'instruction' ? 'instruction' : 'support'} ${shortRange(s.startMin, s.endMin)}`).join(', '))}`
+    : `Not on the schedule · ${day.extras.length} joined`;
   const xd = !!state.data.extraDays[day.dk], open = state.openDays.has(day.dk);
   return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
     <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}${xd ? ` · day you added, ${esc(addedLabel(state.lastAnalysis, day.dk))}` : ''}</span>
@@ -1415,18 +1494,14 @@ function fillDayBody(el){
 }
 function dayBody(day){
   const q = normKey(state.query);
-  const expected = day.students.filter(s => s.flags[0].k !== 'exc').length;
-  const came = day.students.filter(s => !s.isAbsent).length;
   const rows = day.students.filter(s => !q || s.key.includes(q));
   let h = '';
   const xd = day.secs.length && state.data.extraDays[day.dk];   // a day added with another weekday's class
-  if (!day.secs.length) h += `<p class="muted small">There’s no ${cap(day.dayName)} section in your schedule, so everyone who joined is listed below without on-time checks.</p>`;
   if (day.students.length){
-    h += `<div class="daybar"><span class="rate">${came} of ${expected} attended</span></div>`;
     h += `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
     if (!rows.length) h += `<p class="muted small" style="padding:10px 0">No students match that search.</p>`;
     for (const s of rows){
-      const meta = [s.schedLabel];
+      const meta = [s.schedLabel === 'Instruction + support' ? 'Both hours' : s.schedLabel];   // on screen only; the CSV keeps the longer label
       if (!s.isAbsent) meta.push(`${s.presentMin} of ${s.reqMin} min`);
       const hl = state.highlight === s.xkey;
       h += `<div class="row${hl ? ' hl' : ''}" data-xkey="${esc(s.xkey)}">
@@ -1438,7 +1513,8 @@ function dayBody(day){
         <div class="tlc">${timeline(day, s.merged, s.secs)}</div>
         <div class="time${s.firstJoin ? '' : ' none'}" data-label="Joined">${esc(fmt(s.firstJoin))}</div>
         <div class="time${s.lastLeave ? '' : ' none'}" data-label="Left">${esc(fmt(s.lastLeave))}</div>
-        <div class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')} ${rowActions(s)}</div>
+        <div class="chips">${s.flags.length === 1 && s.flags[0].k === 'full' ? `<span class="quiet">${esc(s.flags[0].label)}</span>`
+          : s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')} ${rowActions(s)}</div>
       </div>`;
     }
   }
@@ -1449,7 +1525,7 @@ function dayBody(day){
   }
   if (day.unmatched.length){
     const opts = day.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
-    h += `<h3 class="subhead">Zoom names that didn’t match a student</h3>
+    h += `<h3 class="subhead">Unmatched Zoom names</h3>
       <p class="small muted" style="margin:0 0 4px">Link a name once and it’s matched automatically from then on. Ignore names that aren’t students, like your own.</p>`;
     for (const u of day.unmatched) h += `<div class="mini" data-rk="${esc(u.rk)}">
       <div class="who"><b>${esc(u.raw)}</b>${u.email ? `<span class="meta">${esc(u.email)}</span>` : ''}</div>
@@ -1776,19 +1852,19 @@ function renderOverview(){
   const el = $('#tab-overview'), A = analyze();
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
-  if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">The overview needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> to know who is expected each day.</p></div>`; return; }
+  if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">Paste it on the <button class="linkish" data-goto="schedule">Schedule tab</button>.</p></div>`; return; }
   const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
+  // What to show on the left, things to do on the right
   let h = `<div class="toolbar">${rangeBar()}
-    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     ${addDayMenu(A)}
-    <button class="btn small ghost" data-printlist>Print</button>${droppedToggle(A)}</div>
-    ${state.ovMark ? ovMarkBar() : ''}`;
+    <button class="btn small ghost" data-printlist>Print</button></div>`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Zoom names (on the days shown) and Formative names that didn't match anyone on the schedule can be linked once, or ignored.
   const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
@@ -1799,19 +1875,14 @@ function renderOverview(){
     if (!zun.has(u.rk)) zun.set(u.rk, { ...u, when: [] });
     zun.get(u.rk).when.push(`${shortDate(d.dk)}: ${rangeText(u.merged)}`);
   }
-  if (zun.size) h += `<div class="notice"><b>Zoom names that didn’t match a student.</b> Link each one once and it’s matched from then on. Ignore names that aren’t students.
+  if (zun.size) h += `<div class="notice"><b>Unmatched Zoom names.</b> Link each to a student once, or Ignore it.
       ${linkRows([...zun.values()].map(u => ({ ...u, facts: [u.email, ...u.when.slice(0, 3), u.when.length > 3 ? `and ${plural(u.when.length - 3, 'more day')}` : ''].filter(Boolean).join('; ') })))}</div>`;
   const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
-  if (unm.size) h += `<div class="notice"><b>Formative names that didn’t match a student.</b> Link each one once and it’s matched from then on.
+  if (unm.size) h += `<div class="notice"><b>Unmatched Formative names.</b> Link each to a student once.
       ${linkRows([...unm.values()].map(u => ({ ...u, facts: u.email })))}</div>`;
   if (dates.length && rows.length) h += `<p class="printonly ovprint">Attendance, ${esc(fmtPeriod({ from: dates[0], to: dates[dates.length - 1] }))} · ${plural(rows.length, 'student')}${
     state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
-  if (!state.ovMark) h += `<div class="ovlegend" aria-hidden="true">${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}
-    <span><i class="ovsw c-noclass">–</i>No class</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span></div>
-    <div class="ovlegend" aria-hidden="true">${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span>${rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early (no Zoom report yet)</span>' : ''}${Object.keys(state.data.extraDays).length ? '<span><b class="ovxd">+</b> Day you added</span>' : ''}
-    ${A.formByDk.size ? '<span><b class="ovfd">F</b> over a date: Formative results that day</span>' : ''}${rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}
-    <span class="muted">${A.formByDk.size ? `Formative results for ${plural(A.formByDk.size, 'day')}. ` : ''}Click a day to change it.</span></div>
-    ${A.formByDk.size ? '' : '<p class="small muted ovfhint">No Formative exports in the folder yet. To add one, save its results CSV in this folder with the class date in the file name, then click Refresh. <button class="linkish" data-goto="settings">More in Settings</button></p>'}`;
+  h += ovKey(A, rows);
   if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
   // No scrolling box: the grid is as tall as the class list, and when the days don't fit across the page,
   // whole weeks wrap into another block below (newest weeks on top), each with its own dates and names.
@@ -1831,7 +1902,7 @@ function renderOverview(){
     while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}">${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</th>`; m0 = m1; }
     const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk], fd = A.formByDk.has(dk);
-      const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? 'Formative results that day' : ''].filter(Boolean).join('. ');
+      const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
@@ -1849,14 +1920,30 @@ function renderOverview(){
   el.innerHTML = h;
   placeOvEditor();
 }
-// Quick mark: pick what to mark, then click days. Clicking a day again undoes it.
-const BRUSHES = [['msg', '✓', 'Message sent home'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['L', 'L', 'Late or left early'], ['fin', 'fin', 'Finished work, let go early'],
-  ...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color']];
-function ovMarkBar(){
-  return `<div class="ovmarkbar" role="group" aria-label="Quick mark"><span><b>Quick mark:</b> pick one, then click days. Click a day again to undo.
-      <span class="muted small ovmarkn" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far' : ''}</span></span>
-    <div class="ovbrushes">${BRUSHES.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
-      sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('')}</div></div>`;
+// Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key: colors, letters, marks.
+const BRUSHES = [...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color'],
+  ['L', 'L', 'Late or left early'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', 'fin', 'Finished work, let go early']];
+// The key above the grid: colors, then letters and marks, then Formative. In Quick mark the same panel holds the marks to
+// pick from instead, in the same three rows, so the grid doesn't move when Quick mark is turned on or off.
+function ovKey(A, rows){
+  if (state.ovMark){
+    const brushes = list => list.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
+      sym ? `<b>${sym}</b>` : k === 'auto' ? '<i class="ovsw"></i>' : `<i class="ovsw c-${k}"></i>`}${esc(label)}</button>`).join('');
+    return `<div class="ovkey marking" role="group" aria-label="Quick mark">
+      <div class="ovkrow"><span><b>Quick mark:</b> pick a mark, then click days. Click a day again to undo.</span><span class="ovkend" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far' : ''}</span></div>
+      <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 6))}</div>
+      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(6, 9))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(9))}</div></div>`;
+  }
+  const form = A.formByDk.size, more = Object.keys(state.data.extraDays).length ? '<span aria-hidden="true"><b class="ovxd">+</b> Day you added</span>' : '';
+  return `<div class="ovkey">
+    <div class="ovkrow" aria-hidden="true"><span class="ovkh">Colors</span>${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}<span><i class="ovsw c-noclass">–</i>No class</span></div>
+    <div class="ovkrow" aria-hidden="true"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}
+      <span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span>${
+      rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}</div>
+    ${form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
+      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend">Click a day to change it.</span></div>`
+    : `<div class="ovkrow"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
+      <button class="linkish" data-goto="settings">More in Settings</button>${more}<span class="ovkend" aria-hidden="true">Click a day to change it.</span></div>`}</div>`;
 }
 function applyBrush(xk, brush){
   const c = ovCell(xk);
@@ -1887,26 +1974,31 @@ function setCat(c, cat){
 // The editor for one day, next to its cell.
 function ovEditor(A, c, name){
   const s = c.rec, fin = s ? finMinOf(s) : 0;
-  const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: in ${fmt(s.firstJoin)}–${fmt(s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
+  const span = (a, b) => fmt(a).slice(-2) === fmt(b).slice(-2) ? `${hm(a)}–${fmt(b)}` : `${fmt(a)}–${fmt(b)}`;   // "2:00–3:00 PM"
+  const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: ${span(s.firstJoin, s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
     : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
-  const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), dated = form ? ` Dated from ${[...form.dated].join(' and ')}.` : '';
-  const score = f && f.pct !== null ? `score ${f.pct}%` : '';
-  const formLine = !form ? 'Formative: no export for this day.' : !f.inFile ? `Formative: not in the export${f.total ? ` (${plural(f.total, 'question')})` : ''}.${dated}`
-    : `Formative: ${f.total ? `answered ${f.answered} of ${plural(f.total, 'question')}${score ? `, ${score}` : ''}` : score || 'no score'}.${dated}`;
+  // Where the export's date came from, said only when it was worked out some other way than from the file name
+  // (a date from the file name is noted on the F over the date instead).
+  const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), guessed = form ? [...form.dated].filter(x => x !== 'the file name') : [];
+  const dated = guessed.length ? `date from ${guessed.join(' and ')}` : '', score = f && f.pct !== null ? `score ${f.pct}%` : '';
+  const formLine = !form ? 'Formative: no export for this day' : !f.inFile ? `Formative: not in the export${f.total || dated ? ` (${[f.total ? plural(f.total, 'question') : '', dated].filter(Boolean).join(', ')})` : ''}`
+    : `Formative: ${f.total ? `answered ${f.answered} of ${f.total}${score ? `, ${score}` : ''}` : score || 'no score'}${dated ? ` (${dated})` : ''}`;
   const autoName = OV_CAT[c.base] || OV_STATE[c.base], day = A.dayByDk.get(c.dk), others = c.fx && day ? day.unmatched.map(u => `“${u.raw}”`) : [];
-  const clash = c.fx ? `Answered on Formative, but not found in Zoom.${others.length ? ` Zoom names that didn’t match a student that day: ${others.join(', ')}.` : ''}` : '';
+  const clash = others.length ? `Unmatched Zoom names that day: ${others.join(', ')}.` : '';
+  const canFin = s ? s.canFinish || c.fin : !!c.plan;
   const cats = Object.entries(OV_CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.ov.cat === k}"><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
-  const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
+  const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
+  // "Finished work" is always there, hidden on days it doesn't apply, so the editor is the same size on every day.
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
     <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${clash ? `<br>${esc(clash)}` : ''}</p>
-    <div class="ovgrp"><span class="small muted">Color</span><button class="ovchip ovauto" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
-    <div class="ovgrp"><span class="small muted">Letters</span>${lets}</div>
-    <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Sent a message home about this day</label>
-    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" placeholder="Optional"></label>
-    ${(s ? s.canFinish || c.fin : !!c.plan) ? `<div class="ovgrp">${tgl('data-excuse', c.xk, c.fin, 'Finished work, let go early')}</div>` : ''}
+    <div class="ovcols"><div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
+      <div class="ovgrp"><span class="small muted">Letters</span>${lets}
+        <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Message sent home</label>
+        <div class="ovfinrow${canFin ? '' : ' na'}">${tgl('data-excuse', c.xk, c.fin, 'Finished work, let go early', canFin ? '' : ' disabled')}</div></div></div>
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}"></label>
     <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
-      ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open in ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
+      ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
 }
 function placeOvEditor(){
   const pop = $('#tab-overview .ovpop'); if (!pop) return;
@@ -1960,9 +2052,9 @@ function addDayMenu(A){
   const list = addedDaysList(A);
   return `<details class="menu addday" data-addday${x.open ? ' open' : ''}><summary class="btn small ghost">+ Add a day</summary>
     <div class="pop" role="group" aria-label="Add a class day">
-      <p class="small muted">For a make-up class or a schedule swap. The day gets the students and times of the class you pick. Then mark who came here, or save that day’s Zoom report in the folder.</p>
+      <p class="small muted">For a make-up class or a swapped day. Afterward, mark who came here, or save that day’s Zoom report in the folder.</p>
       <label>Date <input type="date" data-adddate value="${esc(x.date)}"${first ? ` min="${first}"` : ''}></label>
-      <label>Students and times <select data-addlike>${addLikeOptions(classWeekdays(A, x.date), x.like)}</select></label>
+      <label>Same students and times as <select data-addlike>${addLikeOptions(classWeekdays(A, x.date), x.like)}</select></label>
       <div class="actions"><button class="btn small" data-adddaygo>Add day</button></div>
       <p class="small addmsg" role="status">${msg}</p>
       ${list ? `<div class="small"><b>Days you added</b>${list}</div>` : ''}</div></details>`;
@@ -1996,10 +2088,10 @@ function addDay(){
     : state.range.preset !== 'all' && (dk < P.from || dk > end) ? `${what} It isn’t in the dates shown. <button class="linkish" data-range="all">Show all dates</button>` : what);
 }
 
-// "Show dropped students" appears only when someone has been dropped.
+// "Show dropped" appears only when someone has been dropped.
 function droppedToggle(A){
   const n = A.roster.filter(r => isDropped(r.key)).length;
-  return n ? `<label class="sortby"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped students (${n})</label>` : '';
+  return n ? `<label class="sortby"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped (${n})</label>` : '';
 }
 
 /* ---------------- Support hour tab ----------------
@@ -2032,10 +2124,14 @@ function leftInSupport(rec){
 const supDay = dk => `${shortDate(dk).replace(/,.*/, '')} ${parseDk(dk).getDate()}`;
 const supLeft = d => { const r = d.rec; if (!r) return ''; const iw = r.merged.filter(([a, b]) => b > r.winStart && a < r.winEnd), t = r.lastLeave ?? (iw.length ? iw[iw.length - 1][1] : null); return t ? `left ${hm(t)}` : ''; };
 // One support day with its mark button. Marking (or undoing) changes the row in place, so nothing moves under the pointer.
-function supItem(d){
-  const on = d.kind === 'fin';
-  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span>${tgl('data-supmark', d.xk, on, 'Finished work, let go early')}</span>`;
+// In the lists under a column header (with the student's name as `who`), the box stands alone and its label is for screen readers.
+function supItem(d, who){
+  const on = d.kind === 'fin', label = 'Finished work, let go early';
+  const box = who ? `<button class="tgl" data-supmark="${esc(d.xk)}" aria-pressed="${on}"><span class="tbox" aria-hidden="true"></span><span class="sr">${esc(`${label}, ${who}, ${supDay(d.dk)}`)}</span></button>`
+    : tgl('data-supmark', d.xk, on, label);
+  return `<span class="sup-item"><span>${esc(supDay(d.dk))}${supLeft(d) ? `, ${esc(supLeft(d))}` : ''}</span>${box}</span>`;
 }
+const supColHead = '<div class="sup-colh" aria-hidden="true"><span>Student</span><span><span>Day</span><span>Finished work, let go early</span></span></div>';
 function supportResults(W){
   const q = normKey(state.supQuery || ''), of = (p, k) => p.days.filter(d => d.kind === k);
   const chip = d => `<span class="sdc">${esc(supDay(d.dk))} ${d.kind === 'today' ? '<span class="muted">today</span>' : d.kind === 'later' ? '<span class="muted">later</span>' : letterCell(d.kind, '')}</span>`;
@@ -2054,18 +2150,19 @@ function supportResults(W){
   const yes = W.people.filter(p => of(p, 'fin').length);
   const unm = W.people.flatMap(p => of(p, 'soft').map(d => ({ p, d })));
   return `<h3 class="sup-h">Let go early this week <span class="muted">(finished work)</span></h3>
-    ${yes.length ? `<ul class="sup-list sup-cols">${yes.map(p => `<li><b>${esc(p.name)}</b><span>${of(p, 'fin').map(supItem).join('')}</span></li>`).join('')}</ul>` : '<p class="muted">No one has been let go early this week.</p>'}
+    ${yes.length ? `${supColHead}<ul class="sup-list sup-cols">${yes.map(p => `<li><b>${esc(p.name)}</b><span>${of(p, 'fin').map(d => supItem(d, p.name)).join('')}</span></li>`).join('')}</ul>` : '<p class="muted">No one yet.</p>'}
     ${unm.length ? `<details class="sup-unm" data-supunm${state.supUnmOpen ? ' open' : ''}><summary>Left the support hour early, not marked (${unm.length})</summary>
-      <ul class="sup-list sup-cols">${unm.map(({ p, d }) => `<li><b>${esc(p.name)}</b><span>${supItem(d)}</span></li>`).join('')}</ul></details>` : ''}`;
+      ${supColHead}<ul class="sup-list sup-cols">${unm.map(({ p, d }) => `<li><b>${esc(p.name)}</b><span>${supItem(d, p.name)}</span></li>`).join('')}</ul></details>` : ''}`;
 }
 function renderSupport(){
   const el = $('#tab-support'), A = analyze();
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   const W = supportWeek(A);
-  if (!W.days.length){ el.innerHTML = `<div class="start"><h2>No support hour this week</h2><p class="muted">Your schedule has no support-hour sections this week.</p></div>`; return; }
-  el.innerHTML = `<div class="sup"><div class="sup-head"><h2 tabindex="-1">Support hour</h2>
-      <span class="muted">Week of ${esc(monDay(W.wk))} · ${esc(W.days.map(dk => supDay(dk) + (dk < W.today && !A.dayByDk.has(dk) && !state.data.noClass[dk] ? ' (no Zoom report yet)' : state.data.noClass[dk] ? ' (no class)' : '')).join(', '))}</span></div>
+  if (!W.days.length){ el.innerHTML = `<div class="start"><h2>No support hour this week</h2></div>`; return; }
+  // The tab already says "Support hour", so the heading names the week.
+  el.innerHTML = `<div class="sup"><div class="sup-head"><h2 tabindex="-1" aria-label="Support hour, week of ${esc(monDay(W.wk))}">Week of ${esc(monDay(W.wk))}</h2>
+      <span class="muted">${esc(W.days.map(dk => supDay(dk) + (dk < W.today && !A.dayByDk.has(dk) && !state.data.noClass[dk] ? ' (no Zoom report yet)' : state.data.noClass[dk] ? ' (no class)' : '')).join(', '))}</span></div>
     <input class="search" data-supsearch type="search" placeholder="Find a student" value="${esc(state.supQuery)}" aria-label="Find a student" autocomplete="off">
     <div id="sup-results" aria-live="polite">${supportResults(W)}</div></div>`;
 }
@@ -2122,18 +2219,19 @@ function renderStudents(){
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   if (!A.days.length || !A.roster.length){
-    el.innerHTML = `<div class="start"><h2>Nothing to total up yet</h2><p class="muted">This tab adds up each student’s attendance across every Zoom report. It needs ${!A.roster.length ? 'your class schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button>' : 'at least one Zoom report in the folder'}.</p></div>`;
+    el.innerHTML = `<div class="start"><h2>Nothing to total up yet</h2><p class="muted">${!A.roster.length ? 'Needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button>.' : 'Needs at least one Zoom report in the folder.'}</p></div>`;
     return;
   }
   if (state.student){ renderStudentReport(A, el); return; }
   const { days, period, all, list } = studentList(A);
+  // What to show on the left, things to do on the right (as on the Overview)
   let h = `<div class="toolbar">${rangeBar()}
-    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
-    <label class="sortby">Sort by <select data-sortby>${[['name', 'Name A–Z'], ['rate', 'Days attended, lowest first'],
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
+    <span class="tbend"><label class="sortby">Sort by <select data-sortby>${[['name', 'Name A–Z'], ['rate', 'Days attended, lowest first'],
       ['dose', 'Minutes received, lowest first'], ['absent', 'Most absences']]
       .map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" id="exportSummary">Export CSV</button>
-    ${printMenu(all.length)}${droppedToggle(A)}</div>`;
+    ${printMenu(all.length)}</span></div>`;
   h += missingNotice(A, period);
   if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
   h += `<p class="listinfo">${plural(days.length, 'class day')} with Zoom reports · ${plural(all.length, 'student')}<span class="printonly"> · ${esc(fmtPeriod(period))}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</span></p>`;
@@ -2147,21 +2245,21 @@ function renderStudents(){
   for (const s of list){
     const info = scheduleInfo(A, s.key, period);
     const chips = [];
-    if (info.addedOn && info.addedOn > period.from) chips.push(`<span class="chip k-extra">Added to the schedule ${esc(monDay(info.addedOn))}</span>`);
+    if (info.addedOn && info.addedOn > period.from) chips.push(`<span class="chip k-extra">Added ${esc(monDay(info.addedOn))}</span>`);
     if (dropOf(s.key)) chips.push(`<span class="chip k-extra">Dropped ${esc(monDay(dropOf(s.key)))}</span>`);
-    else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on the current schedule</span>`);
+    else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on current schedule</span>`);
     const leftEarly = s.early + s.soft;
     h += `<tr>
       <td class="c-name"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
         ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}
         <span class="cardcounts">Absent ${s.absent} · Late ${s.late} · Left early ${leftEarly}</span></td>
       <td data-label="Days attended">${meter(s.rate)}<span class="small muted">${s.attended} of ${s.n}${s.excused ? ` · ${s.excused} excused` : ''}</span></td>
-      <td data-label="Minutes received">${meter(s.dose)}<span class="small muted">${s.pres} of ${s.req} min</span></td>
+      <td data-label="Minutes received">${meter(s.dose)}<span class="small muted">${nf(s.pres)} of ${nf(s.req)} min</span></td>
       <td class="num">${cnt(s.absent)}</td><td class="num">${cnt(s.late)}</td><td class="num">${cnt(leftEarly)}</td>
       <td class="c-last" data-label="Last 10 class days">${lastTen(datesOf.get(s.key))}</td></tr>`;
   }
   h += `</tbody></table></div>
-    <p class="small muted" style="margin-top:10px">Excused absences and finished-work time aren’t counted. “Minutes received” is time in Zoom during the student’s scheduled hours. Click a name for the student report.</p>`;
+    <p class="small muted" style="margin-top:10px">Excused absences and finished-work time aren’t counted. Minutes received: time in Zoom during each student’s scheduled hours.</p>`;
   el.innerHTML = h;
 }
 
@@ -2181,9 +2279,8 @@ function renderStudentReport(A, el){
 }
 function studentReportHTML(ctx, o){
   if (o.family) return familyReportHTML(ctx, o);
-  let h = `<article class="sreport" data-student="${esc(ctx.key)}">`;
-  if (!o.print) h += reportBar(ctx, o);
-  h += reportHeader(ctx);
+  let h = o.print ? '' : reportBar(ctx, o);
+  h += `<article class="sreport" data-student="${esc(ctx.key)}">` + reportHeader(ctx, o);
   if (!ctx.p){
     h += `<section class="rsec"><p>No class days with Zoom reports for ${esc(ctx.name)} in these dates.${o.print ? '' : ` <button class="linkish" data-range="all">Show all dates</button>`}</p></section>`;
     if (!o.print) h += followUpSection(ctx, o);
@@ -2198,40 +2295,44 @@ function studentReportHTML(ctx, o){
   return h + footerSection(ctx, o) + '</article>';
 }
 
+// One toolbar above the report, like the other tabs': back, the students before and after this one in the list, the dates,
+// and Print or share at the right end.
 function reportBar(ctx, o){
   const order = o.order || [], i = order.findIndex(x => x.key === ctx.key);
   const prev = i > 0 ? order[i - 1] : null, next = i >= 0 && i < order.length - 1 ? order[i + 1] : null;
-  const back = state.studentFrom ? `← Back to ${longDate(state.studentFrom)}` : '← All students';
-  return `<div class="rbar">
-    <div class="r1"><button class="btn small ghost" data-studentback>${esc(back)}</button>
-      ${i >= 0 && order.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : ''}
-        <span>${i + 1} of ${order.length}</span>
-        ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : ''}</nav>` : ''}</div>
-    <div class="r2">${rangeBar()}
-      <details class="menu"><summary class="btn small">Print or share</summary><div class="pop" role="group" aria-label="Print or share">
-        <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
-        <button class="item" data-copysummary>Copy summary</button>
-        <button class="item" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Download CSV</button>
-        <div class="inc">Include:${includeBoxes()}</div></div></details></div></div>`;
+  const back = state.studentFrom ? `← Back to ${shortDate(state.studentFrom)}` : '← All students';
+  const none = '<span class="pnx"></span>';
+  return `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
+    ${i >= 0 && order.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
+      <span>${i + 1} of ${order.length}</span>
+      ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
+    ${rangeBar()}<span class="grow"></span>
+    <details class="menu"><summary class="btn small ghost">Print or share…</summary><div class="pop" role="group" aria-label="Print or share">
+      <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
+      <button class="item" data-copysummary>Copy summary</button>
+      <button class="item" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Export CSV</button>
+      <div class="inc">Include:${includeBoxes()}</div></div></details></div>`;
 }
 
 // Who, when, and the numbers, in one card.
-function reportHeader(ctx){
+function reportHeader(ctx, o){
   const { period, info, p } = ctx, S = state.data.settings;
   const nWeeks = Math.round((parseDk(weekKey(period.to)) - parseDk(weekKey(period.from))) / 6048e5) + 1;
   const drop = dropOf(ctx.key);
   const roster = [info.addedOn && info.addedOn > period.from ? `on the schedule since ${monDay(info.addedOn)}` : '', info.inLatest || drop ? '' : 'not on the current schedule'].filter(Boolean);
-  // Dropped from the class: a line saying so (with Undo), or a small control to record it.
-  const dropLine = drop ? `<p class="dropnote">Dropped from the class starting ${esc(longDate(drop))}. Days from then on aren’t counted.
-      <button class="linkish noprint" data-undrop="${esc(ctx.key)}">Undo</button></p>`
-    : state.dropEdit === ctx.key ? `<div class="dropform noprint" role="group" aria-label="Dropped from the class"><span>Not in the class starting</span>
-      <input type="date" data-dropdate value="${esc(todayDk())}" aria-label="First day not in the class">
-      <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button>
-      <span class="small muted">Days from then on aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</span></div>`
-    : `<span class="noprint dropbtns"><button class="linkish dropbtn" data-dropstart="${esc(ctx.key)}">Dropped from the class?</button>
-      <button class="linkish dropbtn" data-delstudent="${esc(ctx.key)}">Delete student</button></span>`;
+  // Dropped from the class: a line under the name saying so (with Undo). Until then, two quiet links at the right end of
+  // the name row: "Dropped from the class?" opens a small menu to record it (state.dropEdit keeps it open through a redraw),
+  // and "Delete student" asks first.
+  const links = drop || o.print ? '' : `<span class="noprint dropbtns"><details class="menu dropmenu" data-dropmenu="${esc(ctx.key)}"${state.dropEdit === ctx.key ? ' open' : ''}>
+      <summary class="linkish">Dropped from the class?</summary><div class="pop dropform" role="group" aria-label="Dropped from the class">
+        <div class="dropline"><span>Not in the class starting</span><input type="date" data-dropdate value="${esc(todayDk())}" aria-label="First day not in the class">
+          <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button></div>
+        <p>Later days aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</p></div></details>
+      <button class="linkish" data-delstudent="${esc(ctx.key)}">Delete student</button></span>`;
+  const dropLine = drop ? `<p class="dropnote">Dropped from the class starting ${esc(shortDate(drop))}. Later days aren’t counted.
+      <button class="linkish noprint" data-undrop="${esc(ctx.key)}">Undo</button></p>` : '';
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
-    <h2 tabindex="-1">${esc(ctx.name)}</h2>${dropLine}
+    <div class="rname"><h2 tabindex="-1">${esc(ctx.name)}</h2>${links}</div>${dropLine}
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
     ${scheduleChart(info)}
     ${p ? minutesBlock(ctx) : ''}</header>`;
@@ -2254,6 +2355,7 @@ const secName = x => x.type === 'instruction' ? 'Instruction' : 'Support hour';
 function secRange(x){ const r = shortRange(x.startMin, x.endMin); return /[AP]M.*[AP]M/.test(r) ? r : r.replace(/ [AP]M$/, ''); }
 // The weekly schedule as a picture: one row per class day on a shared clock, with the instruction and
 // support-hour blocks drawn where they fall. Screen readers get the same schedule as a sentence.
+// A key for the two colors is added only when a block is too narrow for its own label.
 function scheduleChart(info){
   if (!info.byW.length) return '<p class="small">Not on the schedule at the end of these dates.</p>';
   const lo = Math.floor(Math.min(...info.byW.map(x => x.plan.startMin)) / 60) * 60;
@@ -2264,10 +2366,12 @@ function scheduleChart(info){
   const types = new Set(info.byW.flatMap(x => x.plan.secs.map(s => s.type === 'instruction' ? 'instruction' : 'support')));
   // The track is about 520px wide; each block gets the longest label that fits inside it (the full text is in its title).
   const fit = (t, px) => t.length * 7 + 12 <= px;
+  let allLabeled = true;
   const rows = info.byW.map(({ w, plan }) => {
     const blocks = drawnSecs(plan.secs).map(x => {
       const px = (at(x.b) - at(x.a)) / 100 * 520, full = `${secName(x)} ${secRange(x)}`;
       const label = fit(full, px) ? full : fit(secName(x), px) ? secName(x) : '';
+      if (label !== full) allLabeled = false;
       return `<span class="ws-blk ${x.type}" title="${esc(`${cap(DAYS[w])}: ${secName(x)}, ${shortRange(x.startMin, x.endMin)}`)}"
         style="left:calc(${at(x.a).toFixed(2)}% + 1px);width:calc(${(at(x.b) - at(x.a)).toFixed(2)}% - 2px)">${esc(label)}</span>`;
     }).join('');
@@ -2277,7 +2381,7 @@ function scheduleChart(info){
   const sentence = `Schedule: ${info.line}. ${info.weekMin} minutes a week.`;
   return `<div class="wsched"><div class="ws-head"><span>Schedule</span><b>${info.weekMin} minutes a week</b>${info.changedOn ? `<span>· changed ${esc(monDay(info.changedOn))}, earlier days used the old schedule</span>` : ''}</div>
     <div role="img" aria-label="${esc(sentence)}">${axis}${rows}</div>
-    <div class="ws-key" aria-hidden="true">${types.has('instruction') ? '<span><i class="ws-sw instruction"></i>Instruction</span>' : ''}${types.has('support') ? '<span><i class="ws-sw support"></i>Support hour</span>' : ''}</div></div>`;
+    ${allLabeled ? '' : `<div class="ws-key" aria-hidden="true">${types.has('instruction') ? '<span><i class="ws-sw instruction"></i>Instruction</span>' : ''}${types.has('support') ? '<span><i class="ws-sw support"></i>Support hour</span>' : ''}</div>`}</div>`;
 }
 // The numbers, and where every scheduled minute went: one bar per kind of class time on a shared scale,
 // dark for minutes in Zoom, colored by where the other minutes went. Every value is also written out.
@@ -2297,16 +2401,18 @@ function minutesBlock(ctx){
         `<i class="s-${k}" style="flex:${T[t][k]} 0 0" title="${esc(`${label} · ${PART[k]}: ${nf(T[t][k])} min`)}"></i>`).join('')}</div></div>`;
   }).join('');
   const tot = k => T.instruction[k] + T.support[k];
-  const days = (k, n, words, tail = '') => n ? `<span class="kd"><span class="sep"> · </span>${letterCell(k, '')} ${esc(words)} ${plural(n, 'day')}${tail}</span>` : '';
+  // The days behind a row, after its minutes. A letter's words are left out where they'd only repeat the row's name.
+  const days = (k, n, words, tail = '') => n ? `${letterCell(k, '')}<span>${words ? esc(words) + ' ' : ''}${plural(n, 'day')}${tail}</span>` : '';
+  const kd = (...xs) => xs.some(Boolean) ? `<span class="kd">${xs.filter(Boolean).join('<span aria-hidden="true">·</span>')}</span>` : '';
   const item = (k, name, extra, title) => { const m = k === 'in' ? p.pres : tot(k);
     return `<li class="${m ? '' : 'zero'}"${title ? ` title="${esc(title)}"` : ''}><span class="ksw s-${k}" aria-hidden="true"></span><span class="kt"><b>${name}</b> <span class="v">${nf(m)} min</span>${extra}</span></li>`; };
   const key = [
     item('in', 'In Zoom', ''),
-    item('before', 'Before joining', days('late', p.late, 'late'),
+    item('before', 'Before joining', kd(days('late', p.late, 'late')),
       `Counts every minute before the student joined. A day counts as late after ${S.lateGrace} minutes.`),
-    item('out', 'Out of Zoom mid-class', days('drop', p.drop, 'out mid-class')),
-    item('after', 'After leaving', days('soft', p.soft, 'left support hour early') + days('early', p.early, 'left early')),
-    item('absent', 'Absent days', days('absent', p.absent, 'absent', p.streak >= 2 ? `, last ${p.streak} in a row` : ''))];
+    item('out', 'Out of Zoom mid-class', kd(days('drop', p.drop, ''))),
+    item('after', 'After leaving', kd(days('soft', p.soft, 'left support early'), days('early', p.early, 'left early'))),
+    item('absent', 'Absent days', kd(days('absent', p.absent, '', p.streak >= 2 ? `, last ${p.streak} in a row` : '')))];
   const not = [T.excDays ? `${letterCell('exc', '')} ${plural(T.excDays, 'excused day')} (${nf(T.excMin)} min)` : '',
     T.finMin ? `${letterCell('fin', '')} finished work early, ${nf(T.finMin)} min on ${plural(T.finDays, 'day')}` : ''].filter(Boolean);
   return `<div class="mblock">
@@ -2399,7 +2505,7 @@ function stripCalendar(ctx, o){
   // Header: weekday, its schedule as a thin ribbon, and the clock at each end.
   const head = cols.map(c => {
     const X = m => ((m - c.lo) / Math.max(1, c.hi - c.lo) * 100).toFixed(2);
-    const px = c.weight / W * (showWk ? .69 : .93) * 720 - 40, lw = t => t.length * 6 + 6;
+    const px = c.weight / W * (showWk ? .69 : .93) * 720 - 40, lw = t => t.length * 7 + 6;
     const sL = clockLabel(c.lo), eL = clockLabel(c.hi), showE = lw(sL) + lw(eL) <= px;
     const mids = [];
     for (let m = Math.ceil((c.lo + 1) / 60) * 60; m < c.hi; m += 60){
@@ -2454,10 +2560,11 @@ function stripCalendar(ctx, o){
   if (dates.some(d => d.status === 'missing')) glyphs.push(`<span>${letterCell('missing', '')} no Zoom report</span>`);
   if (notesOn && dates.some(d => d.rec && d.rec.note)) glyphs.push('<span><span class="nd"></span> has a note</span>');
   if (fusByWk.size && (!o.print || o.include.log)) glyphs.push('<span><span class="fuk">◆</span> follow-up logged that week</span>');
+  if (!o.print) glyphs.push('<span class="cal-hint">Click a day for details.</span>');
   const cls = ['scal', roomy && 'roomy', dprint && 'dprint', g2on && 'g2on', wds.length >= 3 && 'wd3', wds.length >= 4 && 'wd4', !showWk && 'nowk'].filter(Boolean).join(' ');
   const held = dates.filter(d => d.status === 'held').length;
-  const caption = 'Each bar is one class, from start (left) to end (right), in the same colors as above. Light gray: not counted (finished work early, excused) or not yet. '
-    + (o.print ? 'Each week: minutes in Zoom of the minutes counted that week.' : 'Click a day for details.');
+  const caption = 'Each bar is one class, start to end, colored as above. Light gray: not counted (finished work early, excused) or not yet.'
+    + (o.print ? ' Each week: minutes in Zoom of the minutes counted that week.' : '');
   return `<p class="caption cal-cap">${caption}</p>${glyphs.length ? `<div class="legend-line" aria-hidden="true">${glyphs.join('')}</div>` : ''}
     <table class="${cls}"><caption class="sr">Calendar of ${plural(held, 'class day')}, one row per week.${o.print ? '' : ' Each day is a button; use the arrow keys to move between days.'}</caption>
     <colgroup><col class="c-lab">${cols.map(c => `<col class="c-wd" style="--wa:${(c.weight / W * (showWk ? 69 : 93)).toFixed(2)}%;--wb:${(c.weight / W * (!showWk || wds.length >= 4 ? 86 : 64)).toFixed(2)}%">`).join('')}${showWk ? '<col class="c-wk">' : ''}</colgroup>
@@ -2526,7 +2633,7 @@ function dayDetail(ctx){
   // The picture is about 760px wide or more on a computer screen.
   const ribbon = drawnSecs(d.plan ? d.plan.secs : []).map(x => {
     const wPct = Xm(x.b) - Xm(x.a), px = wPct / 100 * 760, full = `${secName(x)} ${shortRange(x.startMin, x.endMin)}`;
-    return { x: Xm(x.a), w: wPct, type: x.type, text: full.length * 6.6 + 10 <= px ? full : shortRange(x.startMin, x.endMin).length * 6.6 + 10 <= px ? shortRange(x.startMin, x.endMin) : '' };
+    return { x: Xm(x.a), w: wPct, type: x.type, text: full.length * 6.8 + 10 <= px ? full : shortRange(x.startMin, x.endMin).length * 6.8 + 10 <= px ? shortRange(x.startMin, x.endMin) : '' };
   });
   // Times worth naming: when they joined late, each time out of Zoom, when they left early. Labels that would collide move to the line below.
   const segs = segsOf(s), L = [];
@@ -2537,7 +2644,7 @@ function dayDetail(ctx){
   L.forEach(l => { l.align = l.center ? (l.x < 15 ? 'start' : l.x > 85 ? 'end' : 'center') : l.x < 50 ? 'start' : 'end'; });
   const fits = Wpx => { const kept = new Set(); let lastEnd = -Infinity;
     for (const l of [...L].sort((a, b) => a.x - b.x)){
-      const w = l.text.length * 6.4 + 6, px = l.x / 100 * Wpx;
+      const w = l.text.length * 6.6 + 6, px = l.x / 100 * Wpx;
       const a = l.align === 'start' ? px : l.align === 'end' ? px - w : px - w / 2, b = a + w;
       if (a < 0 || b > Wpx || a < lastEnd + 8) continue;
       kept.add(l); lastEnd = b;
@@ -2626,8 +2733,7 @@ function familySchedule(ctx){
 // A short, warm note with the student's numbers. You edit it before sending; it never includes notes or follow-ups.
 function familyNote(ctx){
   const { p, period, first: F } = ctx, S = state.data.settings;
-  const L = [`Hello, ${F}’s family,`, '', `This is an update on ${F}’s attendance in ${S.className || 'our intervention class'}.`,
-    `It covers ${monthDay(period.from)} to ${monthDay(period.calcTo)}.`];
+  const L = [`Hello, ${F}’s family,`, '', `This is an update on ${F}’s attendance in ${S.className || 'our intervention class'} from ${monthDay(period.from)} to ${monthDay(period.calcTo)}.`];
   if (!p || !p.n) L.push('There were no class days to count in this time.');
   else {
     const R = p.rec.filter(r => !isExcused(r.s)), n = p.n, x = p.attended, lastR = R[R.length - 1], prevR = R[R.length - 2];
@@ -2635,10 +2741,10 @@ function familyNote(ctx){
     if (p.absent === 0){ saidAll = true; L.push(n >= 3 ? `${F} came to all ${n} classes. Thank you!` : n === 2 ? `${F} came to both classes. Thank you!` : `${F} came to class on ${longDate(R[0].day.dk)}. Thank you!`); }
     else if (x >= 1 && p.full === x) L.push(`When ${F} came to class, ${F} stayed the whole time.`);
     else if (prevR && !lastR.s.isAbsent && prevR.s.isAbsent) L.push(`It was great to see ${F} back in class on ${longDate(lastR.day.dk)}.`);
-    else if (x >= 1) L.push(`${F} came to class on ${plural(x, 'day')}. We were glad to see ${F}.`);
+    else if (x >= 1) L.push(`We were glad to see ${F} in class.`);   // the next line gives the count
     else L.push(`We miss ${F} in class. ${F} is always welcome.`);
     if (!saidAll && x > 0) L.push(`${F} came to ${x} of ${plural(n, 'class', 'classes')}.`);
-    if (p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) L.push(`${F} was in class for ${p.pres} of ${p.req} minutes.`);
+    if (p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) L.push(`${F} was in class for ${nf(p.pres)} of ${nf(p.req)} minutes.`);
   }
   const sch = familySchedule(ctx); if (sch) L.push(sch);
   L.push('', 'Thank you,');
@@ -2658,14 +2764,14 @@ function familySection(ctx){
     <textarea class="family" rows="10" data-familydraft="${esc(draftKey(ctx))}" data-familyfrom="${esc(ctx.period.from)}" data-familyto="${esc(ctx.period.to)}" aria-label="Note to the family">${esc(familyText(ctx))}</textarea>
     <div class="actions"><button class="btn small" data-copyfamily>Copy note</button><button class="btn small ghost" data-familyreset>Start over</button>
       <button class="btn small ghost" data-printfamily>Print family version</button>
-      <button class="linkish" data-fulognote${state.familyCopied === ctx.key ? '' : ' disabled title="Copy the note first"'}>Add “Sent attendance note” to the follow-up log</button></div>
-    <p class="small muted">Your day notes and follow-up log are never put in this note. Read it before you send it.</p></details></section>`;
+      <button class="linkish" data-fulognote${state.familyCopied === ctx.key ? ' title="Adds “Sent attendance note” to the follow-up log"' : ' disabled title="Copy the note first"'}>Add to follow-up log</button></div>
+    <p class="small muted">Never includes your day notes or follow-up log. Read it before you send it.</p></details></section>`;
 }
 const tile = (label, value, sub) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
 function familyReportHTML(ctx, o){
   const { p, period } = ctx, S = state.data.settings, boxes = [];
   if (p && p.n) boxes.push(tile('Came to class', ofN(p.attended, p.n, 'day'), ''));
-  if (p && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${p.pres} of ${p.req} minutes`, ''));
+  if (p && p.dose !== null && p.rate !== null && p.dose <= p.rate - 10) boxes.push(tile('Time in class', `${nf(p.pres)} of ${nf(p.req)} minutes`, ''));
   return `<article class="sreport family"><header class="rhead"><div class="eyebrow">${esc(S.className || '')}</div>
       <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
     <div class="notetext" style="margin:0 0 16px">${esc(o.noteText ?? familyText(ctx))}</div>
@@ -2791,16 +2897,22 @@ function zoomHelp(){
     <li>Leave <b>Show unique users</b> unchecked so drop-offs and rejoins are kept.</li>
     <li>Click <b>Export</b> and save the CSV into your attendance folder.</li></ol></details>`;
 }
+// With a folder remembered from last time, one button opens it, and the setup steps are tucked away below.
 function startScreen(){
-  return `<div class="start"><h2>Open your attendance folder</h2>
-    <p class="muted">Each time you open the folder, every Zoom report in it is turned into a day-by-day attendance report.</p>
-    <ol><li>Make a folder on this computer and put this file in it.</li>
+  const h = state.savedHandle, privacy = '<p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>';
+  const steps = `<ol><li>Make a folder on this computer and put this file in it.</li>
       <li>Save Zoom participant reports (CSV files) into the same folder.</li>
-      <li>Click <b>Open attendance folder</b> above and choose that folder.</li>
-      <li>Paste your weekly schedule on the <b>Schedule</b> tab. It’s saved in the folder for next time.</li></ol>
+      <li>Click <b>${h ? 'Choose a different folder' : 'Open attendance folder'}</b> above and choose that folder.</li>
+      <li>Paste your weekly schedule on the <b>Schedule</b> tab. It’s saved in the folder for next time.</li></ol>`;
+  if (h) return `<div class="start"><h2>Open ${esc(h.name)}</h2><p class="muted">Your folder from last time.</p>
+    <div class="actions"><button class="btn" data-reopen>Open ${esc(h.name)}</button><button class="linkish" data-pick>Choose a different folder</button></div>
+    <details class="small startsetup"><summary><b>Setting up a new folder</b></summary>${steps}${zoomHelp()}</details>
+    ${privacy}</div>`;
+  return `<div class="start"><h2>Open your attendance folder</h2>
+    ${steps}
     ${zoomHelp()}
-    ${HAS_FSA ? '' : '<p class="small muted">Tip: in Chrome or Edge this page can remember your folder and save changes to it directly. In this browser, you’ll choose the folder each time and download the data file when you change something.</p>'}
-  </div>`;
+    ${HAS_FSA ? '' : '<p class="small muted">Tip: Chrome and Edge remember your folder and save changes to it. In this browser, choose the folder each time and download the data file after changes.</p>'}
+    ${privacy}</div>`;
 }
 
 /* ---------------- Schedule tab (with history, so a new schedule doesn't rewrite past days) ---------------- */
@@ -2831,13 +2943,13 @@ function schedulePreview(P){
   const supportOnly = new Set();
   for (const d of order){ const ins = new Set(P.days[d].filter(s => s.type === 'instruction').flatMap(s => s.students.map(normKey)));
     P.days[d].filter(s => s.type === 'support').forEach(s => s.students.forEach(n => { if (!ins.has(normKey(n))) supportOnly.add(`${d}|${normKey(n)}`); })); }
-  let prev = `<p class="small muted">${P.roster.length} students found. ${supportOnly.size} extra support-hour slot${supportOnly.size === 1 ? '' : 's'} (students in a support hour without instruction that day).</p><div class="days">`;
+  let prev = `<p class="small muted">${plural(P.roster.length, 'student')} · ${plural(supportOnly.size, 'support-hour-only spot')} (no instruction that day)</p><div class="days">`;
   for (const d of order){
     prev += `<div class="dcol"><h3>${cap(d)}</h3>`;
     if (!P.days[d].length) prev += `<p class="small muted">No sections found under ${cap(d)}.</p>`;
     for (const s of P.days[d]){
       const end = s.endMin ?? s.startMin + S.sectionLen;
-      prev += `<div class="sec ${s.type}"><b>${s.type === 'instruction' ? 'Instruction' : 'Support hour'}, ${fmtRange(s.startMin, end)}</b>
+      prev += `<div class="sec ${s.type}"><b>${s.type === 'instruction' ? 'Instruction' : 'Support hour'} ${shortRange(s.startMin, end)}</b>
         <details><summary>${s.students.length} student${s.students.length === 1 ? '' : 's'}</summary><ul>${s.students.map(n => `<li>${esc(n)}</li>`).join('')}</ul></details></div>`;
     }
     prev += `</div>`;
@@ -2882,7 +2994,7 @@ function renderSchedule(){
       <button class="btn small ghost" data-delversion="${i}">Delete</button></li>`).join('')}</ul></div>` : '';
   el.innerHTML = `<div class="two">
     <div class="panel"><h2>Paste your schedule</h2>
-      <p class="small muted">In your spreadsheet, select everything from the first day name (Monday) down to the last student in the bottom support list, across all the days. Copy it and paste it here. Day names, headings like “Instruction - 2pm” or “Support hour - 3pm”, and the names under them are read the same way they’re laid out in the sheet.</p>
+      <p class="small muted">In your sheet, select from “Monday” down to the last student in the bottom support list, across all days. Copy, then paste here.</p>
       <textarea id="schedText" spellcheck="false" placeholder="Paste from your spreadsheet">${esc(text)}</textarea>
       ${step || `<div class="actions"><button class="btn" id="saveSched"${changed ? '' : ' disabled'}>Save schedule</button>
         ${changed ? '<button class="btn ghost" id="revertSched">Discard changes</button>' : ''}
@@ -2896,13 +3008,13 @@ function renderSchedule(){
         return `<div class="small" style="margin-top:14px"><b>Deleted students</b> <span class="muted">(not on any tab or report)</span><ul class="hist-list">${ds.map(([k, v]) =>
           `<li><span>${esc(v.name)}${v.date ? `, deleted ${esc(monDay(v.date))}` : ''}</span><button class="btn small ghost" data-undelete="${esc(k)}">Bring back</button></li>`).join('')}</ul></div>`; })()}
       ${(() => { const l = addedDaysList(analyze()); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
-        <span class="muted">(add one with “+ Add a day” on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
+        <span class="muted">(add one on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
     </div>
-    <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'What the page found'}</h2>
+    <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'Preview'}</h2>
       ${viewing !== null ? `<div class="notice info">Viewing the schedule used ${esc(versionLabel(viewing))}. <button class="linkish" data-viewversion="">Back to current</button></div>` : ''}
       ${warn.length ? `<div class="notice"><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
       ${schedulePreview(P)}
-      <p class="small muted" style="margin-top:12px">Students listed in both instruction and support on a day are expected for both hours. Students listed only in a support hour are expected for that hour only.</p>
+      <p class="small muted" style="margin-top:12px">Listed under both hours: expected for both. Only under a support hour: expected for that hour.</p>
     </div></div>`;
 }
 // A corrected spelling keeps the student's notes, marks and follow-ups.
@@ -2937,6 +3049,9 @@ function applySchedule(mode, from){
 }
 
 /* ---------------- Settings ---------------- */
+// One setting as one line: what it means, the number, and its unit.
+const setRow = (id, key, label, unit, min, max) => `<label for="${id}">${esc(label)}</label><input id="${id}" type="number" min="${min}" max="${max}" data-set="${key}" value="${esc(state.data.settings[key])}" aria-describedby="${id}-u">
+        <span class="unit" id="${id}-u">${esc(unit)}</span>`;
 function renderSettings(){
   const S = state.data.settings;
   const A = analyze();
@@ -2945,43 +3060,42 @@ function renderSettings(){
   $('#tab-settings').innerHTML = `<div class="stack" style="max-width:760px">
     <div class="panel"><h2>Timing</h2>
       <div class="set">
-        <label for="s-late">Count a student late if they join more than this many minutes after the start</label><input id="s-late" type="number" min="0" max="60" data-set="lateGrace" value="${esc(S.lateGrace)}">
-        <label for="s-leave">Count leaving early if they leave more than this many minutes before the end</label><input id="s-leave" type="number" min="0" max="60" data-set="leaveGrace" value="${esc(S.leaveGrace)}">
-        <label for="s-gap">Flag drop-offs in the middle of class that add up to more than this many minutes</label><input id="s-gap" type="number" min="1" max="60" data-set="gapMin" value="${esc(S.gapMin)}">
-        <label for="s-len">Length of each hour block when the heading only gives a start time (minutes)</label><input id="s-len" type="number" min="15" max="180" data-set="sectionLen" value="${esc(S.sectionLen)}">
+        ${setRow('s-late', 'lateGrace', 'Late if they join more than', 'min after the start', 0, 60)}
+        ${setRow('s-leave', 'leaveGrace', 'Left early if they leave more than', 'min before the end', 0, 60)}
+        ${setRow('s-gap', 'gapMin', 'Out mid-class if out of Zoom more than', 'min in all', 1, 60)}
+        ${setRow('s-len', 'sectionLen', 'Class length when a heading gives only a start time', 'min', 15, 180)}
       </div></div>
     <div class="panel"><h2>Overview colors from Formative</h2>
-      <p class="small muted" style="margin:0 0 10px">On a day you export Formative results (CSV), save the export into the attendance folder with the date in the file name (for example <b>formative-10-14-2026.csv</b>), and click Refresh. You don’t need one every day.
-        On days with a Formative export, a student who was in Zoom is <b>present and engaged</b> if they answered at least this share of the questions,
-        <b>likely present but not engaging</b> (D) if they answered some but less, and <b>likely not actually present</b> if they answered none. A student who only had the support hour that day is colored from Zoom alone unless they answered something.
-        Days without an export are colored from Zoom alone. You can change any day by hand on the Overview, or many days at once with Quick mark.</p>
-      <div class="set">
-        <label for="s-eng">Answered at least this percent of the questions to count as engaged</label><input id="s-eng" type="number" min="1" max="100" data-set="engagedPct" value="${esc(S.engagedPct)}">
-      </div></div>
+      <p class="small muted" style="margin:0 0 12px">Save each Formative export (CSV) in the folder with the class date in its name, like <b>formative-10-14-2026.csv</b>, then click Refresh.</p>
+      <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they answered at least', '% of the questions', 1, 100)}</div>
+      <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered:</p>
+      <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none']].map(([k, w]) =>
+        `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}${k === 'idle' ? ' (D)' : ''}</li>`).join('')}</ul>
+      <p class="small muted" style="margin:8px 0 0">Days without an export, and support-hour-only students who answered nothing, are colored from Zoom alone.</p></div>
     <div class="panel"><h2>Reports and notes to families</h2>
       <div class="settext">
-        <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="For example, Ms. Lopez">
+        <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Ms. Lopez">
         <label for="s-class">What families call this class</label><input id="s-class" type="text" maxlength="120" data-settext="className" value="${esc(S.className)}" placeholder="our intervention class">
-        <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="For example, your school email or phone">
+        <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="Email or phone">
       </div></div>
     <div class="panel"><h2>Days with no class</h2>
       ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${esc(dk)}">Undo</button></li>`).join('')}</ul>`
-        : '<p class="small muted">None yet. When a scheduled day has no Zoom report, you can mark it as a day with no class.</p>'}
+        : '<p class="small muted">None yet.</p>'}
     </div>
-    <div class="panel"><h2>Linked Zoom names</h2>
-      ${aliasList.length ? `<ul class="list">${aliasList.map(([z, k]) => `<li><span>“${esc(z)}” is ${esc(A.nameOf[k] || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet. Link names from the “didn’t match” list on a report.</p>'}
-    </div>
-    <div class="panel"><h2>Ignored Zoom names</h2>
+    <div class="panel"><h2>Zoom names</h2>
+      <h3 class="psub">Linked</h3>
+      ${aliasList.length ? `<ul class="list">${aliasList.map(([z, k]) => `<li><span>“${esc(z)}” is ${esc(A.nameOf[k] || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
+      <h3 class="psub">Ignored</h3>
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">The schedule and its history, these settings, linked names, “finished work”, excused-absence and no-class marks, class days you added, dropped and deleted students, the Overview’s colors, letters and “message sent” marks, notes, and follow-ups are saved in <b>${DATA_FILE}</b> inside your attendance folder. Notes to families are never saved. Zoom reports are only read, never changed.</p>
-      ${state.canWrite ? `<p class="small">Changes save automatically into ${DATA_FILE} in your folder.</p>`
+      <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved.</p>
+      ${state.canWrite ? `<p class="small">Changes save automatically.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
       <div class="actions">${state.dirHandle && !state.canWrite ? '<button class="btn" id="grantSave">Allow saving to folder</button>' : ''}
         <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download data file</button></div>
-      <p class="small muted">For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
+      <p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere. For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
     </div></div>`;
 }
 
@@ -2990,8 +3104,9 @@ function renderFolderBar(){
   let h = '';
   if (state.loaded){
     const nForm = state.files.filter(f => parsedFile(f).formative).length, nZoom = state.files.filter(f => { const p = parsedFile(f); return !p.error && !p.formative; }).length;   // files that couldn't be read aren't counted
-    h = `<span class="where">Folder: <b>${esc(state.folderName || 'selected')}</b>, ${plural(nZoom, 'Zoom report')}${nForm ? `, ${plural(nForm, 'Formative export')}` : ''}</span>
-      <button class="btn ghost" id="refresh">Refresh</button><button class="btn ghost" id="pick">Change folder</button>`;
+    const name = state.folderName || 'Your folder', counts = [plural(nZoom, 'Zoom report'), nForm ? plural(nForm, 'Formative export') : ''].filter(Boolean);
+    h = `<span class="where" title="${esc([name, ...counts].join(' · '))}"><b>${esc(name)}</b> · ${counts.join(' · ')}</span>
+      <button class="btn ghost" id="refresh">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
     h = `<button class="btn" id="reopen">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
   } else h = `<button class="btn" id="pick">Open attendance folder</button>`;
@@ -3004,9 +3119,10 @@ function renderSaveState(){
     : state.dirty ? '<button class="linkish" data-goto="settings">Unsaved changes</button>' : '';
   if (el.innerHTML !== h) el.innerHTML = h;
 }
+// A message that doesn't clear itself after a few seconds gets a Close link.
 function renderStatus(){
-  const el = $('#status');
-  el.innerHTML = state.status ? `<div class="notice ${state.status.type === 'info' ? 'info' : ''}">${esc(state.status.text)}</div>` : '';
+  const el = $('#status'), s = state.status;
+  el.innerHTML = s ? `<div class="notice ${s.type === 'info' ? 'info' : ''}"><span>${esc(s.text)}</span>${s.auto ? '' : '<button class="linkish" data-closestatus>Close</button>'}</div>` : '';
 }
 const RENDER = { overview: () => renderOverview(), reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
 function render(){
@@ -3017,7 +3133,7 @@ function render(){
 }
 function renderCurrent(){ RENDER[state.tab](); }
 function setStatus(text, type){
-  state.status = text ? { text, type } : null; renderStatus();
+  state.status = text ? { text, type, auto: type === 'info' } : null; renderStatus();
   clearTimeout(state.statusTimer);
   if (type === 'info') state.statusTimer = setTimeout(() => { if (state.status && state.status.text === text) setStatus(null); }, 5000);
 }
@@ -3052,7 +3168,7 @@ async function reopen(){
       if (r !== 'granted'){ setStatus('Access to the folder wasn’t allowed. Click “Open attendance folder” to try again.'); return; }
     }
     state.dirHandle = h; await loadFromHandle();
-  } catch (e){ setStatus('The saved folder couldn’t be opened. Choose it again. (' + e.message + ')'); state.savedHandle = null; renderFolderBar(); }
+  } catch (e){ setStatus('The saved folder couldn’t be opened. Choose it again. (' + e.message + ')'); state.savedHandle = null; renderFolderBar(); if (!state.loaded) renderCurrent(); }
 }
 async function loadFromHandle(){
   const h = state.dirHandle, files = []; let dataText = null;
@@ -3183,7 +3299,7 @@ function focusSelector(t){
 
 /* ---------------- Events ---------------- */
 // A menu closed here is marked closed in state right away (its toggle event comes later), so a redraw doesn't reopen it.
-const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; };
+const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; };
 // Pressing anywhere outside the day editor closes it in place, without a redraw, so the box, date or menu being
 // clicked keeps its focus. A press that starts in the editor (a drag to select note text) never closes it.
 document.addEventListener('pointerdown', e => {
@@ -3213,16 +3329,16 @@ async function onClick(t){
   const d = t.dataset, has = a => t.hasAttribute(a);
   if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); navReplace(); return; }
   if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
-  if (t.id === 'pick') return pickFolder();
-  if (t.id === 'reopen') return reopen();
+  if (has('data-closestatus')){ setStatus(null); return; }
+  if (t.id === 'pick' || has('data-pick')) return pickFolder();   // the header's buttons, or the same ones on the start screen
+  if (t.id === 'reopen' || has('data-reopen')) return reopen();
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData'){ downloadData(); if (!state.canWrite){ state.dirty = false; renderSaveState(); renderSettings(); } return; }
   if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); renderCurrent(); } } catch (err){} return; }
-  if (d.dropstart){ state.dropEdit = d.dropstart; renderStudents(); const i = $('#tab-students [data-dropdate]'); if (i) i.focus(); return; }
-  if (has('data-dropcancel')){ state.dropEdit = null; renderStudents(); const b = $('#tab-students [data-dropstart]'); if (b) b.focus(); return; }
+  if (has('data-dropcancel')){ const m = t.closest('details.menu'); closeMenu(m); m.querySelector('summary').focus(); return; }
   if (d.dropsave){
-    const v = t.parentElement.querySelector('[data-dropdate]').value;
-    if (!isDk(v)){ t.parentElement.querySelector('[data-dropdate]').focus(); return; }
+    const i = t.closest('.dropform').querySelector('[data-dropdate]'), v = i.value;
+    if (!isDk(v)){ i.focus(); return; }
     state.data.drops[d.dropsave] = { date: v }; state.dropEdit = null; changed(); renderCurrent();
     const b = $(`#tab-${state.tab} [data-undrop]`); if (b) b.focus(); return;
   }
@@ -3281,7 +3397,7 @@ async function onClick(t){
   if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent(); return; }
   if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderCurrent(); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
-  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; renderCurrent(); return; }
+  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
   if (has('data-printlist')) return window.print();
@@ -3333,7 +3449,7 @@ async function onClick(t){
     if (t.closest('.daydetail')){ const b = $('#tab-students .daydetail [data-noclass]') || $('#tab-students .daydetail [data-selday=""]'); if (b) b.focus({ preventScroll: true }); }
     return; }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
-    setStatus(ok ? 'Summary copied. Paste it into an email or form.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
+    setStatus(ok ? 'Summary copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
   if (has('data-exportstudent')) return exportStudent(currentCtx());
   if (has('data-fuadd')){
     const form = t.closest('[data-fuform]'), f = readFollowUp(form);
@@ -3357,7 +3473,7 @@ async function onClick(t){
   if (has('data-copyfamily')){
     const ta = visible('[data-familydraft]'), ok = ta && await copyText(ta.value);
     if (ok) state.familyCopied = state.student;
-    setStatus(ok ? 'Note copied. Paste it into an email or message, and read it before you send it.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
+    setStatus(ok ? 'Note copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
     renderStudents(); return;
   }
   if (has('data-familyreset')){ const ctx = currentCtx(); delete state.familyDraft[draftKey(ctx)]; renderStudents(); return; }
@@ -3557,7 +3673,10 @@ document.addEventListener('toggle', e => {
   if (el.dataset && 'supunm' in el.dataset) state.supUnmOpen = el.open;
   if (el.dataset && 'daytable' in el.dataset) state.dayTableOpen = el.open;
   if (el.dataset && 'addday' in el.dataset){ state.addDay.open = el.open; if (!el.open) el.querySelector('.addmsg').textContent = ''; }
-  if (el.classList && el.classList.contains('menu') && el.open){
+  if (el.dataset && 'rangemenu' in el.dataset) state.rangeMenu = el.open;
+  if (el.dataset && 'dropmenu' in el.dataset){ state.dropEdit = el.open ? el.dataset.dropmenu : null; if (el.open) el.querySelector('[data-dropdate]').focus(); }
+  // A menu opens rightward unless that would run off the window. The drop menu always opens leftward, inside the report.
+  if (el.classList && el.classList.contains('menu') && el.open && !('dropmenu' in el.dataset)){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
     if (pop.getBoundingClientRect().right > innerWidth - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
   }
@@ -3606,7 +3725,7 @@ window.addEventListener('beforeunload', e => { if (state.dirty && !(state.dirHan
   if (!HAS_FSA) return;
   const h = await idbGet('dir');
   if (!h) return;
-  state.savedHandle = h; renderFolderBar();
+  state.savedHandle = h; render();   // the start screen now offers this folder
   try { if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted'){ state.dirHandle = h; await loadFromHandle(); } } catch (e){}
 })();
 </script>
