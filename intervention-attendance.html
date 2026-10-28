@@ -408,14 +408,17 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
   .ovt tr{break-inside:avoid}   /* a long class list goes on to the next page between rows, under the dates again */
   .ovt tbody tr:nth-child(-n+3){break-before:avoid}   /* and a block doesn't start at the foot of a page with just one row */
   .ovt thead th,.ovt thead tr:nth-child(2) th,.ovt th.ovname{position:relative;top:auto}   /* relative, not sticky: holds the F marks */
-  .ovpop,#tab-overview .toolbar{display:none !important}
+  .ovpop,.ovdpop,#tab-overview .toolbar{display:none !important}
+  .ovt th.ovmo span{position:static}   /* the month's name sits at the start of its days */
+  .ovmn{display:none}
+  body.print-ov header.top{display:none}   /* the printed line above the grid says what it is, so a whole class fits on the first page */
   .ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   /* Paper sizes: a block fits the page width, so it prints full size instead of shrunk */
   .ovt thead th{font-size:.56rem;padding:2px 0}
   .ovt th.ovmo{height:auto}
   .ovt th.ovname{min-width:0;width:140px;max-width:140px}
-  .ovc{width:24px;min-width:24px;height:17px}
-  .ovb{height:17px;font-size:.6rem}
+  .ovc{width:var(--pcw, 24px);min-width:var(--pcw, 24px);height:15px}
+  .ovb{height:15px;font-size:.6rem}
   table.ovt{font-size:.62rem}
   .ovwd{font-size:.5rem}
   .ovb .ovm{font-size:.6rem}
@@ -1952,11 +1955,17 @@ function renderOverview(){
   dates.forEach((dk, n) => { if (wkStart[n]) weeks.push([]); weeks[weeks.length - 1].push(n); });
   let blocks = [];
   if (state.ovPrintAll){
-    const perBlock = Math.max(5, Math.floor(((el.clientWidth || 1140) - 230) / 42));
+    // On paper (landscape, the names plus about 30 days across), the weeks split into pieces of about the same size,
+    // so the last one isn't a thin strip.
+    const k = Math.ceil(dates.length / 30);
+    let n = 0;
     for (const wk of [...weeks].reverse()){
-      const last = blocks[blocks.length - 1];
-      if (!last || last.length + wk.length > perBlock) blocks.push([...wk]); else last.unshift(...wk);
+      if (!blocks.length) blocks.push([]);
+      blocks[blocks.length - 1].unshift(...wk); n += wk.length;
+      // Start the next piece once this one has reached its share of the days (to the nearest whole week).
+      if (blocks.length < k && n >= dates.length * blocks.length / k - wk.length / 2) blocks.push([]);
     }
+    blocks = blocks.filter(b => b.length);
   } else blocks = [dates.map((dk, n) => n)];
   let first = !selCell;
   const table = idx => {
@@ -1968,14 +1977,16 @@ function renderOverview(){
     const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk], fd = A.formByDk.has(dk);
       const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
-        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
+        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span><span class="ovmn">${parseDk(dk).getMonth() + 1}/</span>${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
         c.cat === 'noclass' ? '–' : c.early ? '<span class="ovfin">fin</span>' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}${c.fx ? '<b class="ovfa" aria-hidden="true">F</b>' : ''}</button></td>`;
     }).join('')}</tr>`).join('');
-    return `<div class="ovblock"><table class="ovt"><caption class="sr">Attendance, ${esc(fmtPeriod({ from: dates[idx[0]], to: dates[idx[idx.length - 1]] }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
+    // On paper the days widen to fill the page across (within limits), so each piece reads at a good size.
+    const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(800 / idx.length)))}px"` : '';
+    return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Attendance, ${esc(fmtPeriod({ from: dates[idx[0]], to: dates[idx[idx.length - 1]] }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'class day')}. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
   h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}
@@ -2013,8 +2024,8 @@ function ovKey(A, rows){
       <span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span>${
       rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}</div>
     ${form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
-      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend">Click a day to change it.</span></div>`
-    : `<div class="ovkrow"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
+      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
+    : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
       <button class="linkish" data-goto="settings">More in Settings</button>${more}<span class="ovkend" aria-hidden="true">Click a day to change it.</span></div>`}</div>`;
 }
 function applyBrush(xk, brush){
@@ -3885,7 +3896,12 @@ window.addEventListener('popstate', e => {
 $('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
 let closedForPrint = [];
 window.addEventListener('beforeprint', () => {
-  if (state.tab === 'overview' && state.loaded){ state.ovPrintAll = true; renderOverview(); }
+  if (state.tab === 'overview' && state.loaded){
+    // The Overview prints in landscape, so a whole class and about six weeks fit on each page.
+    let ps = $('#ovPage'); if (!ps){ ps = document.createElement('style'); ps.id = 'ovPage'; document.head.append(ps); }
+    ps.textContent = '@page{size:landscape;margin:.4in}';
+    document.body.classList.add('print-ov'); state.ovPrintAll = true; renderOverview();
+  }
   if (state.tab === 'reports' && !document.body.classList.contains('print-reports')){
     closedForPrint = [...document.querySelectorAll('#tab-reports details.day:not([open])')];
     closedForPrint.forEach(d => { fillDayBody(d); d.open = true; });
@@ -3899,6 +3915,8 @@ window.addEventListener('beforeprint', () => {
 });
 window.addEventListener('afterprint', () => {
   if (state.ovPrintAll){ state.ovPrintAll = false; renderOverview(); }
+  const ps = $('#ovPage'); if (ps) ps.remove();
+  document.body.classList.remove('print-ov');
   document.body.classList.remove('print-reports');
   closedForPrint.forEach(d => { d.open = false; }); closedForPrint = [];
 });
