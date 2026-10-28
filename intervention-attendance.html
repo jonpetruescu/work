@@ -1134,8 +1134,8 @@ function evaluate(intervals, sections, at, S, finished = false){
   out.firstJoin = rel[0][0]; out.lastLeave = rel[rel.length - 1][1];
   out.canFinish = out.lastLeave < winEnd - L;   // left before the end: the teacher can mark it as finished work
   const instr = secs.filter(s => s.type === 'instruction'), supp = secs.filter(s => s.type === 'support');
-  if (instrIv.length && iPresMs < 5 * 60000 && !finished) out.flags.push({ k: 'missed', label: 'Missed instruction' });
-  else if (out.firstJoin > winStart + G){ const m = mins(out.firstJoin - winStart); out.flags.push({ k: 'late', label: `Late ${m} min`, min: m }); }
+  // Joining late is always said in minutes, however much of the class it took.
+  if (out.firstJoin > winStart + G){ const m = mins(out.firstJoin - winStart); out.flags.push({ k: 'late', label: `Late ${m} min`, min: m }); }
   if (out.lastLeave < winEnd - L && finished){ const m = mins(winEnd - out.lastLeave); out.flags.push({ k: 'fin', label: `Finished work, left ${m} min early`, min: m }); }
   else if (out.lastLeave < winEnd - L){
     const m = mins(winEnd - out.lastLeave);
@@ -2642,7 +2642,6 @@ function minutesBlock(ctx){
       <div><dt>Minutes received</dt><dd>${nf(p.pres)} of ${nf(p.req)}${p.dose === null ? '' : ` <span>${p.dose}%</span>`}</dd></div></dl>
     <div class="mbars">${bars}</div>
     <ul class="mkey">${key.join('')}</ul>
-    ${p.missed ? `<p class="mnot">${letterCell('missed', '')} Missed instruction on ${plural(p.missed, 'day')}: in Zoom less than 5 minutes of the instruction time.</p>` : ''}
     ${not.length ? `<p class="mnot"><span class="ksw s-none" aria-hidden="true"></span>Not counted (light gray): ${not.join(' · ')}</p>` : ''}</div>`;
 }
 
@@ -3020,7 +3019,7 @@ function teamSummary(ctx, inc){
   if (p){
     L.push('', `Days attended: ${ofN(p.attended, p.n, 'day')}${p.rate === null ? '' : ` (${p.rate}%)`}${p.excused ? `, plus ${p.excused} excused` : ''}`,
       `Minutes received: ${p.pres} of ${p.req}${p.dose === null ? '' : ` (${p.dose}%)`}${p.iReq && p.sReq ? `; instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : ''}`,
-      `Absent ${p.absent} · Late ${p.late} · Left early ${p.early + p.soft} · Out of Zoom mid-class ${p.drop} · Missed instruction ${p.missed}`);
+      `Absent ${p.absent} · Late ${p.late} · Left early ${p.early + p.soft} · Out of Zoom mid-class ${p.drop}`);
   }
   const held = dates.filter(d => d.status === 'held').length, nc = dates.filter(d => d.status === 'noclass'), ms = dates.filter(d => d.status === 'missing');
   L.push('', `Class days: ${held + nc.length + ms.length} scheduled, ${held} held${nc.length ? `, ${nc.length} not held (${nc.map(d => `${monDay(d.dk)}: ${(NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'other').toLowerCase()}`).join(', ')})` : ''}${ms.length ? `, ${ms.length} without a Zoom report (${ms.map(d => monDay(d.dk)).join(', ')})` : ''}.`);
@@ -3091,7 +3090,7 @@ function exportSummary(){
   const rows = [['Student', 'Days scheduled', 'Days attended', 'Excused absences', 'Unexcused absences', 'Days attended %',
     'Minutes present', 'Minutes scheduled', 'Minutes %', 'Instruction minutes present', 'Instruction minutes scheduled', 'Instruction minutes %',
     'Support minutes present', 'Support minutes scheduled', 'Support minutes %', 'Finished-work minutes (not counted)',
-    'Late', 'Missed instruction', 'Left early (class)', 'Left support hour early', 'Out mid-class', 'Absent in a row (latest)',
+    'Late', 'Left early (class)', 'Left support hour early', 'Out mid-class', 'Absent in a row (latest)',
     'Class days not held', 'Class days without a Zoom report', 'Follow-ups in period', 'Last follow-up', 'Dates']];
   const sums = studentSummary(days).sort((a, b) => a.name.localeCompare(b.name));
   for (const s of sums){
@@ -3099,7 +3098,7 @@ function exportSummary(){
     const fus = fuSorted(s.key), inP = fus.filter(f => f.date >= period.from && f.date <= period.to);
     rows.push([s.name, s.sessions, s.attended, s.excused, s.absent, s.rate ?? '', s.pres, s.req, s.dose ?? '',
       s.iPres, s.iReq, s.instrDose ?? '', s.sPres, s.sReq, s.suppDose ?? '', s.finMin,
-      s.late, s.missed, s.early, s.soft, s.drop, s.streak,
+      s.late, s.early, s.soft, s.drop, s.streak,
       ctx.dates.filter(d => d.status === 'noclass').length, ctx.dates.filter(d => d.status === 'missing').length,
       inP.length, fus.length ? fus[0].date : '', fmtPeriod(period, true)]);
   }
