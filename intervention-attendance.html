@@ -56,6 +56,7 @@ header.top{background:var(--surface);border-bottom:1px solid var(--line)}
 .brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 12px;flex:none;max-width:100%}
 .brand h1{font-size:var(--fs-lg);line-height:1.2;white-space:nowrap}
 .brand p{margin:0;color:var(--muted);font-size:var(--fs-sm);white-space:nowrap}
+.folder #reopen{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .folder{margin-left:auto;display:flex;flex:1 1 0;min-width:0;justify-content:flex-end;flex-wrap:nowrap;align-items:center;gap:12px;white-space:nowrap}
 .folder .where{color:var(--muted);font-size:var(--fs-sm);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .folder .where b{color:var(--ink);font-weight:600}
@@ -79,7 +80,7 @@ main.wrap{padding:22px 20px 60px}
 .notice ul{margin:6px 0 0;padding-left:20px}
 .nc1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}   /* one date with no report: the sentence, then its select and button on the same line */
 /* Messages float over the bottom corner, so nothing on the page moves when one comes or goes. */
-#status{position:fixed;right:24px;bottom:24px;z-index:50;max-width:420px}
+#status{position:fixed;right:24px;bottom:24px;z-index:5;max-width:420px}
 #status .notice{display:flex;align-items:baseline;gap:12px;margin:0;box-shadow:0 6px 24px rgba(0,0,0,.14)}
 #status .linkish{margin-left:auto;flex:none}
 
@@ -110,10 +111,12 @@ main.wrap{padding:22px 20px 60px}
 .sw.i{background:var(--instr)} .sw.s{background:var(--support)} .sw.p{background:var(--bar);height:6px}
 
 /* Day */
-/* A closed day is one line in three columns: the date, who came and when, and the counts. Dates on days with no
-   class line up under the other dates. */
 details.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
-details.day > summary{list-style:none;cursor:pointer;padding:12px 20px;display:grid;grid-template-columns:10px 15rem minmax(0,22rem) 1fr;align-items:center;gap:6px 16px}
+details.day > summary{list-style:none;cursor:pointer;padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+/* On a desktop screen a closed day is one line in three columns: the date, who came and when, and the counts. Dates on
+   days with no class line up under the other dates. Printed pages and narrow windows keep the wrapping line. */
+@media screen and (min-width: 821px){ details.day > summary{display:grid;grid-template-columns:10px 15rem minmax(0,1fr) max-content}
+  details.day .counts{flex-wrap:nowrap} details.day .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} }
 details.day > summary::-webkit-details-marker{display:none}
 details.day > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);align-self:center;margin-right:2px;transition:transform .15s}
 details.day[open] > summary::before{transform:rotate(45deg)}
@@ -178,6 +181,8 @@ table.sum .zero{color:var(--faint)}
 .time{font-size:var(--fs-md)}
 .time.none{color:var(--faint)}
 .chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips .acts{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;flex-basis:100%}
+.row > .chips{align-self:start}
 .chip{font-size:var(--fs-sm);font-weight:600;border-radius:5px;padding:2px 8px;white-space:nowrap}
 .quiet{font-size:var(--fs-sm);color:var(--muted)}   /* "Present full time" on a day's row, so the exceptions are what stand out */
 .linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:var(--fs-sm)}
@@ -242,9 +247,10 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .nclist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:3px 0}
 .nclist li > span:first-child{min-width:8.5em}
 .nclist select,.nc1 select,.rsec select,.rsec input[type=date],.rsec input[type=text],.sched-step input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:.86rem}
-.noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px 12px 46px;margin-bottom:8px;color:var(--muted);display:grid;grid-template-columns:15rem max-content max-content;align-items:center;column-gap:16px}
+.noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px 12px 46px;margin-bottom:8px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
 .noclasscard b{color:var(--ink);font-family:var(--serif);font-size:var(--fs-lg)}
 .noclasscard span{font-size:var(--fs-sm)}   /* the same size as the other days' lines */
+@media screen and (min-width: 821px){ .noclasscard{display:grid;grid-template-columns:15rem max-content max-content} }   /* its date in the days' date column */
 .backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:var(--fs-md)}
 .hl{outline:2px solid var(--focus);outline-offset:1px;border-radius:4px}
 .row.hl{background:var(--grid)}
@@ -306,13 +312,14 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px;color:var(--muted)}
 .ovt tbody tr:hover th.ovname{background:var(--paper)}
 .ovc{width:38px;min-width:38px;height:26px}
-.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:26px;cursor:pointer;color:var(--ov-ink);font-size:var(--fs-xs);font-weight:700;letter-spacing:.02em}
+.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:1px;width:100%;height:26px;cursor:pointer;color:var(--ov-ink);font-size:var(--fs-xs);font-weight:700;letter-spacing:.02em}
 .ovb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
 /* Two-tone ring (ink outside, page color inside), so the focused or open day shows on every color in both themes */
 .ovb:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--surface)}
 .ovc.sel .ovb{outline:3px solid var(--ink);outline-offset:-3px;box-shadow:inset 0 0 0 5px var(--surface)}
 .c-noclass .ovb,.c-missing .ovb,.c-later .ovb{color:inherit}
 .ovm{font-size:var(--fs-xs);color:var(--ov-ink)}
+.ovb .ovm{position:absolute;right:2px;bottom:1px;line-height:1;font-size:.66rem}
 .ovkey .ovm{color:var(--ink)}
 .ovkey .ovxd{color:var(--focus)}
 .ovn{position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--ov-ink);border-left:6px solid transparent}
@@ -420,7 +427,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .sup-unm{margin-top:18px}
 .sup-unm > summary{cursor:pointer;color:var(--muted);font-size:.9rem}
 .btn[data-supmark]{min-width:10.5em}
-.sup-cols li,.sup-colh{display:grid;grid-template-columns:10em minmax(0,1fr);align-items:center}
+.sup-cols li,.sup-colh{display:grid;grid-template-columns:10rem minmax(0,1fr);column-gap:12px;align-items:center}   /* rem, so the small header labels line up with the rows */
 .sup-cols .sup-item,.sup-colh > :last-child{display:flex;justify-content:space-between;margin:2px 0}
 /* The default lists say "Finished work, let go early" once, over the boxes. A box keeps its size when it's ticked. */
 .sup-colh{padding:0 2px 2px;border-bottom:1px solid var(--grid);font-size:var(--fs-xs);color:var(--muted)}
@@ -839,8 +846,8 @@ function listJoin(items, max = 4){
   return xs.length < 2 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 }
 const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
-function fmtPeriod(p){
-  const a = parseDk(p.from), b = parseDk(p.to), o = { month: 'short', day: 'numeric' };
+function fmtPeriod(p, wd){
+  const a = parseDk(p.from), b = parseDk(p.to), o = wd ? { weekday: 'short', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' };
   if (a.getFullYear() !== b.getFullYear()) return `${dtf({ ...o, year: 'numeric' }).format(a)} – ${dtf({ ...o, year: 'numeric' }).format(b)}`;
   return `${dtf(o).format(a)} – ${dtf(o).format(b)}, ${b.getFullYear()}`;
 }
@@ -1461,9 +1468,9 @@ function conflictNotices(A, period, key){
 const tgl = (attr, xk, on, label, extra = '') => `<button class="tgl" ${attr}="${esc(xk)}" aria-pressed="${!!on}"${extra}><span class="tbox" aria-hidden="true"></span>${esc(label)}</button>`;
 function rowActions(s){
   const editing = state.noteEdit === s.xkey;
-  return `${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
+  return `<span class="acts">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
     ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
-    <button class="linkish" data-noteedit="${esc(s.xkey)}"${editing ? ' disabled' : ''}>Note</button>`;
+    <button class="linkish" data-noteedit="${esc(s.xkey)}"${editing ? ' disabled' : ''}>Note</button></span>`;
 }
 function noteBlock(s){
   return state.noteEdit === s.xkey
@@ -1483,7 +1490,7 @@ function renderDay(day){
     : `Not on the schedule · ${day.extras.length} joined`;
   const xd = !!state.data.extraDays[day.dk], open = state.openDays.has(day.dk);
   return `<details class="day" data-dk="${day.dk}"${open ? ' open' : ''}>
-    <summary><h2>${esc(title)}</h2><span class="sub">${esc(sub)}${xd ? ` · day you added, ${esc(addedLabel(state.lastAnalysis, day.dk))}` : ''}</span>
+    <summary><h2>${esc(title)}</h2><span class="sub" title="${esc(sub)}">${esc(sub)}${xd ? ` · day you added, ${esc(addedLabel(state.lastAnalysis, day.dk))}` : ''}</span>
       <span class="counts">${COUNT_ORDER.filter(([k]) => counts[k]).map(([k, l]) => `<span class="count k-${k}">${counts[k]} ${l}</span>`).join('')}
       ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
     </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
@@ -2141,8 +2148,8 @@ function supportResults(W){
     const kinds = new Set(hits.flatMap(p => p.days.map(d => d.kind)));
     return `<ul class="sup-list sup-found">${hits.map(p => {
       const fin = of(p, 'fin'), soft = of(p, 'soft'), miss = of(p, 'missing'), lines = [];
-      if (fin.length) lines.push(`<div class="sup-yes">${letterCell('fin', '')} Let go early this week: ${fin.map(supItem).join('')}</div>`);
-      if (soft.length) lines.push(`<div class="sup-soft">${letterCell('soft', '')} Left the support hour early, not marked: ${soft.map(supItem).join('')}</div>`);
+      if (fin.length) lines.push(`<div class="sup-yes">${letterCell('fin', '')} Let go early this week: ${fin.map(d => supItem(d)).join('')}</div>`);
+      if (soft.length) lines.push(`<div class="sup-soft">${letterCell('soft', '')} Left the support hour early, not marked: ${soft.map(d => supItem(d)).join('')}</div>`);
       if (!fin.length && !soft.length) lines.push(`<div class="sup-no">${miss.length ? `Not marked as let go early. ${esc(miss.map(d => supDay(d.dk)).join(', '))}: no Zoom report yet.` : 'Not let go early this week.'}</div>`);
       return `<li><b>${esc(p.name)}</b>${lines.join('')}<span class="sup-days">${p.days.map(chip).join('')}</span></li>`; }).join('')}</ul>
       <div class="legend-line" aria-hidden="true">${LETTER_ORDER.filter(k => kinds.has(k) && LETTER_SUPPORT[k]).map(k => `<span>${letterCell(k, '')} ${esc(LETTER_SUPPORT[k])}</span>`).join('')}</div>`;
@@ -2305,7 +2312,8 @@ function reportBar(ctx, o){
   return `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
     ${i >= 0 && order.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
       <span>${i + 1} of ${order.length}</span>
-      ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
+      ${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>`
+      : `<span class="pn" aria-hidden="true">${none}<span></span>${none}</span>`}
     ${rangeBar()}<span class="grow"></span>
     <details class="menu"><summary class="btn small ghost">Print or share…</summary><div class="pop" role="group" aria-label="Print or share">
       <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
@@ -2879,7 +2887,7 @@ function exportSummary(){
       s.iPres, s.iReq, s.instrDose ?? '', s.sPres, s.sReq, s.suppDose ?? '', s.finMin,
       s.late, s.missed, s.early, s.soft, s.drop, s.streak,
       ctx.dates.filter(d => d.status === 'noclass').length, ctx.dates.filter(d => d.status === 'missing').length,
-      inP.length, fus.length ? fus[0].date : '', fmtPeriod(period)]);
+      inP.length, fus.length ? fus[0].date : '', fmtPeriod(period, true)]);
   }
   downloadFile(`attendance-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
@@ -3108,7 +3116,7 @@ function renderFolderBar(){
     h = `<span class="where" title="${esc([name, ...counts].join(' · '))}"><b>${esc(name)}</b> · ${counts.join(' · ')}</span>
       <button class="btn ghost" id="refresh">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
-    h = `<button class="btn" id="reopen">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
+    h = `<button class="btn" id="reopen" title="Open ${esc(state.savedHandle.name)}">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
   } else h = `<button class="btn" id="pick">Open attendance folder</button>`;
   b.innerHTML = h;
 }
@@ -3292,6 +3300,12 @@ function readFollowUp(form, raw){
 }
 const visible = sel => [...document.querySelectorAll(sel)].find(el => el.offsetParent !== null);
 // After a redraw, put keyboard focus back on the control that was clicked (or its replacement).
+// Redraw after a toggle, keeping the pressed control in the same place on screen.
+function redrawKeeping(t){
+  const y0 = t.getBoundingClientRect().top, sel = focusSelector(t);
+  renderCurrent();
+  const n = sel && visible(sel); if (n){ window.scrollBy(0, n.getBoundingClientRect().top - y0); n.focus({ preventScroll: true }); }
+}
 function focusSelector(t){
   for (const a of t.attributes) if (a.name.startsWith('data-')) return `${t.tagName.toLowerCase()}[${a.name}="${CSS.escape(a.value)}"]`;
   return t.id ? `#${CSS.escape(t.id)}` : null;
@@ -3329,7 +3343,7 @@ async function onClick(t){
   const d = t.dataset, has = a => t.hasAttribute(a);
   if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); navReplace(); return; }
   if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
-  if (has('data-closestatus')){ setStatus(null); return; }
+  if (has('data-closestatus')){ setStatus(null); const b = $(`nav.tabs [data-tab="${state.tab}"]`); if (b) b.focus({ preventScroll: true }); return; }
   if (t.id === 'pick' || has('data-pick')) return pickFolder();   // the header's buttons, or the same ones on the start screen
   if (t.id === 'reopen' || has('data-reopen')) return reopen();
   if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
@@ -3394,8 +3408,8 @@ async function onClick(t){
     changed(); t.setAttribute('aria-pressed', String(on));
     return;
   }
-  if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); renderCurrent(); return; }
-  if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); renderCurrent(); return; }
+  if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); redrawKeeping(t); return; }
+  if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); redrawKeeping(t); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
   if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
@@ -3445,7 +3459,10 @@ async function onClick(t){
     if (t.closest('.daydetail')){ const b = $('#tab-students .daydetail [data-undonoclass]') || $('#tab-students .daydetail [data-selday=""]'); if (b) b.focus({ preventScroll: true }); }
     return;
   }
-  if (d.undonoclass){ delete state.data.noClass[d.undonoclass]; changed(); renderCurrent();
+  if (d.undonoclass){
+    const card = t.closest('#tab-reports [data-dk]'), nx = card && card.nextElementSibling && card.nextElementSibling.dataset.dk, y0 = nx && card.nextElementSibling.getBoundingClientRect().top;
+    delete state.data.noClass[d.undonoclass]; changed(); renderCurrent();
+    const n = nx && $(`#tab-reports [data-dk="${nx}"]`); if (n) window.scrollBy(0, n.getBoundingClientRect().top - y0);
     if (t.closest('.daydetail')){ const b = $('#tab-students .daydetail [data-noclass]') || $('#tab-students .daydetail [data-selday=""]'); if (b) b.focus({ preventScroll: true }); }
     return; }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
@@ -3474,9 +3491,12 @@ async function onClick(t){
     const ta = visible('[data-familydraft]'), ok = ta && await copyText(ta.value);
     if (ok) state.familyCopied = state.student;
     setStatus(ok ? 'Note copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
-    renderStudents(); return;
+    const h = ta && ta.style.height; renderStudents(); const n = visible('[data-familydraft]'); if (n && h) n.style.height = h; return;
   }
-  if (has('data-familyreset')){ const ctx = currentCtx(); delete state.familyDraft[draftKey(ctx)]; renderStudents(); return; }
+  if (has('data-familyreset')){
+    const ctx = currentCtx(), ta = visible('[data-familydraft]'), h = ta && ta.style.height; delete state.familyDraft[draftKey(ctx)];
+    renderStudents(); const n = visible('[data-familydraft]'); if (n && h) n.style.height = h; return;
+  }
   if (has('data-fulognote')){
     const ctx = currentCtx();
     state.fuPrefill = { key: state.student, date: todayDk(), how: 'message', text: `Sent attendance note (${monDay(ctx.period.from)} – ${monDay(ctx.period.calcTo)})` };
@@ -3518,7 +3538,12 @@ document.addEventListener('input', e => {
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
-    state.schedTimer = setTimeout(() => { const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop; renderSchedule(); const n = $('#schedText'); n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top; }, 250); }
+    state.schedTimer = setTimeout(() => {
+      const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop, h = ta.style.height, open = [...document.querySelectorAll('#tab-schedule details')].map(x => x.open);
+      renderSchedule();
+      const n = $('#schedText'); n.style.height = h; n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top;
+      const ds = document.querySelectorAll('#tab-schedule details'); if (ds.length === open.length) ds.forEach((x, i) => { x.open = open[i]; });
+    }, 250); }
   // Drafts are kept in memory as they're typed (never re-rendering), so a redraw doesn't wipe them.
   if ('familydraft' in d) state.familyDraft[d.familydraft] = { text: t.value, from: d.familyfrom, to: d.familyto };
   const form = t.closest && t.closest('[data-fuform]');
@@ -3690,7 +3715,7 @@ window.addEventListener('popstate', e => {
   state.tab = s.tab || 'overview'; state.student = s.student || null; state.studentFrom = s.from || null;
   if (s.range) state.range = s.range;
   state.returnTo = s.returnTo || null; state.highlight = s.highlight || null; state.selDay = s.selDay || null;
-  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null;
+  state.noteEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.rangeMenu = false; state.dropEdit = null;
   render();
   if (state.student){ const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
   else if (leaving){
