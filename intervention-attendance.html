@@ -115,7 +115,8 @@ details.day{background:var(--surface);border:1px solid var(--line);border-radius
 details.day > summary{list-style:none;cursor:pointer;padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
 /* On a desktop screen a closed day is one line in three columns: the date, who came and when, and the counts. Dates on
    days with no class line up under the other dates. Printed pages and narrow windows keep the wrapping line. */
-@media screen and (min-width: 821px){ details.day > summary{display:grid;grid-template-columns:10px 15rem minmax(0,1fr) max-content}
+@media screen and (min-width: 821px){ details.day > summary{display:grid;grid-template-columns:10px minmax(0,1fr) max-content;grid-template-areas:"a t c" "a s c";gap:2px 16px}
+  details.day > summary::before{grid-area:a} details.day > summary h2{grid-area:t} details.day > summary .sub{grid-area:s} details.day > summary .counts{grid-area:c}
   details.day .counts{flex-wrap:nowrap} details.day .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} }
 details.day > summary::-webkit-details-marker{display:none}
 details.day > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);align-self:center;margin-right:2px;transition:transform .15s}
@@ -124,9 +125,9 @@ details.day[open] > summary::before{transform:rotate(45deg)}
 .day .sub{color:var(--muted);font-size:var(--fs-sm)}
 .counts{display:flex;flex-wrap:wrap;gap:6px;width:auto;padding-left:0}
 .count{font-size:var(--fs-sm);font-weight:600;border-radius:999px;padding:2px 10px}
-/* The five day boxes keep one width each, so they line up from day to day; a box with 0 is faded. */
+/* The day boxes keep one width each, so they line up from day to day; a box with 0 is faded. */
 .counts .count{box-sizing:border-box;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.counts .k-full{width:7.4em} .counts .k-fin{width:9.2em} .counts .k-late{width:5.4em} .counts .k-early{width:8.2em} .counts .k-absent{width:6.8em}
+.counts .k-full{width:7.4em} .counts .k-fin{width:9.2em} .counts .k-late{width:5.4em} .counts .k-early{width:8.2em} .counts .k-drop{width:9.6em} .counts .k-absent{width:6.8em}
 .counts .count.zero{background:transparent;color:var(--faint);box-shadow:inset 0 0 0 1px var(--grid)}
 .day-body{padding:0 20px 18px}
 
@@ -254,7 +255,8 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px 12px 46px;margin-bottom:8px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
 .noclasscard b{color:var(--ink);font-family:var(--serif);font-size:var(--fs-lg)}
 .noclasscard span{font-size:var(--fs-sm)}   /* the same size as the other days' lines */
-@media screen and (min-width: 821px){ .noclasscard{display:grid;grid-template-columns:15rem max-content max-content} }   /* its date in the days' date column */
+@media screen and (min-width: 821px){ .noclasscard{display:grid;grid-template-columns:minmax(0,1fr) max-content;grid-template-areas:"t u" "s u";gap:2px 16px}
+  .noclasscard b{grid-area:t} .noclasscard span{grid-area:s} .noclasscard button{grid-area:u} }   /* laid out like the other days: date, then its line */
 .backbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--focus);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:var(--fs-md)}
 .hl{outline:2px solid var(--focus);outline-offset:1px;border-radius:4px}
 .row.hl{background:var(--grid)}
@@ -792,8 +794,8 @@ const DATA_FILE = 'attendance-tracker-data.json';
 const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 const HAS_FSA = typeof window.showDirectoryPicker === 'function';
 const SEVERITY = {absent:6, missed:5, early:5, late:4, drop:3, soft:2, fin:1, exc:1, full:0};
-// The five boxes on every Reports day, always in this order.
-const DAY_BOXES = [['full', 'present'], ['fin', 'let go early'], ['late', 'late'], ['early', 'left early'], ['absent', 'absent']];
+// The boxes on every Reports day, always in this order.
+const DAY_BOXES = [['full', 'present'], ['fin', 'let go early'], ['late', 'late'], ['early', 'left early'], ['drop', 'out mid-class'], ['absent', 'absent']];
 const LETTER = { full:'✓', fin:'F', late:'L', missed:'M', early:'E', soft:'S', drop:'O', absent:'A', exc:'X', noclass:'–', missing:'?', off:'·' };
 const LETTER_TEAM = { full:'whole class', fin:'finished work early', late:'late', missed:'missed instruction', early:'left early',
   soft:'left support early', drop:'out mid-class', absent:'absent', exc:'excused', noclass:'no class', missing:'no Zoom report', off:'not on the schedule' };
@@ -1498,12 +1500,12 @@ function noteBlock(s){
 function renderDay(day){
   // Late includes missing the instruction hour, left early includes leaving the support hour early, and absent includes
   // excused absences. Present is everyone else who came. A student who was late and left early is in both boxes.
-  const n = { full: 0, fin: 0, late: 0, early: 0, absent: 0 }; let exc = 0;
+  const n = { full: 0, fin: 0, late: 0, early: 0, drop: 0, absent: 0 }; let exc = 0;
   for (const s of day.students){
     const k = new Set(s.flags.map(f => f.k));
     if (s.isAbsent){ n.absent++; if (k.has('exc')) exc++; continue; }
-    const fin = k.has('fin'), late = k.has('late') || k.has('missed'), early = k.has('early') || k.has('soft');
-    if (fin) n.fin++; if (late) n.late++; if (early) n.early++; if (!fin && !late && !early) n.full++;
+    const fin = k.has('fin'), late = k.has('late') || k.has('missed'), early = k.has('early') || k.has('soft'), drop = k.has('drop');
+    if (fin) n.fin++; if (late) n.late++; if (early) n.early++; if (drop) n.drop++; if (!fin && !late && !early && !drop) n.full++;
   }
   const title = longDate(day.date);
   // Who came (counted as the open day counts it) and when, so a closed day can be read without opening it.
@@ -1518,12 +1520,12 @@ function renderDay(day){
       ${day.unmatched.length ? `<span class="count k-extra">${day.unmatched.length} unmatched Zoom name${day.unmatched.length > 1 ? 's' : ''}</span>` : ''}</span>
     </summary><div class="day-body">${open ? dayBody(day) : ''}</div></details>`;
 }
-// A row's status in the same words as the day's boxes (present, let go early, late, left early, absent), with the minutes.
+// A row's status in the same words as the day's boxes (present, let go early, late, left early, out mid-class, absent), with the minutes.
 function rowChip(f){
   const m = f.min ? `${f.min} min` : '';
   return f.k === 'fin' ? ['fin', `Let go early (${m})`] : f.k === 'late' ? ['late', `Late (${m})`] : f.k === 'missed' ? ['late', 'Late (missed instruction)']
     : f.k === 'soft' ? ['early', `Left early (${m}, support hour)`] : f.k === 'early' ? ['early', f.skip ? 'Left early (skipped support hour)' : `Left early (${m})`]
-    : f.k === 'exc' ? ['exc', 'Absent (excused)'] : f.k === 'absent' ? ['absent', 'Absent'] : [f.k, f.label];
+    : f.k === 'drop' ? ['drop', `Out mid-class (${m})`] : f.k === 'exc' ? ['exc', 'Absent (excused)'] : f.k === 'absent' ? ['absent', 'Absent'] : [f.k, f.label];
 }
 function fillDayBody(el){
   const body = el.querySelector(':scope > .day-body'), day = state.lastAnalysis && state.lastAnalysis.dayByDk.get(el.dataset.dk);
