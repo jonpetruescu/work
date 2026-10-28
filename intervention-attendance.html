@@ -1785,14 +1785,17 @@ function partTotals(ctx){
 }
 
 // The weekly message for a family, in the teacher's own words: this week's class days so far (or last week's, early in a
-// week before any class has a Zoom report). Excused absences and finished-work time aren't counted, as everywhere else.
+// week before any class has a Zoom report). Excused absences and finished-work time aren't counted, as everywhere else,
+// and a class they came to without being scheduled is mentioned as an extra class.
 function weeklyMessage(A, key){
   const today = todayDk(), held = wk => studentDates(A, key, { from: wk, to: addDays(wk, 6) < today ? addDays(wk, 6) : today })
     .filter(d => d.status === 'held' && !isExcused(d.rec));
   let when = 'this week', ds = held(weekKey(today));
   if (!ds.length){ when = 'last week'; ds = held(addDays(weekKey(today), -7)); }
+  // A day they came without being scheduled is an extra class: it's mentioned, but it isn't part of x/y and its minutes aren't missed time.
+  const sch = ds.filter(d => !d.rec.unsched), extra = ds.length - sch.length;
   let late = 0, out = 0, early = 0;
-  for (const d of ds){
+  for (const d of sch){
     if (d.rec.isAbsent) continue;
     const P = dayParts(d.rec);
     for (const t of ['instruction', 'support']){ late += P[t].before; out += P[t].out; early += P[t].after; }
@@ -1804,7 +1807,7 @@ function weeklyMessage(A, key){
   return { when, n: ds.length, name, text: `Hello,
 
 This is an update regarding ${name}'s attendance ${when}.
-${name} attended ${ds.filter(d => !d.rec.isAbsent).length}/${ds.length} classes ${when}${parts.length ? `, and missed ${missed}` : ''}.
+${name} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.
 
 ${name}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
 }
