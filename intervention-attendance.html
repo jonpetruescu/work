@@ -381,6 +381,13 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovnoteb{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;margin:10px 0 6px}
 .ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:var(--fs-sm)}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
+.ovdh{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;border-radius:3px}
+.ovdh:hover{background:var(--paper)}
+.ovdh:focus-visible{outline:2px solid var(--focus);outline-offset:-1px}
+.ovt th.dsel .ovdh{box-shadow:inset 0 0 0 2px var(--focus)}
+.ovdpop{position:absolute;z-index:10;width:330px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:var(--fs-sm)}
+.ovdpop p{margin:6px 0}
+.ovdpop .actions{margin-top:8px}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
 .addday .pop{left:auto;right:0;width:360px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}   /* opens leftward from the right end of the toolbar */
 .addday .pop p{margin:0}
@@ -871,6 +878,7 @@ function defaultData(){
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid (an excused absence goes in excusedAbsent)
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
+    deletedDays: {}, // { 'YYYY-MM-DD': { date } } days taken off every tab: not a class day, its Zoom and Formative files set aside
     extraDays: {},   // { 'YYYY-MM-DD': { like } } class days added by hand: like is a weekday (that day's students and times),
                      // 'all' (every class combined) or 'none' (no schedule: every student starts "Not scheduled")
     followUps: {} }; // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
@@ -883,13 +891,14 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, extraDays: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, deletedDays: {}, extraDays: {}, followUps: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
   for (const [k, v] of Object.entries(obj(d.notes))) if (typeof v === 'string') out.notes[k] = v;
   for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
   for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
+  for (const [k, v] of Object.entries(obj(d.deletedDays))) if (isDk(k)) out.deletedDays[k] = { date: isDk(obj(v).date) ? v.date : '' };
   for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
   for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && [...DAYS, 'all', 'none'].includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
@@ -920,7 +929,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1235,9 +1244,13 @@ function analyze(){
     return dropCache.get(ck);
   };
   // A day added by hand has the students and times of the weekday picked for it, in the schedule in effect that day.
-  const extra = state.data.extraDays, extraCache = new Map();
+  const extra = state.data.extraDays, extraCache = new Map(), delDays = state.data.deletedDays;
   const schedFor = dk => {
     const base = weekSched(dk), x = extra[dk];
+    if (delDays[dk]){   // a deleted day has no class
+      if (!extraCache.has(dk)) extraCache.set(dk, { ...base, days: { ...base.days, [DAYS[parseDk(dk).getDay()]]: [] } });
+      return extraCache.get(dk);
+    }
     if (!x) return base;
     const secs = x.like === 'none' ? [] : x.like === 'all' ? allClasses(base) : base.days[x.like] || [];
     if (x.like !== 'none' && !secs.some(sec => sec.students.length)) return base;   // no such class in that day's schedule: it keeps its own
@@ -1256,6 +1269,7 @@ function analyze(){
     if (z.formative){ forms.push({ name: f.name, ...z }); continue; }
     for (const r of z.rows){
       const dk = dkOf(r.join);
+      if (state.data.deletedDays[dk]) continue;   // a deleted day's Zoom report is set aside
       if (!byDate.has(dk)) byDate.set(dk, { dk, files: new Set(), rows: [] });
       const g = byDate.get(dk); g.files.add(f.name); g.rows.push(r);
     }
@@ -1267,6 +1281,7 @@ function analyze(){
   // A student's total adds up only the Formatives whose files list them.
   const formByDk = new Map();
   for (const F of forms){
+    if (state.data.deletedDays[F.dk]) continue;
     if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], dated: new Set(), questions: 0, sets: new Map(), byKey: new Map(), unmatched: new Map() });
     const g = formByDk.get(F.dk), match = matchFor(F.dk), qk = F.qs.join('\u0001');
     g.files.push(F.name); g.dated.add(F.dated);
@@ -1401,7 +1416,7 @@ function renderReports(){
     <div class="legend"><span><i class="sw i"></i>Instruction hour</span><span><i class="sw s"></i>Support hour</span><span><i class="sw p"></i>In Zoom</span></div>
   </div>`;
   h += missingNotice(A, period);
-  const noClassDays = Object.keys(state.data.noClass).filter(dk => !A.dayByDk.has(dk) && dk >= period.from && dk <= period.to);
+  const noClassDays = Object.keys(state.data.noClass).filter(dk => !A.dayByDk.has(dk) && !state.data.deletedDays[dk] && dk >= period.from && dk <= period.to);
   if (!days.length && !noClassDays.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. ${A.days.length} report day${A.days.length === 1 ? ' is' : 's are'} outside the range. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
   if (!state.autoOpened && days.length){ state.openDays.add(days[0].dk); state.autoOpened = true; }
   const cards = [...days.map(d => ({ dk: d.dk, day: d })), ...noClassDays.map(dk => ({ dk }))].sort((a, b) => b.dk.localeCompare(a.dk));
@@ -1889,6 +1904,7 @@ function overviewDates(A, period){
   const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
   for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
     const secs = A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || [];
+    if (state.data.deletedDays[dk]) continue;
     if (A.dayByDk.has(dk) || A.formByDk.has(dk) || state.data.noClass[dk] || state.data.extraDays[dk] || secs.some(x => x.students.length)) out.push(dk);
   }
   return out;
@@ -1904,6 +1920,7 @@ function renderOverview(){
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
   const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
+  if (state.ovDay && !dates.includes(state.ovDay)) state.ovDay = null;
   // What to show on the left, things to do on the right
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
@@ -1947,11 +1964,13 @@ function renderOverview(){
   const table = idx => {
     let months = '', m0 = 0;
     while (m0 < idx.length){ let m1 = m0; const mo = parseDk(dates[idx[m0]]).getMonth(); while (m1 < idx.length && parseDk(dates[idx[m1]]).getMonth() === mo) m1++;
-      months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}"><span>${esc(dtf({ month: 'long' }).format(parseDk(dates[idx[m0]])))}</span></th>`; m0 = m1; }
+      // A month with only a day or two shows its short name ("Sep"), so the name never makes those days wider.
+      const d0 = parseDk(dates[idx[m0]]), long = dtf({ month: 'long' }).format(d0);
+      months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}" title="${esc(long)}"><span>${esc(m1 - m0 >= 3 ? long : dtf({ month: 'short' }).format(d0))}</span></th>`; m0 = m1; }
     const head = idx.map(n => { const dk = dates[n], xd = state.data.extraDays[dk], fd = A.formByDk.has(dk);
       const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
-      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
-        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
+      return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
+        xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
@@ -1962,7 +1981,7 @@ function renderOverview(){
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}</tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
   h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}
-    ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}</div>`;
+    ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}${state.ovDay ? ovDayBox(A, state.ovDay) : ''}</div>`;
   el.innerHTML = h;
   // Back to where the grid was scrolled (the newest days the first time, or after the dates change), or to a day asked for.
   const sc = $('#tab-overview .ovblock');
@@ -1973,7 +1992,7 @@ function renderOverview(){
     if (to) sc.scrollLeft += to.getBoundingClientRect().left - sc.querySelector('th.ovname').getBoundingClientRect().right - 40;
     state.ovScroll = sc.scrollLeft; pinMonths(sc);
   }
-  placeOvEditor();
+  placeOvEditor(); placeOvDay();
 }
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key: colors, letters, marks.
 const BRUSHES = [...['engaged', 'idle', 'away', 'excused', 'absent', 'nosched'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color'],
@@ -2028,10 +2047,9 @@ function setCat(c, cat){
 }
 // The editor for one day, next to its cell.
 function ovEditor(A, c, name){
-  const s = c.rec, fin = s ? finMinOf(s) : 0;
-  const span = (a, b) => fmt(a).slice(-2) === fmt(b).slice(-2) ? `${hm(a)}–${fmt(b)}` : `${fmt(a)}–${fmt(b)}`;   // "2:00–3:00 PM"
-  const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: ${span(s.firstJoin, s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
-    : (state.data.extraDays[c.dk] || {}).like === 'none' ? noSchedZoom(A, c) : c.base === 'nosched' ? `Not on the schedule in use that day. ${noSchedZoom(A, c)}` : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
+  const s = c.rec;
+  const zoom = s ? (s.isAbsent ? `Zoom: absent${isExcused(s) ? ' (excused)' : ''}` : `Zoom: ${zoomMinutes(s)}`)
+    : (state.data.extraDays[c.dk] || {}).like === 'none' ? noSchedZoom(A, c) : c.base === 'nosched' ? `Not on the schedule in use that day. ${noSchedZoom(A, c)}` : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : c.dk === todayDk() ? 'No Zoom report yet.' : 'This day hasn’t happened yet.';
   // Where the export's date came from, said only when it was worked out some other way than from the file name
   // (a date from the file name is noted on the F over the date instead).
   const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), guessed = form ? [...form.dated].filter(x => x !== 'the file name') : [];
@@ -2053,12 +2071,46 @@ function ovEditor(A, c, name){
         <div class="ovfinrow${canFin ? '' : ' na'}">${tgl('data-excuse', c.xk, c.fin, 'Finished work, let go early', canFin ? '' : ' disabled')}</div></div></div>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}"></label>
     <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
-      ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
+      ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open ${esc(name.split(' ')[0])}’s report</button>` : ''}<button class="linkish" data-ovdelfrom="${c.dk}">Delete this day…</button></div></div>`;
 }
 // A day the student wasn't scheduled (or added with no schedule): when they were in Zoom that day, if there's a report.
 function noSchedZoom(A, c){
   const day = A.dayByDk.get(c.dk), e = day && day.extras.find(x => x.key === c.key);
-  return !day ? (c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'No Zoom report yet.') : e ? `Zoom: in ${rangeText(e.merged)}` : 'Zoom: not in the report.';
+  return !day ? (c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'No Zoom report yet.') : e ? `Zoom: in Zoom ${mins(e.merged.reduce((t, [a, b]) => t + b - a, 0))} min.` : 'Zoom: not in the report.';
+}
+// What Zoom shows for a day, in minutes only: how late, how early they left, and how long they were out of class.
+function zoomMinutes(s){
+  const out = s.flags.map(f => f.k === 'late' ? `Late ${f.min} min` : f.k === 'missed' ? 'Missed instruction'
+    : f.k === 'early' ? (f.skip ? 'Skipped the support hour' : `Left ${f.min} min early`) : f.k === 'soft' ? `Left ${f.min} min early`
+    : f.k === 'fin' ? `Let go ${f.min} min early (finished work)` : f.k === 'drop' ? `Out of class ${f.min} min` : '').filter(Boolean);
+  return out.length ? out.join(' · ') : 'in class the whole time';
+}
+// The box for one whole day (opened from its date at the top of the grid): what's known about the day, and Delete.
+function ovDayBox(A, dk){
+  const day = A.dayByDk.get(dk), form = A.formByDk.get(dk), xd = state.data.extraDays[dk], nc = state.data.noClass[dk];
+  const n = new Set((A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || []).flatMap(sec => sec.students.map(normKey))).size;
+  const facts = [xd ? `A day you added: ${addedLabel(A, dk)}.` : n ? `${plural(n, 'student')} on the schedule.` : 'No one on the schedule.',
+    day ? `Zoom report: ${[...day.files].join(', ')}.` : 'No Zoom report.', form ? `Formative: ${plural(form.files.length, 'export')}.` : '',
+    nc ? `Marked no class (${NOCLASS_REASONS[nc.reason] || 'Other'}).` : ''].filter(Boolean);
+  const onlyAdded = xd && !day && !form && !nc;
+  return `<div class="ovdpop" role="dialog" aria-label="${esc(longDate(dk))}" data-ovdpop="${dk}">
+    <div class="ovpop-h"><b>${esc(longDate(dk))}</b><button class="linkish ovx" data-ovdayclose>Close</button></div>
+    <p class="small">${facts.map(esc).join('<br>')}</p>
+    <p class="small muted">${onlyAdded ? 'Deleting it removes the day you added.' : `Deleting the day takes it off every tab: it isn’t counted as a class day${day || form ? ', and its files are set aside' : ''}. Marks and notes on it are kept, and you can bring it back on the Schedule tab.`}</p>
+    <div class="actions"><button class="btn small" data-ovdelday="${dk}">Delete this day</button><button class="btn small ghost" data-ovdayclose>Cancel</button></div></div>`;
+}
+function placeOvDay(){
+  const pop = $('#tab-overview .ovdpop'); if (!pop) return;
+  const th = $(`#tab-overview th[data-dk="${pop.dataset.ovdpop}"]`), wrap = $('#tab-overview .ovwrap');
+  if (!th){ pop.remove(); return; }
+  const r = th.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  pop.style.left = Math.max(0, Math.min(r.left - w.left, w.width - pop.offsetWidth)) + 'px';
+  pop.style.top = (r.bottom - w.top + 6) + 'px';
+}
+// Close the day box; with `focus`, put focus back on its date.
+function closeOvDay(focus){
+  const was = state.ovDay; state.ovDay = null; renderOverview();
+  const b = focus && was && $(`#tab-overview [data-ovdh="${was}"]`); if (b) b.focus({ preventScroll: true });
 }
 function placeOvEditor(){
   const pop = $('#tab-overview .ovpop'); if (!pop) return;
@@ -2147,6 +2199,7 @@ function addDay(){
     delete state.data.extraDays[dk];   // picking its own weekday puts a swapped day back to its usual class
   } else if (!hasClass(like)) return say(`The schedule in use on ${esc(shortDate(dk))} has no ${like === 'all' ? 'classes' : `${esc(cap(like))} class`}.`, '[data-addlike]');
   else state.data.extraDays[dk] = { like };
+  delete state.data.deletedDays[dk];
   changed(); x.date = ''; x.open = false; state.ovScrollTo = dk; renderOverview();
   // Show the day: focus its first student. When it isn't in the dates shown, say so and keep the box open.
   const cell = [...document.querySelectorAll('#tab-overview .ovb')].find(b => b.dataset.ovcell.startsWith(dk + '|'));
@@ -3076,6 +3129,9 @@ function renderSchedule(){
       ${(() => { const ds = Object.entries(state.data.deleted).sort((a, b) => a[1].name.localeCompare(b[1].name)); if (!ds.length) return '';
         return `<div class="small" style="margin-top:14px"><b>Deleted students</b> <span class="muted">(not on any tab or report)</span><ul class="hist-list">${ds.map(([k, v]) =>
           `<li><span>${esc(v.name)}${v.date ? `, deleted ${esc(monDay(v.date))}` : ''}</span><button class="btn small ghost" data-undelete="${esc(k)}">Bring back</button></li>`).join('')}</ul></div>`; })()}
+      ${(() => { const ds = Object.keys(state.data.deletedDays).sort().reverse(); if (!ds.length) return '';
+        return `<div class="small" style="margin-top:14px"><b>Deleted days</b> <span class="muted">(not on any tab; their files are set aside)</span><ul class="hist-list">${ds.map(dk =>
+          `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}</span><button class="btn small ghost" data-undelday="${dk}">Bring back</button></li>`).join('')}</ul></div>`; })()}
       ${(() => { const l = addedDaysList(analyze()); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
         <span class="muted">(add one on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
     </div>
@@ -3158,7 +3214,7 @@ function renderSettings(){
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
     <div class="panel"><h2>Your data</h2>
-      <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved.</p>
+      <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added or deleted, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
@@ -3383,6 +3439,12 @@ function focusSelector(t){
 const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; };
 // Pressing anywhere outside the day editor closes it in place, without a redraw, so the box, date or menu being
 // clicked keeps its focus. A press that starts in the editor (a drag to select note text) never closes it.
+// A click anywhere else closes the day box, in place.
+document.addEventListener('pointerdown', e => {
+  if (!state.ovDay || state.tab !== 'overview' || e.target.closest('.ovdpop, .ovdh')) return;
+  state.ovDay = null; const pop = $('#tab-overview .ovdpop'); if (pop) pop.remove();
+  document.querySelectorAll('#tab-overview th.dsel').forEach(th => { th.classList.remove('dsel'); th.querySelector('.ovdh').setAttribute('aria-expanded', 'false'); });
+}, true);
 document.addEventListener('pointerdown', e => {
   if (!state.ovSel || state.tab !== 'overview' || e.target.closest('.ovpop, .ovb')) return;
   state.ovSel = null;
@@ -3394,7 +3456,7 @@ document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
   const t = e.target.closest('button'); if (!t) return;
   // A double-click acts once (and a second click can't land on whatever moved under the pointer).
-  if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday'].some(k => t.dataset[k] !== undefined)) return;
+  if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday', 'ovdh', 'ovdelday'].some(k => t.dataset[k] !== undefined)) return;
   const menu = t.closest('details.menu'); if (menu && t.classList.contains('item')){ menu.open = false; menu.querySelector('summary').focus({ preventScroll: true }); }
   const sel = focusSelector(t);
   await onClick(t);
@@ -3443,6 +3505,25 @@ async function onClick(t){
     delete state.data.extraDays[d.deladdday]; changed(); renderCurrent();
     const left = [...document.querySelectorAll(sel)], f = left[Math.min(Math.max(i, 0), left.length - 1)] || $(`#tab-${state.tab} [data-adddaygo]`);
     if (f) f.focus(); return;
+  }
+  if (d.ovdh){ state.ovSel = null; state.ovDay = state.ovDay === d.ovdh ? null : d.ovdh; renderOverview();
+    const b = state.ovDay ? $('#tab-overview [data-ovdelday]') : $(`#tab-overview [data-ovdh="${d.ovdh}"]`); if (b) b.focus({ preventScroll: true }); return; }
+  if (d.ovdelfrom){ state.ovSel = null; state.ovDay = d.ovdelfrom; renderOverview(); const b = $('#tab-overview [data-ovdelday]'); if (b) b.focus({ preventScroll: true }); return; }
+  if (has('data-ovdayclose')) return closeOvDay(true);
+  if (d.ovdelday){
+    // A day you added with nothing else on it is simply removed; any other day is kept aside, so it can be brought back.
+    const dk = d.ovdelday, A = state.lastAnalysis || analyze();
+    const onlyAdded = state.data.extraDays[dk] && !A.dayByDk.has(dk) && !A.formByDk.has(dk) && !state.data.noClass[dk];
+    if (onlyAdded) delete state.data.extraDays[dk]; else state.data.deletedDays[dk] = { date: todayDk() };
+    const next = [...document.querySelectorAll('#tab-overview [data-ovdh]')].map(b => b.dataset.ovdh).find(x => x > dk);
+    state.ovDay = null; changed(); renderOverview();
+    const b = $(`#tab-overview [data-ovdh="${next}"]`) || $('#tab-overview .ovb[tabindex="0"]'); if (b) b.focus({ preventScroll: true });
+    return;
+  }
+  if (d.undelday){
+    const all = [...document.querySelectorAll('[data-undelday]')], i = all.indexOf(t);
+    delete state.data.deletedDays[d.undelday]; changed(); renderCurrent();
+    const left = [...document.querySelectorAll('[data-undelday]')], f = left[Math.min(Math.max(i, 0), left.length - 1)]; if (f) f.focus(); return;
   }
   if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; renderOverview(); return; }
@@ -3682,6 +3763,7 @@ document.addEventListener('keydown', e => {
   const hadMenu = !!document.querySelector('details.menu[open]');
   if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return calendarKey(e, t);
   if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
+  if (e.key === 'Escape' && state.ovDay && t.closest && t.closest('.ovdpop, .ovdh')) return closeOvDay(true);
   if (e.key === 'Escape' && state.ovSel && t.closest && t.closest('.ovpop')){
     if (d.ovnote !== undefined) t.blur();   // saves the note first, so the redrawn day shows its note mark
     const was = state.ovSel; state.ovSel = null; renderOverview(); focusOvCell(was); return;
@@ -3776,7 +3858,7 @@ document.addEventListener('toggle', e => {
 // Scrolling the grid sideways: remember where it is (for the next redraw), and keep an open day editor beside its day.
 document.addEventListener('scroll', e => {
   if (!e.target.classList || !e.target.classList.contains('ovblock') || state.ovPrintAll) return;
-  state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvEditor();
+  state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvEditor(); placeOvDay();
 }, true);
 // A month whose days have mostly scrolled under the names hides its name, so only whole names show at the left edge.
 function pinMonths(sc){
