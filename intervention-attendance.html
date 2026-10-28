@@ -375,6 +375,8 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovnoteb{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;margin:10px 0 6px}
 .ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:var(--fs-sm)}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
+.ovpager{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.ovpager .ovspan{flex:1;text-align:center;font-size:var(--fs-sm);color:var(--muted)}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
 .addday .pop{left:auto;right:0;width:360px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}   /* opens leftward from the right end of the toolbar */
 .addday .pop p{margin:0}
@@ -914,7 +916,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovEnd: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1896,9 +1898,8 @@ function renderOverview(){
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
     .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
-  // Days added with no schedule: each student on the class list that day gets a day to color.
-  const free = new Map(dates.filter(dk => (state.data.extraDays[dk] || {}).like === 'none').map(dk => [dk, new Set(A.weekSched(dk).roster.map(r => r.key))]));
-  const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
+  const today = todayDk(), sel = state.ovSel;
+  let selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
   // What to show on the left, things to do on the right
   let h = `<div class="toolbar">${rangeBar()}
@@ -1925,17 +1926,42 @@ function renderOverview(){
     state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
   h += ovKey(A, rows);
   if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
-  // No scrolling box: the grid is as tall as the class list, and when the days don't fit across the page,
-  // whole weeks wrap into another block below (newest weeks on top), each with its own dates and names.
+  // No scrolling box and no wrapping: the grid is as tall as the class list and shows as many whole weeks as fit across
+  // the page (the newest by default); Earlier and Later step through the rest. Printing draws every week, in blocks
+  // that wrap to fit the paper (newest weeks on top).
   const wkStart = dates.map((dk, n) => n === 0 || weekKey(dk) !== weekKey(dates[n - 1]));
-  const perBlock = Math.max(5, Math.floor(((el.clientWidth || 1140) - 230) / 42));
   const weeks = [];
   dates.forEach((dk, n) => { if (wkStart[n]) weeks.push([]); weeks[weeks.length - 1].push(n); });
-  // Fill blocks from the newest week back, so the top block is full and the oldest block takes what's left.
-  const blocks = [];
-  for (const wk of weeks.reverse()){
-    const last = blocks[blocks.length - 1];
-    if (!last || last.length + wk.length > perBlock) blocks.push([...wk]); else last.unshift(...wk);
+  let blocks = [], pager = null;
+  if (state.ovPrintAll){
+    const perBlock = Math.max(5, Math.floor(((el.clientWidth || 1140) - 230) / 42));
+    for (const wk of [...weeks].reverse()){
+      const last = blocks[blocks.length - 1];
+      if (!last || last.length + wk.length > perBlock) blocks.push([...wk]); else last.unshift(...wk);
+    }
+  } else {
+    const fit = Math.max(5, Math.floor(((el.clientWidth || 1140) - 224) / 39)), keys = weeks.map(w => weekKey(dates[w[0]]));
+    const size = (a, b) => weeks.slice(a, b + 1).reduce((t, w) => t + w.length, 0);
+    // The page ends at the chosen week (the newest by default) and reaches back as far as fits; the earliest page is full too.
+    let e = keys.length - 1;
+    if (state.ovEnd){ e = 0; keys.forEach((k, i) => { if (k <= state.ovEnd) e = i; }); }
+    let st = e;
+    while (st > 0 && size(st - 1, e) <= fit) st--;
+    if (st === 0) while (e < keys.length - 1 && size(0, e + 1) <= fit) e++;
+    // Later shows the weeks right after this page, as many as fit.
+    let le = e + 1; while (le < keys.length - 1 && size(e + 1, le + 1) <= fit) le++;
+    pager = { st, e, n: keys.length, earlier: st > 0 ? keys[st - 1] : null, later: e < keys.length - 1 ? (le >= keys.length - 1 ? '' : keys[le]) : null };
+    blocks = [weeks.slice(st, e + 1).flat()];
+  }
+  // A day that isn't on the page closes its editor.
+  if (selCell && !blocks.some(b => b.includes(dates.indexOf(selCell.dk)))){ state.ovSel = null; selCell = null; }
+  if (pager && (pager.st > 0 || pager.e < pager.n - 1)){
+    const pg = blocks[0];
+    h += `<div class="ovpager noprint" role="group" aria-label="Weeks shown">
+      <button class="btn small ghost" data-ovpage="${pager.earlier || ''}" data-dir="earlier"${pager.earlier ? '' : ' disabled'}>‹ Earlier weeks</button>
+      <span class="ovspan" role="status">${esc(fmtPeriod({ from: dates[pg[0]], to: dates[pg[pg.length - 1]] }))} · ${pager.e - pager.st + 1} of ${plural(pager.n, 'week')}</span>
+      <button class="btn small ghost" data-ovpage="${pager.later || ''}" data-dir="later"${pager.later === null ? ' disabled' : ''}>Later weeks ›</button>
+      <button class="btn small ghost" data-ovpage="" data-dir="newest"${pager.e < pager.n - 1 ? '' : ' disabled'}>Newest</button></div>`;
   }
   let first = !selCell;
   const table = idx => {
@@ -1948,7 +1974,6 @@ function renderOverview(){
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
-      if (c.cat === 'nosched' && !c.ov.cat && !(free.get(c.dk) || new Set()).has(c.key)) return `<td class="ovc c-nosched${wkStart[ci] ? ' wk' : ''}"><span class="sr">${esc(words)}</span></td>`;
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
         c.cat === 'noclass' ? '–' : c.early ? '<span class="ovfin">fin</span>' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}${c.fx ? '<b class="ovfa" aria-hidden="true">F</b>' : ''}</button></td>`;
@@ -1962,7 +1987,7 @@ function renderOverview(){
   placeOvEditor();
 }
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key: colors, letters, marks.
-const BRUSHES = [...['engaged', 'idle', 'away', 'excused', 'absent'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color'],
+const BRUSHES = [...['engaged', 'idle', 'away', 'excused', 'absent', 'nosched'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color'],
   ['L', 'L', 'Late or left early'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', 'fin', 'Finished work, let go early']];
 // The key above the grid: colors, then letters and marks, then Formative. In Quick mark the same panel holds the marks to
 // pick from instead, in the same three rows, so the grid doesn't move when Quick mark is turned on or off.
@@ -1973,7 +1998,7 @@ function ovKey(A, rows){
     return `<div class="ovkey marking" role="group" aria-label="Quick mark">
       <div class="ovkrow"><span><b>Quick mark:</b> pick a mark, then click days. Click a day again to undo.</span><span class="ovkend" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far' : ''}</span></div>
       <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 6))}</div>
-      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(6, 9))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(9))}</div></div>`;
+      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(7, 10))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(10))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(6, 7))}</div></div>`;
   }
   const form = A.formByDk.size, more = Object.keys(state.data.extraDays).length ? '<span aria-hidden="true"><b class="ovxd">+</b> Day you added</span>' : '';
   return `<div class="ovkey">
@@ -2017,7 +2042,7 @@ function ovEditor(A, c, name){
   const s = c.rec, fin = s ? finMinOf(s) : 0;
   const span = (a, b) => fmt(a).slice(-2) === fmt(b).slice(-2) ? `${hm(a)}–${fmt(b)}` : `${fmt(a)}–${fmt(b)}`;   // "2:00–3:00 PM"
   const zoom = s ? (s.isAbsent ? 'Zoom: not in Zoom during class' : `Zoom: ${span(s.firstJoin, s.lastLeave)}, ${s.presentMin} of ${s.reqMin - fin} min${s.flags.some(f => f.k !== 'full') ? ` · ${s.flags.filter(f => f.k !== 'full').map(f => f.label).join(', ')}` : ''}`)
-    : (state.data.extraDays[c.dk] || {}).like === 'none' ? noSchedZoom(A, c) : c.cat === 'nosched' ? 'Not on the schedule this day.' : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
+    : (state.data.extraDays[c.dk] || {}).like === 'none' ? noSchedZoom(A, c) : c.base === 'nosched' ? `Not on the schedule in use that day. ${noSchedZoom(A, c)}` : state.data.noClass[c.dk] ? 'Marked no class.' : c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'This day hasn’t happened yet.';
   // Where the export's date came from, said only when it was worked out some other way than from the file name
   // (a date from the file name is noted on the F over the date instead).
   const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), guessed = form ? [...form.dated].filter(x => x !== 'the file name') : [];
@@ -2041,7 +2066,7 @@ function ovEditor(A, c, name){
     <div class="ovpop-f"><button class="linkish" data-ovreset${Object.keys(c.ov).length ? '' : ' disabled'}>Back to automatic</button>
       ${c.plan || c.rec ? `<button class="linkish" data-ovopen>Open ${esc(name.split(' ')[0])}’s report</button>` : ''}</div></div>`;
 }
-// A day added with no schedule: when the student was in Zoom that day, if there's a report.
+// A day the student wasn't scheduled (or added with no schedule): when they were in Zoom that day, if there's a report.
 function noSchedZoom(A, c){
   const day = A.dayByDk.get(c.dk), e = day && day.extras.find(x => x.key === c.key);
   return !day ? (c.dk < todayDk() ? 'No Zoom report in the folder for this day.' : 'No Zoom report yet.') : e ? `Zoom: in ${rangeText(e.merged)}` : 'Zoom: not in the report.';
@@ -2133,13 +2158,13 @@ function addDay(){
     delete state.data.extraDays[dk];   // picking its own weekday puts a swapped day back to its usual class
   } else if (!hasClass(like)) return say(`The schedule in use on ${esc(shortDate(dk))} has no ${like === 'all' ? 'classes' : `${esc(cap(like))} class`}.`, '[data-addlike]');
   else state.data.extraDays[dk] = { like };
-  changed(); x.date = ''; x.open = false; renderOverview();
+  changed(); x.date = ''; x.open = false; state.ovEnd = weekKey(dk) < weekKey(todayDk()) ? weekKey(dk) : null; renderOverview();
   // Show the day: focus its first student. When it isn't in the dates shown, say so and keep the box open.
   const cell = [...document.querySelectorAll('#tab-overview .ovb')].find(b => b.dataset.ovcell.startsWith(dk + '|'));
   if (cell){ cell.scrollIntoView({ block: 'nearest', inline: 'nearest' }); focusOvCell(cell.dataset.ovcell); return; }
   const P = periodOf(state.lastAnalysis), end = P.open ? addDays(weekKey(todayDk()), 6) : P.to, what = `${state.data.extraDays[dk] ? 'Added' : 'Changed'} ${esc(shortDate(dk))}.`;
   say(P.open && dk > end ? `${what} It shows on the Overview when its week comes.`
-    : state.range.preset !== 'all' && (dk < P.from || dk > end) ? `${what} It isn’t in the dates shown. <button class="linkish" data-range="all">Show all dates</button>` : what);
+    : state.range.preset !== 'all' && (dk < P.from || dk > end) ? `${what} It isn’t in the dates shown. <button class="linkish" data-range="all" data-ovweek="${weekKey(dk)}">Show all dates</button>` : what);
 }
 
 // "Show dropped" appears only when someone has been dropped.
@@ -3424,6 +3449,12 @@ async function onClick(t){
     const left = [...document.querySelectorAll(sel)], f = left[Math.min(Math.max(i, 0), left.length - 1)] || $(`#tab-${state.tab} [data-adddaygo]`);
     if (f) f.focus(); return;
   }
+  if (d.ovpage !== undefined && t.closest('.ovpager')){
+    // Step through the weeks. Focus stays on the button pressed (or the other one, at either end).
+    state.ovEnd = d.ovpage || null; renderOverview();
+    const b = $(`#tab-overview .ovpager [data-dir="${d.dir}"]:not([disabled])`) || $('#tab-overview .ovpager button:not([disabled])'); if (b) b.focus();
+    return;
+  }
   if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovSel = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
@@ -3458,7 +3489,7 @@ async function onClick(t){
   if (d.excuse){ const k = d.excuse; if (state.data.excused[k]) delete state.data.excused[k]; else state.data.excused[k] = true; changed(); redrawKeeping(t); return; }
   if (d.excabs){ const k = d.excabs; if (state.data.excusedAbsent[k]) delete state.data.excusedAbsent[k]; else state.data.excusedAbsent[k] = true; changed(); redrawKeeping(t); return; }
   if (d.noteedit){ state.noteEdit = d.noteedit; renderCurrent(); return; }
-  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; renderCurrent(); return; }
+  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovEnd = d.ovweek && d.ovweek < weekKey(todayDk()) ? d.ovweek : null; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
   if (has('data-printlist')) return window.print();
@@ -3616,7 +3647,7 @@ document.addEventListener('change', e => {
     const ok = v => !v || (isDk(v) && v >= '1990' && v < '2200');
     if (!ok(f) || !ok(to)) return;
     if (f && to && f > to) [f, to] = [to, f];
-    state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; renderCurrent();
+    state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; state.ovEnd = null; renderCurrent();
     // Keep the cursor in the date box that was just filled in, so the redraw doesn't lose your place.
     const box = visible(`.range [data-${'rfrom' in d ? 'rfrom' : 'rto'}]`); if (box) box.focus({ preventScroll: true });
   }
@@ -3702,12 +3733,21 @@ function overviewKey(e, t){
   else if (e.key === 'ArrowDown') to = step(1, 0);
   else if (e.key === 'ArrowUp') to = step(-1, 0);
   else if (e.key === 'Home' || e.key === 'End'){
-    // Earliest or latest day in the student's row (Ctrl: in the whole grid), wherever its block is drawn.
+    // Earliest or latest day shown in the student's row (Ctrl: in the whole grid).
     const pool = (e.ctrlKey ? all : all.filter(b => +b.dataset.r === r)).sort((x, y) => (+x.dataset.r - +y.dataset.r) || (+x.dataset.c - +y.dataset.c));
     to = e.key === 'Home' ? pool[0] : pool[pool.length - 1];
   }
   else return;
   e.preventDefault();
+  if (!to && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){
+    // At the edge of the page, the arrow keys step to the earlier or later weeks.
+    const pb = $(`#tab-overview .ovpager [data-dir="${e.key === 'ArrowLeft' ? 'earlier' : 'later'}"]:not([disabled])`);
+    if (!pb) return;
+    state.ovEnd = pb.dataset.ovpage || null; renderOverview();
+    const row = [...document.querySelectorAll(`#tab-overview .ovb[data-r="${r}"]`)].sort((x, y) => +x.dataset.c - +y.dataset.c);
+    const f = e.key === 'ArrowLeft' ? row[row.length - 1] : row[0]; if (f) focusOvCell(f.dataset.ovcell);
+    return;
+  }
   if (!to) return;
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
   to.focus(); to.scrollIntoView({ block: 'nearest' });
@@ -3775,6 +3815,7 @@ window.addEventListener('popstate', e => {
 $('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
 let closedForPrint = [];
 window.addEventListener('beforeprint', () => {
+  if (state.tab === 'overview' && state.loaded){ state.ovPrintAll = true; renderOverview(); }
   if (state.tab === 'reports' && !document.body.classList.contains('print-reports')){
     closedForPrint = [...document.querySelectorAll('#tab-reports details.day:not([open])')];
     closedForPrint.forEach(d => { fillDayBody(d); d.open = true; });
@@ -3787,6 +3828,7 @@ window.addEventListener('beforeprint', () => {
   }
 });
 window.addEventListener('afterprint', () => {
+  if (state.ovPrintAll){ state.ovPrintAll = false; renderOverview(); }
   document.body.classList.remove('print-reports');
   closedForPrint.forEach(d => { d.open = false; }); closedForPrint = [];
 });
