@@ -1143,9 +1143,9 @@ function evaluate(intervals, sections, at, S, finished = false){
     const suppPresent = supp.reduce((t, s) => t + overlap(merged, s.a, s.b), 0);
     if (inSupport && suppPresent >= 5 * 60000){
       const sm = mins(overlap(mergeIntervals(supp.map(s => [s.a, s.b])), out.lastLeave, winEnd));   // support time left, not instruction
-      out.flags.push({ k: 'soft', label: `Left support ${sm} min early`, min: sm });
+      out.flags.push({ k: 'soft', label: `Left ${sm} min early`, min: sm });
     }
-    else if (inSupport && instr.length) out.flags.push({ k: 'early', label: 'Skipped support hour', min: m, skip: true });
+    else if (inSupport && instr.length) out.flags.push({ k: 'early', label: `Left ${m} min early`, min: m, skip: true });
     else out.flags.push({ k: 'early', label: `Left ${m} min early`, min: m });
   }
   const spanA = Math.max(out.firstJoin, winStart), spanB = Math.min(out.lastLeave, winEnd);
@@ -1710,7 +1710,7 @@ function studentDates(A, key, period){
    or a whole day absent. The report's bars and strips are drawn from this; the numbers on the page come from summarize(). */
 const clockMinF = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; };   // clock time, safe across daylight saving
 const hm = t => fmt(t).replace(/\s?[AP]M$/, '');
-const dayLetters = s => [...new Set(s.flags.map(f => f.k))].filter(k => k !== 'full').sort((a, b) => SEVERITY[b] - SEVERITY[a]).slice(0, 2);
+const dayLetters = s => [...new Set(s.flags.map(f => f.k === 'soft' ? 'early' : f.k))].filter(k => k !== 'full').sort((a, b) => SEVERITY[b] - SEVERITY[a]).slice(0, 2);
 // Spans in ms, inside the scheduled time only. Finished-work and excused time are their own kinds and aren't counted.
 function segsOf(s){
   const R = mergeIntervals(s.secs.map(x => [x.a, x.b])), out = [];
@@ -1803,11 +1803,19 @@ function weeklyMessage(A, key){
   const name = A.nameOf[key] || key, m = n => `${plural(Math.round(n), 'minute')} of instruction`;
   const parts = [late >= 0.5 && `${m(late)} due to being tardy`, out >= 0.5 && `${m(out)} due to being out in the middle of class`,
     early >= 0.5 && `${m(early)} due to leaving early`].filter(Boolean);
-  const missed = parts.length < 3 ? parts.join(' and ') : `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+  const and = xs => xs.length < 3 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`, missed = and(parts);
+  // Engagement: the Overview's color for each scheduled class they attended (a color chosen by hand counts), and camera off.
+  const recs = new Map(sch.map(d => [d.dk, new Map([[key, d.rec]])]));
+  const eng = sch.filter(d => !d.rec.isAbsent).map(d => cellState(A, key, d.dk, recs)).filter(c => ['engaged', 'idle', 'away'].includes(c.cat));
+  const nCat = k => eng.filter(c => c.cat === k).length, cam = eng.filter(c => c.C).length;
+  // Only the colors they had, the first one "in x of y classes": "present and engaged in 2 of 3 classes and likely present but not engaging in 1".
+  const engBits = [['engaged', 'present and engaged'], ['idle', 'likely present but not engaging'], ['away', 'likely not actually present']]
+    .filter(([k]) => nCat(k)).map(([k, w], i) => `${w} in ${nCat(k)}${i ? '' : ` of ${plural(eng.length, 'class', 'classes')}`}`);
+  const engaged = eng.length ? `\n${name} was ${and(engBits)}${cam ? `, and had their camera off in ${plural(cam, 'class', 'classes')}` : ''}.` : '';
   return { when, n: ds.length, name, text: `Hello,
 
 This is an update regarding ${name}'s attendance ${when}.
-${name} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.
+${name} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.${engaged}
 
 ${name}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
 }
@@ -2380,7 +2388,8 @@ function meter(v){
   return `<span class="meter"><span class="track"><span class="fill" style="width:${v}%"></span></span><b>${v}%</b></span>`;
 }
 const cnt = n => `<span class="${n ? '' : 'zero'}">${n}</span>`;
-function cellKind(d){ return d.status === 'held' ? worstFlag(d.rec).k : d.status; }
+// Leaving the support hour early reads as leaving early here (only the Support hour tab tells them apart).
+function cellKind(d){ const k = d.status === 'held' ? worstFlag(d.rec).k : d.status; return k === 'soft' ? 'early' : k; }
 function cellTitle(d){
   if (d.status === 'held') return `${shortDate(d.dk)}: ${d.rec.flags.map(f => f.label).join(', ')}`;
   if (d.status === 'noclass') return `${shortDate(d.dk)}: No class (${NOCLASS_REASONS[(state.data.noClass[d.dk] || {}).reason] || 'Other'})`;
@@ -2624,7 +2633,7 @@ function minutesBlock(ctx){
     item('before', 'Before joining', kd(days('late', p.late, 'late')),
       `Counts every minute before the student joined. A day counts as late after ${S.lateGrace} minutes.`),
     item('out', 'Out of Zoom mid-class', kd(days('drop', p.drop, ''))),
-    item('after', 'After leaving', kd(days('soft', p.soft, 'left support early'), days('early', p.early, 'left early'))),
+    item('after', 'After leaving', kd(days('early', p.early + p.soft, 'left early'))),
     item('absent', 'Absent days', kd(days('absent', p.absent, '', p.streak >= 2 ? `, last ${p.streak} in a row` : '')))];
   const not = [T.excDays ? `${letterCell('exc', '')} ${plural(T.excDays, 'excused day')} (${nf(T.excMin)} min)` : '',
     T.finMin ? `${letterCell('fin', '')} finished work early, ${nf(T.finMin)} min on ${plural(T.finDays, 'day')}` : ''].filter(Boolean);
