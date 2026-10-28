@@ -1595,7 +1595,7 @@ function renderDay(day){
 function rowChip(f){
   const m = f.min ? `${f.min} min` : '';
   return f.k === 'fin' ? ['fin', `Let go early (${m})`] : f.k === 'late' ? ['late', `Late (${m})`] : f.k === 'missed' ? ['late', 'Late (missed instruction)']
-    : f.k === 'soft' ? ['early', `Left early (${m}, support hour)`] : f.k === 'early' ? ['early', f.skip ? 'Left early (skipped support hour)' : `Left early (${m})`]
+    : f.k === 'soft' || f.k === 'early' ? ['early', `Left early (${m})`]
     : f.k === 'drop' ? ['drop', `Out mid-class (${m})`] : f.k === 'exc' ? ['exc', 'Absent (excused)'] : f.k === 'absent' ? ['absent', 'Absent'] : [f.k, f.label];
 }
 function fillDayBody(el){
@@ -2167,7 +2167,7 @@ function noSchedZoom(A, c){
 // What Zoom shows for a day, in minutes only: how late, how early they left, and how long they were out of class.
 function zoomMinutes(s){
   const out = s.flags.map(f => f.k === 'late' ? `Late ${f.min} min` : f.k === 'missed' ? 'Missed instruction'
-    : f.k === 'early' ? (f.skip ? 'Skipped the support hour' : `Left ${f.min} min early`) : f.k === 'soft' ? `Left ${f.min} min early`
+    : f.k === 'early' || f.k === 'soft' ? `Left ${f.min} min early`
     : f.k === 'fin' ? `Let go ${f.min} min early (finished work)` : f.k === 'drop' ? `Out of class ${f.min} min` : '').filter(Boolean);
   return out.length ? out.join(' · ') : 'in class the whole time';
 }
