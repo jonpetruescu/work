@@ -821,7 +821,7 @@ const NOCLASS_REASONS = { holiday:'School holiday', testing:'Testing', canceled:
 // The Overview grid's colors and letters, in the teacher's own words.
 const OV_CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle: 'Likely present but not engaging',
   away: 'Likely not actually present', absent: 'Did not attend', nosched: 'Not scheduled' };
-const OV_LET = { L: 'Late or left early', D: 'Disengaged', C: 'Camera off' };
+const OV_LET = { L: 'Late or left early', C: 'Camera off' };   // the colors show engagement, so there's no D
 const FU_HOW = { call:'Called home', message:'Emailed or texted home', student:'Talked with the student', meeting:'Meeting (team or family)', other:'Other' };
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -905,7 +905,7 @@ function withDefaults(d){
     const o = {}, x = obj(v);
     if (x.cat in OV_CAT) o.cat = x.cat;
     if (x.cat === 'camera' && typeof x.C !== 'boolean') o.C = true;   // the old orange "camera off" color is now just the C letter
-    for (const l of ['L', 'D', 'C']) if (typeof x[l] === 'boolean') o[l] = x[l];
+    for (const l of ['L', 'D', 'C']) if (typeof x[l] === 'boolean') o[l] = x[l];   // D is no longer shown, but kept in the file
     if (isDk(k.split('|')[0]) && Object.keys(o).length) out.dayStatus[k] = o;
   }
   for (const [k, v] of Object.entries(obj(d.followUps))) if (Array.isArray(v)){
@@ -1869,7 +1869,7 @@ function setMsg(xk, on){
 }
 function cellState(A, key, dk, recs){
   const plan = planFor(A, key, dk), rec = (recs.get(dk) || new Map()).get(key) || null;
-  const xk = `${dk}|${key}`, ov = { ...state.data.dayStatus[xk] }, auto = { L: false, D: false };
+  const xk = `${dk}|${key}`, ov = { ...state.data.dayStatus[xk] }, auto = { L: false };
   let base, f = null, fact = '';
   if (!plan && !rec) base = 'nosched';
   else if (rec){
@@ -1886,18 +1886,16 @@ function cellState(A, key, dk, recs){
       const useF = !!f && (plan?.secs.some(s => s.type === 'instruction') || f.share > 0);
       base = !useF ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
       auto.L = !hasFlag(rec, 'fin') && ['late', 'early', 'soft', 'missed'].some(k => hasFlag(rec, k));   // finished work: let go, so no L
-      auto.D = useF && f.share > 0 && f.share < eng;   // answering none is the purple color, without a D as well
       fact = !f ? 'No Formative that day' : useF ? '' : f.inFile ? 'Answered none on Formative' : 'Not in the Formative export';
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
   const cat = ov.cat in OV_CAT ? ov.cat : base;
-  // Automatic letters go with the color: no D on a color chosen by hand that says engaged or not there, no L on a day not attended.
-  if (cat !== 'idle' && cat !== 'away') auto.D = false;
+  // The automatic L goes with the color: no L on a day not attended.
   if (['absent', 'excused', 'nosched'].includes(cat)) auto.L = false;
-  return { dk, key, xk, plan, rec, fin: !!state.data.excused[xk], early: !rec && !!plan && !!state.data.excused[xk], f, fact, fx: !!rec && rec.isAbsent && !!fact, base, cat, auto, ov, L: ov.L ?? auto.L, D: ov.D ?? auto.D, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
+  return { dk, key, xk, plan, rec, fin: !!state.data.excused[xk], early: !rec && !!plan && !!state.data.excused[xk], f, fact, fx: !!rec && rec.isAbsent && !!fact, base, cat, auto, ov, L: ov.L ?? auto.L, C: !!ov.C, msg: hasMsg(key, dk), note: state.data.notes[xk] || '' };
 }
 const OV_STATE = { noclass: 'No class', missing: 'No Zoom report yet', later: 'Not yet' };
-const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'D', 'C'].filter(l => c[l] && OV_LET[l] !== OV_CAT[c.cat]).map(l => OV_LET[l]), c.fact, c.early ? 'Finished work, let go early' : '', c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
+const cellWords = c => [OV_CAT[c.cat] || OV_STATE[c.cat], ...['L', 'C'].filter(l => c[l]).map(l => OV_LET[l]), c.fact, c.early ? 'Finished work, let go early' : '', c.msg ? 'Message sent' : '', c.note ? 'Has a note' : ''].filter(Boolean).join(', ');
 // Class days in the dates shown: any day with a report, a no-class mark, or someone on the schedule (days added by hand included).
 // An open range runs to the end of this week.
 function overviewDates(A, period){
@@ -1972,7 +1970,7 @@ function renderOverview(){
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span>${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
-      const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'D', 'C'].filter(l => c[l]).join('');
+      const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
         c.cat === 'noclass' ? '–' : c.early ? '<span class="ovfin">fin</span>' : c.cat === 'missing' ? '?' : ''}${letters ? `<span class="ovl">${letters}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}${c.fx ? '<b class="ovfa" aria-hidden="true">F</b>' : ''}</button></td>`;
@@ -1996,7 +1994,7 @@ function renderOverview(){
 }
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key: colors, letters, marks.
 const BRUSHES = [...['engaged', 'idle', 'away', 'excused', 'absent', 'nosched'].map(k => [k, '', OV_CAT[k]]), ['auto', '', 'Automatic color'],
-  ['L', 'L', 'Late or left early'], ['D', 'D', 'Disengaged'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', 'fin', 'Finished work, let go early']];
+  ['L', 'L', 'Late or left early'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', 'fin', 'Finished work, let go early']];
 // The key above the grid: colors, then letters and marks, then Formative. In Quick mark the same panel holds the marks to
 // pick from instead, in the same three rows, so the grid doesn't move when Quick mark is turned on or off.
 function ovKey(A, rows){
@@ -2006,7 +2004,7 @@ function ovKey(A, rows){
     return `<div class="ovkey marking" role="group" aria-label="Quick mark">
       <div class="ovkrow"><span><b>Quick mark:</b> pick a mark, then click days. Click a day again to undo.</span><span class="ovkend" role="status">${state.ovMarkN ? plural(state.ovMarkN, 'change') + ' so far' : ''}</span></div>
       <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 6))}</div>
-      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(7, 10))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(10))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(6, 7))}</div></div>`;
+      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(7, 9))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(9))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(6, 7))}</div></div>`;
   }
   const form = A.formByDk.size, more = Object.keys(state.data.extraDays).length ? '<span aria-hidden="true"><b class="ovxd">+</b> Day you added</span>' : '';
   return `<div class="ovkey">
@@ -3195,7 +3193,7 @@ function renderSettings(){
       <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they answered at least', '% of the questions', 1, 100)}</div>
       <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered:</p>
       <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none']].map(([k, w]) =>
-        `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}${k === 'idle' ? ' (D)' : ''}</li>`).join('')}</ul>
+        `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}</li>`).join('')}</ul>
       <p class="small muted" style="margin:8px 0 0">Days without an export, and support-hour-only students who answered nothing, are colored from Zoom alone.</p></div>
     <div class="panel"><h2>Reports and notes to families</h2>
       <div class="settext">
