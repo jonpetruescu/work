@@ -264,6 +264,8 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .tile .s{font-size:.8rem;color:var(--muted);line-height:1.35;margin-top:2px}
 .listinfo{font-size:var(--fs-sm);color:var(--muted);margin:0 0 10px}
 .cardcounts{display:none}
+.nmrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nmrow .btn{flex:none}
 .sortby{font-size:var(--fs-sm);color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm)}
 
@@ -1733,6 +1735,30 @@ function partTotals(ctx){
   return T;
 }
 
+// The weekly message for a family, in the teacher's own words: this week's class days so far (or last week's, early in a
+// week before any class has a Zoom report). Excused absences and finished-work time aren't counted, as everywhere else.
+function weeklyMessage(A, key){
+  const today = todayDk(), held = wk => studentDates(A, key, { from: wk, to: addDays(wk, 6) < today ? addDays(wk, 6) : today })
+    .filter(d => d.status === 'held' && !isExcused(d.rec));
+  let when = 'this week', ds = held(weekKey(today));
+  if (!ds.length){ when = 'last week'; ds = held(addDays(weekKey(today), -7)); }
+  let late = 0, out = 0, early = 0;
+  for (const d of ds){
+    if (d.rec.isAbsent) continue;
+    const P = dayParts(d.rec);
+    for (const t of ['instruction', 'support']){ late += P[t].before; out += P[t].out; early += P[t].after; }
+  }
+  const name = A.nameOf[key] || key, m = n => `${plural(Math.round(n), 'minute')} of instruction`;
+  const parts = [late >= 0.5 && `${m(late)} due to being tardy`, out >= 0.5 && `${m(out)} due to being out in the middle of class`,
+    early >= 0.5 && `${m(early)} due to leaving early`].filter(Boolean);
+  const missed = parts.length < 3 ? parts.join(' and ') : `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+  return { when, n: ds.length, name, text: `Hello,
+
+This is an update regarding ${name}'s attendance ${when}.
+${name} attended ${ds.filter(d => !d.rec.isAbsent).length}/${ds.length} classes ${when}${parts.length ? `, and missed ${missed}` : ''}.
+
+${name}'s current grade in Math 1 Intervention is 00%.` };
+}
 function studentSummary(days){
   const map = new Map();
   for (const day of [...days].reverse()) for (const s of day.students){   // oldest first
@@ -2376,7 +2402,8 @@ function renderStudents(){
     else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on current schedule</span>`);
     const leftEarly = s.early + s.soft;
     h += `<tr>
-      <td class="c-name"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
+      <td class="c-name"><div class="nmrow"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
+        <button class="btn small ghost noprint" data-weeklymsg="${esc(s.key)}" title="Copy a message about ${esc(s.name)}’s attendance this week">Copy message</button></div>
         ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}
         <span class="cardcounts">Absent ${s.absent} · Late ${s.late} · Left early ${leftEarly}</span></td>
       <td data-label="Days attended">${meter(s.rate)}<span class="small muted">${s.attended} of ${s.n}${s.excused ? ` · ${s.excused} excused` : ''}</span></td>
@@ -3618,6 +3645,13 @@ async function onClick(t){
     const n = nx && $(`#tab-reports [data-dk="${nx}"]`); if (n) window.scrollBy(0, n.getBoundingClientRect().top - y0);
     if (t.closest('.daydetail')){ const b = $('#tab-students .daydetail [data-noclass]') || $('#tab-students .daydetail [data-selday=""]'); if (b) b.focus({ preventScroll: true }); }
     return; }
+  if (d.weeklymsg){
+    const msg = weeklyMessage(state.lastAnalysis || analyze(), d.weeklymsg);
+    if (!msg.n) return setStatus(`${msg.name} has no class days with a Zoom report this week or last week, so there’s nothing to copy yet.`);
+    const ok = await copyText(msg.text);
+    setStatus(ok ? `Copied a message about ${msg.name}’s attendance ${msg.when}.` : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
+    return;
+  }
   if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
     setStatus(ok ? 'Summary copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
   if (has('data-exportstudent')) return exportStudent(currentCtx());
