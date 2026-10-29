@@ -9,7 +9,7 @@
 <style>
 :root{
   --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
-  --ink:#1C2433; --muted:#566074; --faint:#6B7486; --rule:#A3ACBA;
+  --ink:#1C2433; --muted:#566074; --faint:#626B7D; --rule:#A3ACBA;
   --instr:#C9DAF8; --support:#FFF2CC; --bar:#24324D;
   --ok:#1D6F47; --ok-bg:#DFF1E7;
   --late:#8F4B00; --late-bg:#FBE8D2;
@@ -28,6 +28,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root{
+    color-scheme:dark;   /* the browser's own boxes, lists and scroll bars are dark too */
     --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
     --ink:#E5E9F1; --muted:#A4AEBF; --faint:#8C96A8; --rule:#4E5A6E;
     --instr:#2C3D61; --support:#4A4123; --bar:#A9C2F5;
@@ -283,7 +284,7 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .ovdrop{display:block;font-size:.66rem;font-weight:500;color:var(--late)}
 /* Overview grid: the teacher's spreadsheet colors */
 :root{ --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-nosched:#E3E5E8; --ov-ink:#1C2433 }
-@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-nosched:#262F3D; --ov-ink:#10151E } }
+@media (prefers-color-scheme: dark){ :root{ --ov-engaged:#5E8F4B; --ov-excused:#5A86CF; --ov-idle:#C2A23A; --ov-away:#AE6D91; --ov-absent:#CC6262; --ov-nosched:#262F3D; --ov-ink:#10151E } }
 .c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)}
 .c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)} .c-nosched{background:var(--ov-nosched)}
 .c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
@@ -393,6 +394,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovdpop p{margin:6px 0}
 .ovdpop .actions{margin-top:8px}
 .ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
+.ovlink select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;max-width:210px;font-size:var(--fs-sm)}
 .addday .pop{left:auto;right:0;width:360px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}   /* opens leftward from the right end of the toolbar */
 .addday .pop p{margin:0}
 .addday .hist-list{font-size:inherit}
@@ -644,6 +646,77 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
 .printonly{display:none}
 #printArea{display:none}
 
+/* Text links get a hit area of at least 24px, so they're as easy to click as buttons, without moving anything. */
+.linkish{position:relative}
+.linkish::after{content:"";position:absolute;inset:-5px -3px}
+.skip{position:absolute;left:12px;top:-60px;z-index:40;background:var(--surface);color:var(--ink);border:2px solid var(--focus);border-radius:6px;padding:8px 12px;font-weight:600}
+.skip:focus{top:8px}
+main:focus{outline:none}
+/* Saving, Undo and Help, at the right end of the tab row */
+.savebar .saved{color:var(--ok)}
+.savebar .btn.warn{background:var(--late);border-color:var(--late);color:var(--surface)}
+.helpbtn{align-self:center;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-weight:600;font-size:var(--fs-sm);cursor:pointer}
+.helpbtn:hover{border-color:var(--muted)}
+.helpbtn b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--bar);color:var(--btn-ink);font-size:.75rem}
+#status .notice .linkish + .linkish{margin-left:12px}
+/* The start screen: what the page does, one main button, and the sample class beside it */
+.start .lead{font-size:var(--fs-md);margin:0 0 16px}
+.start h3{font-size:var(--fs-md);font-family:var(--sans);margin:20px 0 0}
+.start .actions{margin-top:0}
+/* Set-up steps: done steps are checked off, and only the next one shows its button. */
+.steps{list-style:none;margin:14px 0 0;padding:0}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--grid)}
+.steps li:first-child{border-top:0}
+.steps .stepn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);font-weight:700;font-size:var(--fs-sm);color:var(--muted)}
+.steps li.done .stepn{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.steps li.now .stepn{border-color:var(--bar);color:var(--ink)}
+.steps li.later{color:var(--muted)}
+.steps p{margin:2px 0 0;font-size:var(--fs-sm)}
+.steps .actions{margin-top:8px}
+.steps details{margin-top:8px}
+/* The sample class: a band that says so, on every tab */
+.demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.demo-bar .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-left:auto}
+/* Help and copy boxes (native dialogs: Esc closes them, and focus stays inside) */
+dialog.dlg{border:1px solid var(--line);border-radius:12px;padding:0;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);background:var(--surface);color:var(--ink);box-shadow:0 16px 48px rgba(0,0,0,.28)}
+dialog.dlg::backdrop{background:rgba(15,20,30,.45)}
+.dlg-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--line)}
+.dlg-head h2{font-size:var(--fs-xl)}
+.dlg-head .btn{margin-left:auto}
+.dlg-body{padding:6px 22px 22px}
+.dlg-body h3{font-size:var(--fs-lg);margin:20px 0 6px}
+.dlg-body p,.dlg-body li{font-size:var(--fs-md);line-height:1.55}
+.dlg-body ul,.dlg-body ol{padding-left:22px;margin:6px 0}
+.dlg-body li{margin:3px 0}
+.dlg-body .keyrow{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:6px 16px;align-items:baseline;margin:6px 0}
+kbd{display:inline-block;min-width:1.6em;padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--paper);font:600 var(--fs-sm) var(--sans);text-align:center}
+.helpkey{list-style:none;padding:0 !important;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 16px}
+.helpkey li{display:flex;align-items:center;gap:8px;margin:0}
+.faq dt{font-weight:600;margin-top:10px}
+.faq dd{margin:2px 0 0;color:var(--ink)}
+dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
+/* The tour: a card that points at one part of the page at a time */
+.tour{position:fixed;z-index:30;width:350px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--focus);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.24);padding:12px 16px 12px}
+.tour h2{font-size:var(--fs-lg);margin:2px 0 6px}
+.tour h2:focus{outline:none}
+.tour p{margin:0 0 12px;font-size:var(--fs-md);line-height:1.5}
+.tour .tour-n{margin:0;font-size:var(--fs-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tour-b{display:flex;align-items:center;gap:8px}
+.tour-b .linkish{margin-right:auto}
+.tour-on{outline:3px solid var(--focus) !important;outline-offset:4px;border-radius:8px;animation:tourpulse 1.2s ease-in-out 3}
+.ovb.tour-on{outline-offset:-3px !important}
+@keyframes tourpulse{50%{outline-offset:9px}}
+@media screen and (max-width: 600px){ .tour{left:12px !important;right:12px;top:auto !important;bottom:12px;width:auto} }
+/* The schedule box keeps the sheet's columns, like the spreadsheet it came from */
+#schedText{white-space:pre;overflow-wrap:normal;overflow-x:auto;tab-size:14em}
+.schedex{margin:0 0 10px}
+.schedex summary{cursor:pointer}
+.schedex table{border-collapse:collapse;margin:8px 0;font-size:var(--fs-xs)}
+.schedex td{border:1px solid var(--line);padding:3px 7px;white-space:nowrap;background:var(--surface)}
+.schedex tr:first-child td{font-weight:700}
+.schedex tr:nth-child(2) td{font-weight:600}
+.schedex td.i{background:var(--instr)} .schedex td.s{background:var(--support)}
+
 @media (max-width: 820px){
   .grid-head{display:none}
   .row{grid-template-columns:1fr auto auto;gap:6px 12px;padding:12px 0}
@@ -726,7 +799,8 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   @page{margin:.5in}
   body{background:#fff}
   main.wrap{padding-bottom:0}   /* the screen's bottom space would push the last row of a list onto a page of its own */
-  header.top nav, .folder, .toolbar, .savebar, .linkish, .mini .act, .notice, .daybar button, .noprint, .rbar, .backbar, #status{display:none !important}
+  header.top nav, .folder, .toolbar, .savebar, .helpbtn, .linkish, .mini .act, .notice, .daybar button, .noprint, .rbar, .backbar, #status, #banner, .tour, .skip{display:none !important}
+  .tour-on{outline:0 !important}
   .printonly{display:block}
   span.printonly{display:inline}
   .tablewrap{overflow:visible;border:0}
@@ -759,10 +833,11 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
   table.sum td.c-name{width:32%}
 }
 @media (forced-colors: active){ .mbar, .ksw, .ws-blk, .ws-sw, .ds, .rib, .wb .tr, .g{forced-color-adjust:none} }
-@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+@media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important} }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the page</a>
 <header class="top">
   <div class="wrap">
     <div class="top-row">
@@ -774,27 +849,31 @@ textarea.family{min-height:240px;font-size:.92rem;line-height:1.5}
     </div>
     <div class="tabrow">
       <nav class="tabs" role="tablist" aria-label="Sections">
-        <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
-        <button role="tab" data-tab="reports" aria-selected="false">Reports</button>
-        <button role="tab" data-tab="students" aria-selected="false">Students</button>
-        <button role="tab" data-tab="support" aria-selected="false">Support<span class="tabx"> hour</span></button>
-        <button role="tab" data-tab="schedule" aria-selected="false">Schedule</button>
-        <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+        <button role="tab" id="t-overview" aria-controls="tab-overview" data-tab="overview" aria-selected="true" title="Every student and every class day on one grid">Overview</button>
+        <button role="tab" id="t-reports" aria-controls="tab-reports" data-tab="reports" aria-selected="false" title="Each class day: who came, who was late, who left early">Days</button>
+        <button role="tab" id="t-students" aria-controls="tab-students" data-tab="students" aria-selected="false" title="Each student’s totals, reports and messages to families">Students</button>
+        <button role="tab" id="t-support" aria-controls="tab-support" data-tab="support" aria-selected="false" title="Who was let go early from the support hour this week">Support<span class="tabx"> hour</span></button>
+        <button role="tab" id="t-schedule" aria-controls="tab-schedule" data-tab="schedule" aria-selected="false" title="Your weekly class schedule">Schedule</button>
+        <button role="tab" id="t-settings" aria-controls="tab-settings" data-tab="settings" aria-selected="false" title="Timing rules, your name for family notes, and your data">Settings</button>
       </nav>
-      <div class="savebar" id="saveBar" aria-live="polite"></div>
+      <div class="savebar" id="saveBar"></div>
+      <button class="helpbtn" id="helpBtn" data-help aria-haspopup="dialog" aria-keyshortcuts="?" title="Help (press ?)"><b aria-hidden="true">?</b>Help</button>
     </div>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap" id="main" tabindex="-1">
+  <div id="banner"></div>
   <div id="status" aria-live="polite"></div>
-  <section id="tab-overview"></section>
-  <section id="tab-reports" hidden></section>
-  <section id="tab-students" hidden></section>
-  <section id="tab-support" hidden></section>
-  <section id="tab-schedule" hidden></section>
-  <section id="tab-settings" hidden></section>
+  <section id="tab-overview" role="tabpanel" aria-labelledby="t-overview"></section>
+  <section id="tab-reports" role="tabpanel" aria-labelledby="t-reports" hidden></section>
+  <section id="tab-students" role="tabpanel" aria-labelledby="t-students" hidden></section>
+  <section id="tab-support" role="tabpanel" aria-labelledby="t-support" hidden></section>
+  <section id="tab-schedule" role="tabpanel" aria-labelledby="t-schedule" hidden></section>
+  <section id="tab-settings" role="tabpanel" aria-labelledby="t-settings" hidden></section>
 </main>
 <section id="printArea" aria-hidden="true"></section>
+<dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
+<dialog class="dlg" id="copyDlg" aria-labelledby="copyTitle"></dialog>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
 
 <script>
@@ -932,7 +1011,8 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null,
+  demo: false, undo: [], redo: [], snap: null, saveFailed: false   // demo: the sample class is open; undo/redo: the data before each change
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -1452,12 +1532,9 @@ function renderReports(){
   let h = '';
   if (state.returnTo) h += `<div class="backbar">From ${esc(state.returnTo.name)}’s report <button class="btn small" data-returnto>Back to ${esc(state.returnTo.name)}</button>
     <button class="linkish" data-dismissreturn>Stay here</button></div>`;
-  if (!A.sched.roster.length) h += `<div class="notice">Add your class schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> so each student can be checked against the hours they’re expected.</div>`;
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
-  if (!A.days.length){
-    el.innerHTML = h + `<div class="start"><h2>No Zoom reports in this folder yet</h2><p class="muted">Save a participant report from Zoom into <b>${esc(state.folderName || 'your folder')}</b>, then click Refresh.</p>${zoomHelp()}</div>`;
-    return;
-  }
+  if (!A.days.length){ el.innerHTML = h + setupCard(A); return; }
+  if (!A.sched.roster.length) h += `<div class="notice">Add your class schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button> so each student can be checked against the hours they’re expected.</div>`;
   const days = daysInRange(A.days), period = periodOf(A);
   h += `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
@@ -1609,7 +1686,7 @@ function dayBody(day){
   const xd = day.secs.length && state.data.extraDays[day.dk];   // a day added with another weekday's class
   if (day.students.length){
     h += `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
-    if (!rows.length) h += `<p class="muted small" style="padding:10px 0">No students match that search.</p>`;
+    if (!rows.length) h += `<p class="muted small" style="padding:10px 0">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></p>`;
     for (const s of rows){
       const meta = [s.schedLabel === 'Instruction + support' ? 'Both hours' : s.schedLabel];   // on screen only; the CSV keeps the longer label
       if (!s.isAbsent) meta.push(`${s.presentMin} of ${s.reqMin} min`);
@@ -1817,7 +1894,7 @@ function weeklyMessage(A, key){
 This is an update regarding ${name}'s attendance ${when}.
 ${first} attended ${sch.length ? `${sch.filter(d => !d.rec.isAbsent).length}/${sch.length} classes ${when}${extra ? `, plus ${plural(extra, 'extra class', 'extra classes')}` : ''}` : `${plural(extra, 'extra class', 'extra classes')} ${when}`}${parts.length ? `, and missed ${missed}` : ''}.${engaged}
 
-${first}'s current grade in Math 1 Intervention is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
+${first}'s current grade in ${state.data.settings.className || 'our intervention class'} is ${(A.grades.get(key) || {}).grade || '00%'}.` , grade: A.grades.get(key) || null };
 }
 function studentSummary(days){
   const map = new Map();
@@ -1997,7 +2074,7 @@ function renderOverview(){
   const el = $('#tab-overview'), A = analyze();
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
-  if (!A.roster.length){ el.innerHTML = `<div class="start"><h2>Add your class schedule first</h2><p class="muted">Paste it on the <button class="linkish" data-goto="schedule">Schedule tab</button>.</p></div>`; return; }
+  if (!A.roster.length){ el.innerHTML = setupCard(A); return; }
   const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
   const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
@@ -2011,6 +2088,7 @@ function renderOverview(){
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     ${addDayMenu(A)}
     <button class="btn small ghost" data-printlist>Print</button></div>`;
+  if (!A.days.length) h += setupCard(A);
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Zoom names (on the days shown) and Formative names that didn't match anyone on the schedule can be linked once, or ignored.
   const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
@@ -2029,7 +2107,7 @@ function renderOverview(){
   if (dates.length && rows.length) h += `<p class="printonly ovprint">Attendance, ${esc(fmtPeriod({ from: dates[0], to: dates[dates.length - 1] }))} · ${plural(rows.length, 'student')}${
     state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
   h += ovKey(A, rows);
-  if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search.'}</p>`; return; }
+  if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'}</p>`; return; }
   // One grid, as tall as the class list, that scrolls sideways like a spreadsheet (the names stay put on the left).
   // It opens on the newest days and keeps its place when it's redrawn. Printing draws every week, in blocks that
   // wrap to fit the paper (newest weeks on top).
@@ -2353,7 +2431,7 @@ function supportResults(W){
   const chip = d => `<span class="sdc">${esc(supDay(d.dk))} ${d.kind === 'today' ? '<span class="muted">today</span>' : d.kind === 'later' ? '<span class="muted">later</span>' : letterCell(d.kind, '')}</span>`;
   if (q){
     const hits = W.people.filter(p => normKey(p.name).includes(q));
-    if (!hits.length) return `<p class="muted">No one with a support hour this week matches “${esc(state.supQuery)}”.</p>`;
+    if (!hits.length) return `<p class="muted">No one with a support hour this week matches “${esc(state.supQuery)}”. <button class="linkish" data-clearsearch>Clear search</button></p>`;
     const kinds = new Set(hits.flatMap(p => p.days.map(d => d.kind)));
     return `<ul class="sup-list sup-found">${hits.map(p => {
       const fin = of(p, 'fin'), soft = of(p, 'soft'), miss = of(p, 'missing'), lines = [];
@@ -2435,10 +2513,7 @@ function renderStudents(){
   const A = analyze();
   state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
-  if (!A.days.length || !A.roster.length){
-    el.innerHTML = `<div class="start"><h2>Nothing to total up yet</h2><p class="muted">${!A.roster.length ? 'Needs your schedule on the <button class="linkish" data-goto="schedule">Schedule tab</button>.' : 'Needs at least one Zoom report in the folder.'}</p></div>`;
-    return;
-  }
+  if (!A.days.length || !A.roster.length){ el.innerHTML = setupCard(A); return; }
   if (state.student){ renderStudentReport(A, el); return; }
   const { days, period, all, list } = studentList(A);
   const opts = A.roster.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
@@ -2462,7 +2537,7 @@ function renderStudents(){
   h += letterLegend(kinds);
   h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Days attended</th><th>Minutes received</th>
     <th class="num">Absent</th><th class="num">Late</th><th class="num">Left early</th><th>Last 10 class days</th></tr></thead><tbody>`;
-  if (!list.length) h += `<tr><td colspan="7" class="muted">No students match that search.</td></tr>`;
+  if (!list.length) h += `<tr><td colspan="7" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
   for (const s of list){
     const info = scheduleInfo(A, s.key, period);
     const chips = [];
@@ -2884,7 +2959,7 @@ function dayDetail(ctx){
   for (const g of outs) facts.push(`Out of Zoom ${fmt(g.a)}–${fmt(g.b)}`);
   return `<div class="daydetail" data-dk="${d.dk}">
     <div class="dd-head">${head}<span class="chips">${s.flags.map(f => `<span class="chip k-${f.k}">${esc(f.label)}</span>`).join('')}</span>
-      <span class="dd-links"><button class="linkish" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}">Open on Reports</button>${close}${navs}</span></div>
+      <span class="dd-links"><button class="linkish" data-goday="${d.dk}" data-xkey="${esc(s.xkey)}">Open in Days</button>${close}${navs}</span></div>
     <div class="ddpic" role="img" aria-label="${esc(facts.join('. ') || 'Not in Zoom')}">
       <div class="ribl" aria-hidden="true">${ribbon.map(r => `<span style="left:${(r.x + r.w / 2).toFixed(2)}%">${esc(r.text)}</span>`).join('')}</div>
       <div class="rib" aria-hidden="true">${ribbon.map(r => `<span class="${r.type}" style="left:${r.x.toFixed(2)}%;width:${r.w.toFixed(2)}%"></span>`).join('')}</div>
@@ -3070,10 +3145,12 @@ function csvCell(v){
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 const toCSV = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
-function downloadFile(name, text, type){
+// Every download says where the file went.
+function downloadFile(name, text, type, note = ' Look for it in your Downloads folder.'){
   const blob = new Blob([text], { type });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  setStatus(`Downloaded ${name}.${note}`, 'info');
 }
 function exportDays(){
   const days = daysInRange((state.lastAnalysis || analyze()).days);
@@ -3119,22 +3196,244 @@ function zoomHelp(){
     <li>Leave <b>Show unique users</b> unchecked so drop-offs and rejoins are kept.</li>
     <li>Click <b>Export</b> and save the CSV into your attendance folder.</li></ol></details>`;
 }
-// With a folder remembered from last time, one button opens it, and the setup steps are tucked away below.
+// One main button (the folder), with the sample class beside it for a first look. With a folder remembered from
+// last time, that folder is the main button and the setup steps are tucked away below.
 function startScreen(){
   const h = state.savedHandle, privacy = '<p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>';
+  const demo = '<button class="btn ghost" data-demo>Try a sample class</button>';
   const steps = `<ol><li>Make a folder on this computer and put this file in it.</li>
       <li>Save Zoom participant reports (CSV files) into the same folder.</li>
-      <li>Click <b>${h ? 'Choose a different folder' : 'Open attendance folder'}</b> above and choose that folder.</li>
+      <li>Click <b>${h ? 'Choose a different folder' : 'Open attendance folder'}</b> and choose that folder.</li>
       <li>Paste your weekly schedule on the <b>Schedule</b> tab. It’s saved in the folder for next time.</li></ol>`;
-  if (h) return `<div class="start"><h2>Open ${esc(h.name)}</h2><p class="muted">Your folder from last time.</p>
-    <div class="actions"><button class="btn" data-reopen>Open ${esc(h.name)}</button><button class="linkish" data-pick>Choose a different folder</button></div>
+  if (h) return `<div class="start"><h2>Open ${esc(h.name)}</h2><p class="muted lead">Your folder from last time.</p>
+    <div class="actions"><button class="btn" data-reopen>Open ${esc(h.name)}</button>${demo}<button class="linkish" data-pick>Choose a different folder</button></div>
     <details class="small startsetup"><summary><b>Setting up a new folder</b></summary>${steps}${zoomHelp()}</details>
     ${privacy}</div>`;
-  return `<div class="start"><h2>Open your attendance folder</h2>
+  return `<div class="start"><h2>Attendance from your Zoom reports</h2>
+    <p class="muted lead">Open the folder where you save your class’s Zoom reports. To look around first, open a sample class with made-up students.</p>
+    <div class="actions"><button class="btn" data-pick>Open attendance folder</button>${demo}</div>
+    <h3>Setting up for the first time</h3>
     ${steps}
     ${zoomHelp()}
     ${HAS_FSA ? '' : '<p class="small muted">Tip: Chrome and Edge remember your folder and save changes to it. In this browser, choose the folder each time and download the data file after changes.</p>'}
     ${privacy}</div>`;
+}
+// What's left to set up, where a tab has nothing to show yet. Steps that are done are checked off, and only the next
+// one says what to do, with its button.
+function setupCard(A){
+  const folder = `<b>${esc(state.folderName || 'your folder')}</b>`, hasSched = A.roster.length > 0;
+  const steps = [
+    { done: true, title: 'Open your attendance folder', doneText: `${folder} is open.` },
+    { done: hasSched, title: 'Paste your class schedule', text: 'Copy it from your spreadsheet, then paste it on the Schedule tab.', act: '<button class="btn small" data-goto="schedule">Go to Schedule</button>' },
+    { done: A.days.length > 0, title: 'Add your Zoom reports', text: `Save a Zoom participant report (CSV) in ${folder}, then click Refresh.`, act: '<button class="btn small" data-refresh>Refresh</button>', more: zoomHelp() }];
+  const next = steps.findIndex(x => !x.done), done = steps.filter(x => x.done).length;
+  return `<div class="start setup"><h2>Get set up</h2><p class="muted" style="margin:4px 0 0">${done} of ${steps.length} done</p><ol class="steps">${steps.map((x, i) => {
+    const now = i === next;
+    return `<li class="${x.done ? 'done' : now ? 'now' : 'later'}"><span class="stepn" aria-hidden="true">${x.done ? '✓' : i + 1}</span><div><b>${esc(x.title)}</b><span class="sr">${x.done ? ', done' : now ? ', next' : ''}</span>
+      ${x.done && x.doneText ? `<p class="muted">${x.doneText}</p>` : now ? `<p>${x.text}</p>` : ''}${now && x.act ? `<div class="actions">${x.act}</div>` : ''}${now && x.more ? x.more : ''}</div></li>`; }).join('')}</ol></div>`;
+}
+
+/* ---------------- Sample class ----------------
+   Made-up students, kept in memory only and never saved: four weeks of Zoom reports up to yesterday, a few Formative
+   exports, a grades file, and a data file with a few marks, a note and a follow-up. For a first look, and for showing
+   the page to others without anyone's real students on the screen. */
+function sampleFolder(){
+  let seed = 4242;   // the same sample every time
+  const rnd = () => (seed = seed * 48271 % 2147483647) / 2147483647, int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const A = ['Ava Thompson', 'Ben Carter', 'Chloe Nguyen', 'Diego Ramirez', 'Elena Petrova', 'Finn O’Brien'];
+  const B = ['Grace Kim', 'Hassan Ali', 'Isla Martin', 'Jamal Brooks', 'Kira Sato', 'Leo Rossi'];
+  // One group Mondays and Wednesdays, the other Tuesdays and Thursdays: instruction 1–2 PM, then the support hour.
+  const plan = { monday: [A, A], tuesday: [B, [...B, 'Chloe Nguyen']], wednesday: [A, [...A, 'Jamal Brooks']], thursday: [B, B] };
+  const ws = Object.keys(plan), lists = ws.flatMap(w => plan[w]), sheet = [ws.flatMap(w => [cap(w), '']), ws.flatMap(() => ['Instruction 1:00-2:00 PM', 'Support hour 2:00-3:00 PM'])];
+  for (let r = 0; r < Math.max(...lists.map(l => l.length)); r++) sheet.push(lists.map(l => l[r] || ''));
+  const scheduleText = sheet.map(r => r.join('\t')).join('\n');
+  const today = todayDk(), holiday = addDays(weekKey(today), -14), planOf = dk => plan[DAYS[parseDk(dk).getDay()]];
+  const zt = (dk, m) => { const [y, mo, d] = dk.split('-'), h = Math.floor(m / 60); return `${mo}/${d}/${y} ${pad(h % 12 || 12)}:${pad(m % 60)}:00 ${h >= 12 ? 'PM' : 'AM'}`; };
+  const mdY = dk => { const [y, m, d] = dk.split('-'); return `${m}-${d}-${y}`; };
+  const days = [];
+  for (let dk = addDays(weekKey(today), -21); dk < today; dk = addDays(dk, 1)) if (planOf(dk) && dk !== holiday) days.push(dk);
+  const daysOf = who => days.filter(dk => planOf(dk).some(l => l.includes(who)));
+  const diegoOut = daysOf('Diego Ramirez').slice(-2), islaOut = daysOf('Isla Martin')[2], hassanIpad = daysOf('Hassan Ali').slice(-1)[0];
+  const data = { version: 3, scheduleVersions: [{ from: '', text: scheduleText }], scheduleText,
+    settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, engagedPct: 50, teacherName: 'Ms. Rivera', className: 'Math 1 Intervention', contactLine: 'Room 12 (sample)' },
+    ignored: ['ms rivera'], noClass: { [holiday]: { reason: 'holiday' } }, excused: {}, excusedAbsent: { [`${islaOut}|isla martin`]: true },
+    notes: {}, dayStatus: {}, followUps: {} };
+  const files = [], present = {};
+  for (const dk of days){
+    const [ins, sup] = planOf(dk), rows = [['Ms. Rivera', 12 * 60 + 52, 15 * 60 + 3]];
+    present[dk] = new Set();
+    for (const who of new Set([...ins, ...sup])){
+      const s = ins.includes(who) ? 13 * 60 : 14 * 60, e = sup.includes(who) ? 15 * 60 : 14 * 60, r = rnd();
+      let iv = [[s - int(0, 3), e + int(0, 2)]];
+      if (who === 'Diego Ramirez' && diegoOut.includes(dk) || who === 'Isla Martin' && dk === islaOut) iv = [];
+      else if (!['Ava Thompson', 'Kira Sato', 'Hassan Ali'].includes(who) && r < 0.05) iv = [];
+      else if (who === 'Ben Carter' && r < 0.6){ iv = [[s + int(7, 16), e + 1]]; if (!Object.keys(data.notes).length) data.notes[`${dk}|ben carter`] = 'Said his bus was late'; }
+      else if (who === 'Chloe Nguyen' && s === 14 * 60 && r < 0.6) iv = [[s, e - int(18, 30)]];
+      else if (who === 'Elena Petrova' && r < 0.45) iv = [[s - 1, s + int(20, 30)], [s + int(36, 44), e + 1]];
+      else if (who === 'Finn O’Brien' && r < 0.5){ iv = [[s - 1, e - int(22, 35)]]; if (!Object.keys(data.excused).length) data.excused[`${dk}|finn obrien`] = true; }
+      else if (who === 'Hassan Ali') iv = [[s + int(1, 4), e + 1]];
+      else if (who === 'Leo Rossi' && r < 0.3) iv = [[s + int(9, 14), e]];
+      // Zoom names as they really come: a phone, a short name, and once a classroom iPad to link to the student.
+      const name = who === 'Grace Kim' ? 'Grace’s iPhone' : who === 'Leo Rossi' ? 'leo r' : who === 'Hassan Ali' && dk === hassanIpad ? 'Room 12 iPad' : who;
+      for (const [a, b] of iv) rows.push([name, a, b]);
+      if (iv.length && ins.includes(who)) present[dk].add(who);
+    }
+    files.push({ name: `zoom-participants-${mdY(dk)}.csv`, modified: Date.now(), text: 'Name (Original Name),User Email,Join Time,Leave Time,Duration (Minutes),Guest,In Waiting Room\n'
+      + rows.map(([n, a, b]) => [csvCell(n), '', zt(dk, a), zt(dk, b), b - a, 'No', 'No'].join(',')).join('\n') + '\n' });
+  }
+  // Formative on Wednesdays and Thursdays, six questions. Jamal rarely answers; Elena answers about half.
+  const qs = ['1. Solve 3x + 4 = 19', '2. Solve 5x - 2 = 3x + 8', '3. Graph y = 2x + 1', '4. Slope through (1, 2) and (3, 8)', '5. Write 0.75 as a fraction', '6. Exit ticket'];
+  for (const dk of days.filter(dk => [3, 4].includes(parseDk(dk).getDay()))){
+    const rows = [...present[dk]].map(n => { const got = n === 'Jamal Brooks' ? int(0, 1) : n === 'Elena Petrova' ? int(2, 4) : int(5, 6);
+      return [n, '', ...qs.map((q, i) => i < got ? 'answered' : ''), got ? `${Math.round(got / 6 * int(70, 100))}%` : '']; });
+    files.push({ name: `formative-${mdY(dk)}.csv`, modified: Date.now(), text: [['Student Name', 'Email', ...qs, 'Score (%)'], ...rows].map(r => r.map(csvCell).join(',')).join('\n') + '\n' });
+  }
+  files.push({ name: `grades-${mdY(addDays(today, -1))}.csv`, modified: Date.now(), text: 'Student Name,Current Score\n' + [...A, ...B].map(n => `${csvCell(n)},${int(62, 97)}.${int(0, 9)}%`).join('\n') + '\n' });
+  for (const dk of daysOf('Jamal Brooks').filter(dk => present[dk].has('Jamal Brooks')).slice(-3, -1)) data.dayStatus[`${dk}|jamal brooks`] = { C: true };
+  data.followUps['diego ramirez'] = [{ id: 'sample1', date: addDays(today, -1), how: 'call', text: 'Left a voicemail for his family about the last two classes' }];
+  return { files, dataText: JSON.stringify(data) };
+}
+function loadSample(){
+  const x = sampleFolder();
+  state.tab = 'overview'; state.ovScroll = null; state.query = '';
+  ingest(x.files, x.dataText, 'Sample class', true);
+  startTour();
+}
+function leaveSample(){
+  endTour();
+  Object.assign(state, { demo: false, loaded: false, data: defaultData(), files: [], folderName: '', dirty: false, undo: [], redo: [], snap: null,
+    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ovDay: null, ovMark: null });
+  setStatus(null); render(); navReplace();
+}
+
+/* ---------------- Help ----------------
+   One place for what everything means, built when it opens so the minutes in it are your own settings. */
+function helpHTML(){
+  const S = state.data.settings, kb = (keys, what) => `<span>${keys.map(k => `<kbd>${esc(k)}</kbd>`).join(' ')}</span><span>${esc(what)}</span>`;
+  return `<div class="dlg-head"><h2 id="helpTitle">Help</h2><button class="btn small ghost" data-dlgclose>Close</button></div><div class="dlg-body">
+    <h3>Getting started</h3>
+    <ol><li>Make a folder on this computer and put this file in it.</li><li>After each class, save the Zoom participant report (CSV) in that folder.</li>
+      <li>Click <b>Open attendance folder</b> and choose the folder.</li><li>Paste your weekly schedule on the <b>Schedule</b> tab, once.</li></ol>
+    ${zoomHelp()}
+    <div class="actions">${state.loaded ? '<button class="btn small" data-tour>Take the tour</button>' : '<button class="btn small" data-demo>Try a sample class</button>'}</div>
+    <h3>What each tab is for</h3>
+    <ul><li><b>Overview</b>: every student and every class day on one grid, like a paper attendance sheet. Click a day to see it or change it.</li>
+      <li><b>Days</b>: who came on each class day, who was late or left early, and when each student was in Zoom.</li>
+      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share. <b>Copy message</b> writes a weekly note for a family.</li>
+      ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
+      <li><b>Schedule</b>: your weekly class schedule, pasted from your spreadsheet.</li>
+      <li><b>Settings</b>: how many minutes count as late, your name for notes to families, and your data.</li></ul>
+    <h3>What the colors and letters mean</h3>
+    <p>On the Overview:</p>
+    <ul class="helpkey">${Object.entries(OV_CAT).map(([k, v]) => `<li><i class="ovsw c-${k}"></i>${esc(v)}</li>`).join('')}<li><i class="ovsw c-noclass">–</i>No class</li><li><i class="ovsw c-missing">?</i>No Zoom report yet</li>
+      ${Object.entries(OV_LET).map(([k, v]) => `<li><b>${k}</b> ${esc(v)}</li>`).join('')}<li><b class="ovm">✓</b> Message sent home</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
+    <p>On the Days and Students tabs:</p>
+    <ul class="helpkey">${LETTER_ORDER.filter(k => LETTER_TEAM[k]).map(k => `<li>${letterCell(k, '')} ${esc(LETTER_TEAM[k])}</li>`).join('')}</ul>
+    <h3>How attendance is counted</h3>
+    <ul><li><b>Late</b>: joined more than ${S.lateGrace} minutes after class started.</li>
+      <li><b>Left early</b>: left more than ${S.leaveGrace} minutes before class ended.</li>
+      <li><b>Out mid-class</b>: out of Zoom more than ${S.gapMin} minutes in all, in the middle of class.</li>
+      <li><b>Absent</b>: less than a minute in Zoom during the student’s scheduled hours.</li>
+      <li><b>Minutes received</b>: time in Zoom during the student’s scheduled hours.</li>
+      <li>Excused absences, and time after a student finished their work and was let go, don’t count against them.</li></ul>
+    <p class="small muted">You can change these minutes on the Settings tab.</p>
+    <h3>Keyboard shortcuts</h3>
+    <div class="keyrow">${kb(['?'], 'Open this help')}${kb(['/'], 'Find a student')}${kb([MOD, 'Z'], 'Undo your last change')}${kb([MOD, 'Shift', 'Z'], 'Redo')}
+      ${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid, a student’s calendar, or the tabs')}${kb(['Enter'], 'Open the day you’re on')}${kb(['Esc'], 'Close a box, menu or the tour')}</div>
+    <h3>Your data</h3>
+    <p>Everything stays on this computer. Your schedule, marks and notes are saved in <b>${DATA_FILE}</b> in your folder. Zoom, Formative and grades files are only read, never changed. The page works with Wi-Fi turned off.</p>
+    <h3>Something not working?</h3>
+    <dl class="faq">
+      <dt>A Zoom file “has no join or leave times.”</dt><dd>It was exported with <b>Show unique users</b> checked. Export it again with that box unchecked.</dd>
+      <dt>A student shows as absent, but they were there.</dt><dd>Zoom may know them by another name, like a parent’s name or “iPad.” Look for <b>Unmatched Zoom names</b> on the Overview and link the name to the student. You only do this once.</dd>
+      <dt>A file I just saved doesn’t show up.</dt><dd>Click <b>Refresh</b> at the top of the page.</dd>
+      <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download data file</b> after making changes and put the file in your folder.</dd>
+      <dt>Formative colors don’t show on the Overview.</dt><dd>Put the class date in each export’s file name, like <b>formative-10-14-2026.csv</b>, then click Refresh.</dd>
+      <dt>The text is too small.</dt><dd>Press <kbd>${MOD}</kbd> <kbd>+</kbd> to make everything bigger, and <kbd>${MOD}</kbd> <kbd>0</kbd> to go back.</dd>
+      <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
+  </div>`;
+}
+function openHelp(){
+  const d = $('#helpDlg'); endTour();
+  d.innerHTML = helpHTML(); if (!d.open) d.showModal();
+  d.querySelector('[data-dlgclose]').focus();
+}
+// When the browser won't copy, the text is shown in a box, already selected, to copy by hand.
+function showCopyBox(text){
+  const d = $('#copyDlg');
+  d.innerHTML = `<div class="dlg-head"><h2 id="copyTitle">Copy this text</h2><button class="btn small ghost" data-dlgclose>Close</button></div>
+    <div class="dlg-body"><p>This browser didn’t let the page copy it for you. The text below is selected: press <kbd>${MOD}</kbd> <kbd>C</kbd> to copy it, then click Close.</p>
+    <textarea readonly aria-label="Text to copy">${esc(text)}</textarea></div>`;
+  if (!d.open) d.showModal();
+  const ta = d.querySelector('textarea'); ta.focus(); ta.select();
+}
+
+/* ---------------- Tour ----------------
+   A few steps through the tabs, each pointing at the main part of one: a first look for a new teacher,
+   or a way to walk others through the page. A step with nothing to point at (no support hour, no reports yet) is skipped. */
+const TOUR = [
+  { tab: 'overview', at: () => $('#tab-overview .ovblock'), title: 'Your attendance sheet', text: 'One row for each student and one column for each class day, filled in from your Zoom reports. The key above it explains every color and letter.' },
+  { tab: 'overview', at: () => { const r = [...document.querySelectorAll('#tab-overview tbody tr')].find(tr => tr.querySelector('.c-engaged .ovb')); return r ? [...r.querySelectorAll('.c-engaged .ovb')].pop() : null; },
+    title: 'Click a day to see or change it', text: 'You’ll see when the student joined and left. You can pick a different color, add a note, or mark a message sent home. To mark many days at once, use Quick mark.' },
+  { tab: 'reports', at: () => $('#tab-reports details.day > summary'), title: 'Each class day', text: 'Who came, who was late and who left early, with a line showing when each student was in Zoom. Open a day to mark an absence as excused.' },
+  { tab: 'students', at: () => $('#tab-students table.sum tbody tr'), title: 'Each student’s totals', text: 'Days attended and minutes received, for the dates you pick. Copy message writes a weekly note for a family. Click a name for a full report you can print.' },
+  { tab: 'support', at: () => $('#tab-support .sup'), title: 'During the support hour', text: 'See who was let go early this week after finishing their work, and mark it as it happens.' },
+  { tab: 'schedule', at: () => $('#schedText'), title: 'Your class schedule', text: 'Paste it from your spreadsheet once. The preview shows how it was read. When students join or leave, paste the new one and pick the day it starts.' },
+  { tab: 'settings', at: () => $('#tab-settings .panel'), title: 'Settings', text: 'How many minutes count as late or leaving early, and your name for notes to families.' },
+  { at: () => $('#helpBtn'), title: 'Help is always here', text: 'What every color and letter means, how minutes are counted, and fixes for common problems. If you click something by mistake, Undo at the top right takes it back.' }];
+let tourAt = -1;
+const tourSteps = () => TOUR.map((x, i) => i).filter(i => !TOUR[i].tab || !tabHidden(TOUR[i].tab));
+function startTour(){ const d = $('#helpDlg'); if (d.open) d.close(); endTour(); tourStep(1); }
+function tourStep(dir){
+  for (let i = tourAt + dir; i >= 0 && i < TOUR.length; i += dir){
+    const x = TOUR[i];
+    if (x.tab){
+      if (tabHidden(x.tab)) continue;
+      if (state.tab !== x.tab || state.student || state.ovMark || state.ovSel || state.ovDay){
+        tourAt = i; Object.assign(state, { tab: x.tab, student: null, ovMark: null, ovSel: null, ovDay: null }); render(); navReplace();
+      }
+    }
+    const el = x.at(); if (!el) continue;
+    tourAt = i; showTour(el); return;
+  }
+  if (dir > 0) endTour();
+}
+function showTour(el){
+  document.querySelectorAll('.tour-on').forEach(x => x.classList.remove('tour-on'));
+  el.classList.add('tour-on');
+  const r = el.getBoundingClientRect();
+  if (r.height > innerHeight * .55) window.scrollBy(0, r.top - 120); else el.scrollIntoView({ block: 'center', inline: 'nearest' });
+  const list = tourSteps(), n = list.indexOf(tourAt), x = TOUR[tourAt], last = n === list.length - 1;
+  let card = $('#tour');
+  if (!card){ card = document.createElement('div'); card.id = 'tour'; card.className = 'tour'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-labelledby', 'tourTitle'); document.body.append(card); }
+  card.innerHTML = `<p class="tour-n">Tour · step ${n + 1} of ${list.length}</p><h2 id="tourTitle">${esc(x.title)}</h2><p>${esc(x.text)}</p>
+    <div class="tour-b"><button class="linkish" data-tourend>End tour</button>${n > 0 ? '<button class="btn small ghost" data-tourstep="-1">Back</button>' : ''}<button class="btn small" data-tourstep="1">${last ? 'Done' : 'Next'}</button></div>`;
+  placeTour();
+  card.querySelector('[data-tourstep="1"]').focus({ preventScroll: true });   // Enter goes on to the next step
+}
+// The card sits beside what it points at (to the right, below, above or to the left, whichever fits), or else in the corner.
+function placeTour(){
+  if (tourAt < 0) return;
+  const x = TOUR[tourAt], card = $('#tour');
+  if (x.tab && x.tab !== state.tab) return endTour();   // you went somewhere else
+  let el = $('.tour-on');
+  if (!el && card && (el = x.at())) el.classList.add('tour-on');   // a redraw replaced it
+  if (!el || !card || innerWidth <= 600) return;
+  const r = el.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight, m = 14, W = innerWidth, H = innerHeight;
+  const fitY = y => Math.max(m, Math.min(y, H - h - m)), fitX = v => Math.max(m, Math.min(v, W - w - m));
+  let left = m, top = H - h - m;
+  if (r.right + m + w <= W - m && r.width < W * .6){ left = r.right + m; top = fitY(r.top); }
+  else if (r.bottom + m + h <= H - m){ left = fitX(r.left); top = r.bottom + m; }
+  else if (r.top - m - h >= m){ left = fitX(r.left); top = r.top - m - h; }
+  else if (r.left - m - w >= m){ left = r.left - m - w; top = fitY(r.top); }
+  card.style.left = left + 'px'; card.style.top = top + 'px';
+}
+function endTour(){
+  if (tourAt < 0) return;
+  tourAt = -1; document.querySelectorAll('.tour-on').forEach(x => x.classList.remove('tour-on'));
+  const card = $('#tour'), had = card && card.contains(document.activeElement);
+  if (card) card.remove();
+  if (had) $('#helpBtn').focus({ preventScroll: true });
 }
 
 /* ---------------- Schedule tab (with history, so a new schedule doesn't rewrite past days) ---------------- */
@@ -3186,6 +3485,15 @@ function scheduleDiff(oldText, newText){
   for (const r of removed) for (const n of added) if (looksAlike(r.key, n.key)) respelled.push([r.name, n.name]);
   return { added, removed, respelled };
 }
+// What a schedule looks like, so the first paste comes out right. Open until there's a schedule.
+function scheduleExample(open){
+  const rows = [['Monday', '', 'Tuesday', ''], ['Instruction 1–2 PM', 'Support 2–3 PM', 'Instruction 1–2 PM', 'Support 2–3 PM'],
+    ['Ava Thompson', 'Ava Thompson', 'Grace Kim', 'Grace Kim'], ['Ben Carter', 'Ben Carter', 'Hassan Ali', 'Hassan Ali'], ['', 'Chloe Nguyen', '', '']];
+  return `<details class="small schedex"${open ? ' open' : ''}><summary><b>What should the schedule look like?</b></summary>
+    <table aria-label="An example schedule">${rows.map((r, i) => `<tr>${r.map((c, j) => `<td${i ? ` class="${j % 2 ? 's' : 'i'}"` : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>
+    <ul style="margin:0;padding-left:18px"><li>Day names across the top.</li><li>Under each day, a heading with “Instruction” or “Support” and the times.</li>
+      <li>Each student under every hour they come to. Chloe is only under Monday’s support hour, so she’s expected for that hour only.</li></ul></details>`;
+}
 function renderSchedule(){
   const el = $('#tab-schedule'), vs = state.data.scheduleVersions;
   const viewing = state.viewVersion !== null && vs[state.viewVersion] && state.viewVersion !== vs.length - 1 ? state.viewVersion : null;
@@ -3217,6 +3525,7 @@ function renderSchedule(){
   el.innerHTML = `<div class="two">
     <div class="panel"><h2>Paste your schedule</h2>
       <p class="small muted">In your sheet, select from “Monday” down to the last student in the bottom support list, across all days. Copy, then paste here.</p>
+      ${scheduleExample(!text.trim())}
       <textarea id="schedText" spellcheck="false" placeholder="Paste from your spreadsheet">${esc(text)}</textarea>
       ${step || `<div class="actions"><button class="btn" id="saveSched"${changed ? '' : ' disabled'}>Save schedule</button>
         ${changed ? '<button class="btn ghost" id="revertSched">Discard changes</button>' : ''}
@@ -3297,10 +3606,10 @@ function renderSettings(){
       <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none']].map(([k, w]) =>
         `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}</li>`).join('')}</ul>
       <p class="small muted" style="margin:8px 0 0">Days without an export, and support-hour-only students who answered nothing, are colored from Zoom alone.</p></div>
-    <div class="panel"><h2>Reports and notes to families</h2>
+    <div class="panel"><h2>Printed reports and messages to families</h2>
       <div class="settext">
         <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Ms. Lopez">
-        <label for="s-class">What families call this class</label><input id="s-class" type="text" maxlength="120" data-settext="className" value="${esc(S.className)}" placeholder="our intervention class">
+        <label for="s-class">What families call this class (used in messages and notes)</label><input id="s-class" type="text" maxlength="120" data-settext="className" value="${esc(S.className)}" placeholder="our intervention class">
         <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="Email or phone">
       </div>
       <p class="small muted" style="margin:12px 0 0">Grades: save your gradebook export (CSV) in the folder with “grades” and the date in its name, like <b>grades-12-10-2026.csv</b>, then click Refresh. “Copy message” on the Students tab uses each student’s grade from the newest one.</p></div>
@@ -3314,13 +3623,15 @@ function renderSettings(){
       <h3 class="psub">Ignored</h3>
       ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
     </div>
-    <div class="panel"><h2>Your data</h2>
+    <div class="panel"><h2>Your data</h2>${state.demo ? `
+      <p class="small"><b>This is the sample class.</b> The students are made up, and nothing you change here is saved. When you open your own folder, the sample goes away.</p>
+      <div class="actions"><button class="btn" data-pick>Open your folder</button></div>` : `
       <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added or deleted, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
       <div class="actions">${state.dirHandle && !state.canWrite ? '<button class="btn" id="grantSave">Allow saving to folder</button>' : ''}
-        <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download data file</button></div>
+        <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download data file</button></div>`}
       <p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere. For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
     </div></div>`;
 }
@@ -3332,37 +3643,57 @@ function renderFolderBar(){
     const nForm = state.files.filter(f => parsedFile(f).formative).length, nGrades = state.files.filter(f => parsedFile(f).grades).length;
     const nZoom = state.files.filter(f => { const p = parsedFile(f); return !p.error && !p.formative && !p.grades; }).length;   // files that couldn't be read aren't counted
     const name = state.folderName || 'Your folder', counts = [plural(nZoom, 'Zoom report'), nForm ? plural(nForm, 'Formative export') : '', nGrades ? plural(nGrades, 'grades file') : ''].filter(Boolean);
-    h = `<span class="where" title="${esc([name, ...counts].join(' · '))}"><b>${esc(name)}</b> · ${counts.join(' · ')}</span>
-      <button class="btn ghost" id="refresh">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
+    h = state.demo ? `<span class="where" title="${esc(['Sample class, made-up students', ...counts].join(' · '))}"><b>Sample class</b> · ${counts.join(' · ')}</span>
+      <button class="btn" id="pick">Open your folder</button>`
+      : `<span class="where" title="${esc([name, ...counts].join(' · '))}"><b>${esc(name)}</b> · ${counts.join(' · ')}</span>
+      <button class="btn ghost" id="refresh" title="Read the folder again, for files you’ve just saved in it">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
   } else if (state.savedHandle){
     h = `<button class="btn" id="reopen" title="Open ${esc(state.savedHandle.name)}">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
   } else h = `<button class="btn" id="pick">Open attendance folder</button>`;
   b.innerHTML = h;
 }
-// One quiet line. With folder access saving is automatic and the line never changes;
-// without it, a small link points to Settings, where the data file can be downloaded.
+// Always says where your changes are: being saved, saved, or not saved yet (with the one button that saves them).
+// Undo sits beside it once there's something to undo.
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘' : 'Ctrl';
 function renderSaveState(){
-  const el = $('#saveBar'), h = !state.loaded ? '' : state.canWrite ? '<span>Saves automatically</span>'
-    : state.dirty ? '<button class="linkish" data-goto="settings">Unsaved changes</button>' : '';
+  const el = $('#saveBar');
+  const s = !state.loaded ? '' : state.demo ? '<span>Sample class: changes aren’t saved</span>'
+    : state.canWrite ? (state.dirty || state.saving ? '<span>Saving…</span>' : '<span class="saved">✓ All changes saved</span>')
+    : !state.dirty ? '' : state.dirHandle ? '<button class="btn small warn" data-statusact="grantsave" title="Your changes aren’t in the folder yet">Not saved: allow saving</button>'
+    : '<button class="btn small warn" data-statusact="download" title="This browser can’t save into the folder by itself">Not saved: download data file</button>';
+  const h = s + (state.loaded && state.undo.length ? `<button class="linkish" data-undo title="Undo your last change (${MOD}+Z)">Undo</button>` : '');
   if (el.innerHTML !== h) el.innerHTML = h;
 }
-// A message that doesn't clear itself after a few seconds gets a Close link.
+// A message that doesn't clear itself after a few seconds gets a Close link. A message can carry one action, like Undo.
 function renderStatus(){
   const el = $('#status'), s = state.status;
-  el.innerHTML = s ? `<div class="notice ${s.type === 'info' ? 'info' : ''}"><span>${esc(s.text)}</span>${s.auto ? '' : '<button class="linkish" data-closestatus>Close</button>'}</div>` : '';
+  el.innerHTML = s ? `<div class="notice ${s.type === 'info' ? 'info' : ''}"><span>${esc(s.text)}</span>${
+    s.action ? `<button class="linkish" data-statusact="${esc(s.action.act)}">${esc(s.action.label)}</button>` : ''}${s.auto ? '' : '<button class="linkish" data-closestatus>Close</button>'}</div>` : '';
 }
 const RENDER = { overview: () => renderOverview(), reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
+// The Support hour tab shows only for a class that has a support hour in its schedule.
+const hasSupport = () => state.data.scheduleVersions.some(v => Object.values(parsedSchedule(v.text).days).some(secs => secs.some(x => x.type === 'support' && x.students.length)));
+const tabHidden = t => t === 'support' && state.loaded && !hasSupport();
 function render(){
-  renderFolderBar(); renderSaveState(); renderStatus();
-  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
+  if (tabHidden(state.tab)) state.tab = 'overview';
+  renderFolderBar(); renderSaveState(); renderStatus(); renderBanner();
+  // Tabs work like tabs everywhere else: one Tab stop, and the arrow keys move between them.
+  document.querySelectorAll('nav.tabs button').forEach(b => { const on = b.dataset.tab === state.tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; b.hidden = tabHidden(b.dataset.tab); });
   for (const t of Object.keys(RENDER)) $('#tab-' + t).hidden = state.tab !== t;
   RENDER[state.tab]();
+  placeTour();
 }
 function renderCurrent(){ RENDER[state.tab](); }
-function setStatus(text, type){
-  state.status = text ? { text, type, auto: type === 'info' } : null; renderStatus();
+// The sample class says so on every tab, with the tour and the way out.
+function renderBanner(){
+  const h = state.demo ? `<div class="notice info demo-bar"><span><b>Sample class.</b> The students are made up, and nothing you change is saved.</span>
+    <span class="acts"><button class="btn small" data-tour>Take the tour</button><button class="linkish" data-leavesample>Leave the sample</button></span></div>` : '';
+  const el = $('#banner'); if (el.innerHTML !== h) el.innerHTML = h;
+}
+function setStatus(text, type, action){
+  state.status = text ? { text, type, auto: type === 'info', action } : null; renderStatus();
   clearTimeout(state.statusTimer);
-  if (type === 'info') state.statusTimer = setTimeout(() => { if (state.status && state.status.text === text) setStatus(null); }, 5000);
+  if (type === 'info') state.statusTimer = setTimeout(() => { if (state.status && state.status.text === text) setStatus(null); }, action ? 9000 : 5000);
 }
 /* ---------------- Folder access and saving ---------------- */
 function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('intervention-attendance', 1);
@@ -3373,7 +3704,7 @@ async function idbSet(k, v){ try { const db = await idb(); await new Promise((re
 // Asked once the chosen folder is known, and only when it's a different folder: switching would drop changes
 // that never reached the old folder. (Refreshing the same folder keeps them; see ingest.)
 function okToSwitch(folderName){
-  return !(state.loaded && state.dirty && folderName !== state.folderName)
+  return !(state.loaded && state.dirty && !state.demo && folderName !== state.folderName)
     || confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download data file” to keep them. Or click OK to open this folder without them.');
 }
 async function pickFolder(){
@@ -3383,7 +3714,12 @@ async function pickFolder(){
     if (!okToSwitch(h.name)) return;
     state.dirHandle = h; state.savedHandle = h; await idbSet('dir', h);
     await loadFromHandle();
-  } catch (e){ if (e && e.name !== 'AbortError') setStatus('The folder couldn’t be opened: ' + e.message); }
+  } catch (e){ if (e && e.name !== 'AbortError') setStatus(folderError(e)); }
+}
+// Why a folder couldn't be opened, and what to do about it.
+function folderError(e){
+  return e && /Security|NotAllowed/.test(e.name) ? 'Your browser won’t open that folder, because it keeps some folders (like Desktop or Downloads itself) off-limits. Make a folder inside one of them, like “Attendance” in Documents, and choose that.'
+    : `That folder couldn’t be opened. Try choosing it again. If it keeps happening, close the tab and open this file again.${e && e.message ? ` (${e.message})` : ''}`;
 }
 async function reopen(){
   const h = state.dirHandle || state.savedHandle; if (!h) return pickFolder();
@@ -3395,10 +3731,11 @@ async function reopen(){
       if (r !== 'granted'){ setStatus('Access to the folder wasn’t allowed. Click “Open attendance folder” to try again.'); return; }
     }
     state.dirHandle = h; await loadFromHandle();
-  } catch (e){ setStatus('The saved folder couldn’t be opened. Choose it again. (' + e.message + ')'); state.savedHandle = null; renderFolderBar(); if (!state.loaded) renderCurrent(); }
+  } catch (e){ setStatus(`Your folder from last time couldn’t be opened. It may have been moved or renamed. Click “Open attendance folder” and choose it again.${e && e.message ? ` (${e.message})` : ''}`); state.savedHandle = null; renderFolderBar(); if (!state.loaded) renderCurrent(); }
 }
 async function loadFromHandle(){
   const h = state.dirHandle, files = []; let dataText = null;
+  setStatus(`Reading ${h.name}…`, 'info');
   for await (const [name, entry] of h.entries()){
     if (entry.kind !== 'file') continue;
     const low = name.toLowerCase();
@@ -3420,9 +3757,9 @@ async function loadFromInput(list){
   state.canWrite = false;
   ingest(files, dataText, folder);
 }
-function ingest(files, dataText, folderName){
+function ingest(files, dataText, folderName, demo = false){
   let msg = null, info = false;
-  const same = state.loaded && folderName === state.folderName;
+  const same = state.loaded && !state.demo && !demo && folderName === state.folderName, had = new Set(state.files.map(f => f.name));
   // Refreshing the same folder keeps changes that haven't reached the folder yet, instead of reloading the older file.
   const keep = same && state.dirty;
   if (keep){ msg = 'Your changes that aren’t saved in the folder yet were kept.'; info = true; }
@@ -3436,6 +3773,12 @@ function ingest(files, dataText, folderName){
   // A different folder (another class) with no data file starts empty, so one class's notes never land in another's folder.
   else if (state.loaded && !same) state.data = defaultData();
   state.files = files.sort((a, b) => a.name.localeCompare(b.name));
+  // Refresh says what it found, so it's clear it did something.
+  if (same && !msg){ const fresh = state.files.filter(f => !had.has(f.name)); msg = fresh.length ? `Found ${plural(fresh.length, 'new file')}: ${listJoin(fresh.map(f => f.name), 3)}.` : 'Up to date. No new files in the folder.'; info = true; }
+  state.demo = demo; if (demo){ state.dirHandle = null; state.canWrite = false; }   // the sample is never saved into a folder
+  // Undo goes back through this folder's changes only.
+  if (!same){ state.undo = []; state.redo = []; }
+  state.snap = JSON.stringify(state.data); state.saveFailed = false;
   state.folderName = folderName; state.loaded = true; state.dirty = keep; state.draft = null; state.noteEdit = null;
   state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null;
   if (!same){
@@ -3443,23 +3786,55 @@ function ingest(files, dataText, folderName){
     state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyCopied = null;
     if (state.tab === 'students') state.tab = 'reports';
   }
-  state.status = msg ? { text: msg, type: info ? 'info' : undefined } : null;
-  render(); navReplace();
+  state.status = null;
+  render(); navReplace(); setStatus(msg, info ? 'info' : undefined);
   if (keep && state.dirHandle && state.canWrite) changed();
 }
-let saveTimer = null;
-function changed(){ state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState(); }
+let saveTimer = null, undoOpen = false;
+// Every change keeps the data as it was before, for Undo. The changes one click makes are one step.
+function changed(){
+  const now = JSON.stringify(state.data);
+  if (state.snap !== null && now !== state.snap && !undoOpen){
+    state.undo.push(state.snap); if (state.undo.length > 100) state.undo.shift();
+    state.redo = []; undoOpen = true; setTimeout(() => { undoOpen = false; });
+  }
+  state.snap = now;
+  state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState();
+}
+// Undo (or Redo) puts the data back as it was, saves it, and redraws. Boxes open on something that may be gone close.
+function undo(redo){
+  const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
+  if (!state.loaded || !from.length) return;
+  to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
+  Object.assign(state, { ovSel: null, ovDay: null, noteEdit: null, fuEdit: null, fuEditDraft: null, dropEdit: null, schedChange: null, viewVersion: null });
+  state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
+  render();
+  setStatus(redo ? 'Put the change back.' : 'Undid your last change.', 'info', redo ? (state.undo.length ? { label: 'Undo', act: 'undo' } : null) : { label: 'Redo', act: 'redo' });
+}
 async function save(){
-  if (!(state.dirHandle && state.canWrite)){ renderSaveState(); return; }
+  if (state.demo || !(state.dirHandle && state.canWrite)){ renderSaveState(); return; }
   state.saving = true; renderSaveState();
   try {
     const fh = await state.dirHandle.getFileHandle(DATA_FILE, { create: true });
     const w = await fh.createWritable(); await w.write(JSON.stringify(state.data, null, 2)); await w.close();
-    state.dirty = false;
-  } catch (e){ state.canWrite = false; }
+    state.dirty = false; state.saveFailed = false;
+  } catch (e){
+    // Said once, with the fix. The changes stay on the page, and the save bar keeps saying they aren't saved.
+    state.canWrite = false;
+    if (!state.saveFailed) setStatus('Your changes couldn’t be saved in the folder. They’re still here on the page. Click “Allow saving” to try again.', undefined, { label: 'Allow saving', act: 'grantsave' });
+    state.saveFailed = true;
+  }
   state.saving = false; renderSaveState();
 }
-function downloadData(){ downloadFile(DATA_FILE, JSON.stringify(state.data, null, 2), 'application/json'); }
+async function grantSave(){
+  try {
+    if (state.dirHandle && (await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; await save(); setStatus(state.dirty ? null : 'Saved.', 'info'); renderCurrent(); return; }
+  } catch (err){}
+  setStatus('Saving is still off. You can download the data file instead and put it in your attendance folder.', undefined, { label: 'Download data file', act: 'download' });
+}
+function downloadData(){
+  downloadFile(DATA_FILE, JSON.stringify(state.data, null, 2), 'application/json', state.dirHandle && state.canWrite ? undefined : ` Move it into ${state.folderName || 'your attendance folder'}, replacing the old one.`);
+}
 
 /* ---------------- Moving between Reports and a student report ----------------
    Each screen is a browser history entry (the address never changes), so the browser's Back button
@@ -3555,6 +3930,7 @@ document.addEventListener('pointerdown', e => {
   document.querySelectorAll('#tab-overview .ovc.sel').forEach(td => { td.classList.remove('sel'); td.querySelector('.ovb').setAttribute('aria-expanded', 'false'); });
 }, true);
 document.addEventListener('click', async e => {
+  if (tourAt >= 0) requestAnimationFrame(placeTour);   // a day opened or closed under the tour moves what it points at
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
   const t = e.target.closest('button'); if (!t) return;
   // A double-click acts once (and a second click can't land on whatever moved under the pointer).
@@ -3572,14 +3948,35 @@ document.addEventListener('click', async e => {
 });
 async function onClick(t){
   const d = t.dataset, has = a => t.hasAttribute(a);
+  // Everything in Help takes you somewhere, so it closes first.
+  if (t.closest('#helpDlg') && !has('data-dlgclose')) $('#helpDlg').close();
+  if (has('data-help')) return openHelp();
+  if (has('data-dlgclose')){ t.closest('dialog').close(); return; }
+  if (has('data-demo')) return loadSample();
+  if (has('data-leavesample')) return leaveSample();
+  if (has('data-tour')) return startTour();
+  if (d.tourstep) return tourStep(+d.tourstep);
+  if (has('data-tourend')) return endTour();
+  if (has('data-undo')) return undo(false);
+  if (d.statusact){
+    const a = d.statusact; setStatus(null);
+    if (a === 'undo' || a === 'redo') return undo(a === 'redo');
+    if (a === 'grantsave') return grantSave();
+    if (a === 'download'){ downloadData(); state.dirty = false; renderSaveState(); if (state.tab === 'settings') renderSettings(); }
+    return;
+  }
+  if (has('data-clearsearch')){
+    state.query = ''; state.supQuery = ''; renderCurrent();
+    const s0 = visible(`#tab-${state.tab} [data-search], #tab-${state.tab} [data-supsearch]`); if (s0) s0.focus(); return;
+  }
   if (d.tab){ state.tab = d.tab; state.returnTo = null; state.highlight = null; if (d.tab === 'students') state.student = null; render(); navReplace(); return; }
   if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
   if (has('data-closestatus')){ setStatus(null); const b = $(`nav.tabs [data-tab="${state.tab}"]`); if (b) b.focus({ preventScroll: true }); return; }
   if (t.id === 'pick' || has('data-pick')) return pickFolder();   // the header's buttons, or the same ones on the start screen
   if (t.id === 'reopen' || has('data-reopen')) return reopen();
-  if (t.id === 'refresh') return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
+  if (t.id === 'refresh' || has('data-refresh')) return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
   if (t.id === 'dlData'){ downloadData(); if (!state.canWrite){ state.dirty = false; renderSaveState(); renderSettings(); } return; }
-  if (t.id === 'grantSave'){ try { if ((await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; save(); renderCurrent(); } } catch (err){} return; }
+  if (t.id === 'grantSave') return grantSave();
   if (has('data-dropcancel')){ const m = t.closest('details.menu'); closeMenu(m); m.querySelector('summary').focus(); return; }
   if (d.dropsave){
     const i = t.closest('.dropform').querySelector('[data-dropdate]'), v = i.value;
@@ -3593,6 +3990,7 @@ async function onClick(t){
     if (!confirm(`Delete ${name}?\n\n${first} will be taken off every date, tab, report and export, and their Zoom and Formative names won’t be flagged. Their notes and marks are kept, so you can bring ${first} back from the Schedule tab.`)) return;
     state.data.deleted[k] = { date: todayDk(), name };
     state.student = null; state.studentFrom = null; state.dropEdit = null; changed(); render(); navReplace();
+    setStatus(`Deleted ${name}.`, 'info', { label: 'Undo', act: 'undo' });
     const s0 = $('#tab-students [data-search]'); if (s0) s0.focus(); return;
   }
   if (d.undelete){
@@ -3604,7 +4002,7 @@ async function onClick(t){
   if (d.deladdday){
     // Focus stays in the list (the next day down), or goes to "Add day" when the list is empty.
     const sel = `#tab-${state.tab} [data-deladdday]`, i = [...document.querySelectorAll(sel)].indexOf(t);
-    delete state.data.extraDays[d.deladdday]; changed(); renderCurrent();
+    delete state.data.extraDays[d.deladdday]; changed(); renderCurrent(); setStatus(`Removed ${shortDate(d.deladdday)}.`, 'info', { label: 'Undo', act: 'undo' });
     const left = [...document.querySelectorAll(sel)], f = left[Math.min(Math.max(i, 0), left.length - 1)] || $(`#tab-${state.tab} [data-adddaygo]`);
     if (f) f.focus(); return;
   }
@@ -3618,7 +4016,7 @@ async function onClick(t){
     const onlyAdded = state.data.extraDays[dk] && !A.dayByDk.has(dk) && !A.formByDk.has(dk) && !state.data.noClass[dk];
     if (onlyAdded) delete state.data.extraDays[dk]; else state.data.deletedDays[dk] = { date: todayDk() };
     const next = [...document.querySelectorAll('#tab-overview [data-ovdh]')].map(b => b.dataset.ovdh).find(x => x > dk);
-    state.ovDay = null; changed(); renderOverview();
+    state.ovDay = null; changed(); renderOverview(); setStatus(`Deleted ${longDate(dk)}.`, 'info', { label: 'Undo', act: 'undo' });
     const b = $(`#tab-overview [data-ovdh="${next}"]`) || $('#tab-overview .ovb[tabindex="0"]'); if (b) b.focus({ preventScroll: true });
     return;
   }
@@ -3718,13 +4116,13 @@ async function onClick(t){
   if (d.weeklymsg){
     const msg = weeklyMessage(state.lastAnalysis || analyze(), d.weeklymsg);
     if (!msg.n) return setStatus(`${msg.name} has no class days with a Zoom report this week or last week, so there’s nothing to copy yet.`);
-    const ok = await copyText(msg.text);
-    setStatus(!ok ? 'Copying didn’t work in this browser.' : `Copied a message about ${msg.name}’s attendance ${msg.when}${
-      msg.grade ? `, with the grade from ${msg.grade.file}` : '. No grade for them in a grades file, so it says 00%'}.`, ok ? 'info' : undefined);
+    if (!(await copyText(msg.text))) return showCopyBox(msg.text);
+    setStatus(`Copied a message about ${msg.name}’s attendance ${msg.when}${
+      msg.grade ? `, with the grade from ${msg.grade.file}` : '. No grade for them in a grades file, so it says 00%'}. Paste it into your email.`, 'info');
     return;
   }
-  if (has('data-copysummary')){ const ok = await copyText(teamSummary(currentCtx(), state.include));
-    setStatus(ok ? 'Summary copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined); return; }
+  if (has('data-copysummary')){ const text = teamSummary(currentCtx(), state.include);
+    if (await copyText(text)) setStatus('Summary copied. Paste it into an email or a form.', 'info'); else showCopyBox(text); return; }
   if (has('data-exportstudent')) return exportStudent(currentCtx());
   if (has('data-fuadd')){
     const form = t.closest('[data-fuform]'), f = readFollowUp(form);
@@ -3740,15 +4138,14 @@ async function onClick(t){
   }
   if (has('data-fucancel')){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); return; }
   if (d.fudel){
-    if (!confirm('Delete this follow-up?')) return;
     state.data.followUps[state.student] = (state.data.followUps[state.student] || []).filter(y => y.id !== d.fudel);
     if (!state.data.followUps[state.student].length) delete state.data.followUps[state.student];
-    changed(); renderStudents(); return;
+    changed(); renderStudents(); setStatus('Follow-up deleted.', 'info', { label: 'Undo', act: 'undo' }); return;
   }
   if (has('data-copyfamily')){
     const ta = visible('[data-familydraft]'), ok = ta && await copyText(ta.value);
-    if (ok) state.familyCopied = state.student;
-    setStatus(ok ? 'Note copied.' : 'Copying didn’t work in this browser.', ok ? 'info' : undefined);
+    if (ta) state.familyCopied = state.student;
+    if (ok) setStatus('Note copied. Paste it into your email.', 'info'); else if (ta) showCopyBox(ta.value);
     const h = ta && ta.style.height; renderStudents(); const n = visible('[data-familydraft]'); if (n && h) n.style.height = h; return;
   }
   if (has('data-familyreset')){
@@ -3781,7 +4178,7 @@ async function onClick(t){
     const i = +d.delversion, vs = state.data.scheduleVersions;
     if (vs.length < 2 || !confirm(`Delete the schedule used ${versionLabel(i)}? Those days will be checked with the ${i === 0 ? 'next' : 'earlier'} schedule.`)) return;
     vs.splice(i, 1); vs[0].from = ''; state.data.scheduleText = vs[vs.length - 1].text;
-    state.viewVersion = null; state.schedChange = null; changed(); renderSchedule(); return;   // an unsaved edit in the box stays
+    state.viewVersion = null; state.schedChange = null; changed(); renderSchedule(); setStatus('Schedule deleted.', 'info', { label: 'Undo', act: 'undo' }); return;   // an unsaved edit in the box stays
   }
 }
 document.addEventListener('input', e => {
@@ -3871,6 +4268,20 @@ document.addEventListener('focusout', e => { if (e.target.dataset && e.target.da
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
   const hadMenu = !!document.querySelector('details.menu[open]');
+  // Shortcuts that work anywhere except while typing (where Ctrl+Z undoes the typing): Undo and Redo, ? for Help, / to find a student.
+  const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable]'), dlg = document.querySelector('dialog[open]');
+  if (!typing && !dlg && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zy]$/i.test(e.key)){ e.preventDefault(); undo(e.key.toLowerCase() === 'y' || e.shiftKey); return; }
+  if (!typing && !dlg && !e.ctrlKey && !e.metaKey && !e.altKey){
+    if (e.key === '?'){ e.preventDefault(); openHelp(); return; }
+    if (e.key === '/'){ const s0 = visible(`#tab-${state.tab} [data-search], #tab-${state.tab} [data-supsearch]`); if (s0){ e.preventDefault(); s0.focus(); s0.select(); } return; }
+  }
+  if (e.key === 'Escape' && tourAt >= 0 && !typing && !dlg && !hadMenu && !state.ovSel && !state.ovDay && !state.ovMark && !(state.selDay && t.closest && t.closest('.daydetail'))){ endTour(); return; }
+  // The tabs: the arrow keys move between them (and open them), Home and End go to the first and last.
+  if (t.getAttribute && t.getAttribute('role') === 'tab' && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)){
+    const tabs = [...document.querySelectorAll('nav.tabs [role=tab]')].filter(b => !b.hidden), i = tabs.indexOf(t);
+    const to = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    e.preventDefault(); to.click(); to.focus(); return;
+  }
   if (t.classList && t.classList.contains('sbtn') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return calendarKey(e, t);
   if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
   if (e.key === 'Escape' && state.ovDay && t.closest && t.closest('.ovdpop, .ovdh')) return closeOvDay(true);
@@ -3977,7 +4388,16 @@ function pinMonths(sc){
 }
 // The grid's blocks for printing fit the page width, so redraw it after the window changes size.
 let ovResize = null;
-window.addEventListener('resize', () => { clearTimeout(ovResize); ovResize = setTimeout(() => { if (state.tab === 'overview' && state.loaded) renderOverview(); }, 150); });
+window.addEventListener('resize', () => { clearTimeout(ovResize); ovResize = setTimeout(() => { if (state.tab === 'overview' && state.loaded) renderOverview(); placeTour(); }, 150); });
+// The tour's card follows what it points at as the page or the grid scrolls.
+document.addEventListener('scroll', () => { if (tourAt >= 0) requestAnimationFrame(placeTour); }, { capture: true, passive: true });
+// A click outside Help (on the dimmed page) closes it, as in most apps.
+document.querySelectorAll('dialog.dlg').forEach(dl => dl.addEventListener('click', e => {
+  const r = dl.getBoundingClientRect();
+  if (e.target === dl && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dl.close();
+}));
+// The skip link moves focus to the page without changing the address (which would count as a step back).
+$('.skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus(); });
 window.addEventListener('popstate', e => {
   const s = e.state || {}, leaving = state.student;
   navSeq = s.seq || 0;
@@ -4021,7 +4441,7 @@ window.addEventListener('afterprint', () => {
   document.body.classList.remove('print-reports');
   closedForPrint.forEach(d => { d.open = false; }); closedForPrint = [];
 });
-window.addEventListener('beforeunload', e => { if (state.dirty && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (state.dirty && !state.demo && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
 
 (async function init(){
   render(); navReplace();
