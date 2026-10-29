@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Privacy lock: this page may not load or send anything over the network. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<!-- Privacy lock: this page may not load anything over the network, and the only place it can send anything is Google Apps Script,
+     for the "Update Google Sheet" button (script.google.com answers from script.googleusercontent.com). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intervention attendance</title>
 <style>
@@ -716,6 +717,12 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
 .schedex tr:first-child td{font-weight:700}
 .schedex tr:nth-child(2) td{font-weight:600}
 .schedex td.i{background:var(--instr)} .schedex td.s{background:var(--support)}
+/* Google Sheet set-up */
+.gs-steps{padding-left:20px;margin:12px 0}
+.gs-steps li{margin:6px 0;line-height:1.5}
+.gs-steps .btn{margin-right:6px}
+.gs-form{margin-top:12px}
+.gsbtn:disabled{opacity:.7}
 
 @media (max-width: 820px){
   .grid-head{display:none}
@@ -843,7 +850,7 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
     <div class="top-row">
       <div class="brand">
         <h1>Intervention attendance</h1>
-        <p>Runs only on this computer. Nothing is uploaded.</p>
+        <p id="privacyLine">Runs only on this computer. Nothing is uploaded.</p>
       </div>
       <div class="folder" id="folderBar"></div>
     </div>
@@ -875,12 +882,182 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
 <dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
 <dialog class="dlg" id="copyDlg" aria-labelledby="copyTitle"></dialog>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
+<!-- The script for a Google Sheet, copied from Settings into the spreadsheet's Apps Script. Text only: it never runs here. -->
+<script type="text/plain" id="gsScript">
+/**
+ * Intervention attendance → this spreadsheet
+ *
+ * Receives updates from the attendance page's "Update Google Sheet" button and writes them into two tabs
+ * for each class: "<class> · Summary" and "<class> · Days".
+ *
+ * What it can and can't do:
+ *  - It works on this one spreadsheet only (that's what @OnlyCurrentDoc below means), not the rest of your Drive.
+ *  - It refuses any update that doesn't carry your connection key (Attendance → Show connection key).
+ *  - It only writes tabs it made itself. Your other tabs are never touched.
+ *  - It never sends this spreadsheet's data back. The page only hears whether an update worked.
+ *
+ * @OnlyCurrentDoc
+ */
+const VERSION = 1;
+const MARK = 'made-by-attendance-page';
+const MAX_ROWS = 1000, MAX_COLS = 400, MAX_TEXT = 300;
+// The Overview's colors. A day's color can only be one of these.
+const COLORS = { engaged: '#93c47d', excused: '#6d9eeb', idle: '#ffd966', away: '#c27ba0', absent: '#e06666', nosched: '#e3e5e8',
+  noclass: '#ffffff', missing: '#ffffff', later: '#ffffff' };
+const KEY_WORDS = [['engaged', 'Present and engaged'], ['excused', 'Excusable absence'], ['idle', 'Likely present but not engaging'],
+  ['away', 'Likely not actually present'], ['absent', 'Did not attend'], ['nosched', 'Not scheduled']];
+const LETTERS = 'L late or left early · C camera off · ✓ message sent home · fin finished work, let go early · – no class · ? no Zoom report yet';
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Attendance')
+    .addItem('Show connection key', 'showKey')
+    .addItem('Make a new key (the old one stops working)', 'newKey')
+    .addToUi();
+}
+function showKey() {
+  keyDialog_(storedKey_() || makeKey_(), 'Paste this key into the attendance page, on the Settings tab under Google Sheet. Keep it private, like a password.');
+}
+function newKey() {
+  const ui = SpreadsheetApp.getUi();
+  if (ui.alert('Make a new key?', 'The old key stops working right away. You’ll paste the new one into the attendance page on each computer you use.', ui.ButtonSet.OK_CANCEL) !== ui.Button.OK) return;
+  keyDialog_(makeKey_(), 'The old key no longer works. Paste this one into the attendance page on each computer you use.');
+}
+function keyDialog_(key, text) {
+  const html = HtmlService.createHtmlOutput('<div style="font:14px/1.5 Arial,sans-serif"><p>' + text + '</p>'
+    + '<input readonly autofocus value="' + key + '" onfocus="this.select()" onclick="this.select()" style="width:100%;box-sizing:border-box;font:13px monospace;padding:6px">'
+    + '<p style="color:#555">Click the key, then press Ctrl+C (⌘+C on a Mac) to copy it.</p></div>').setWidth(480).setHeight(230);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Connection key');
+}
+function storedKey_() { return PropertiesService.getScriptProperties().getProperty('KEY'); }
+// 64 random hex characters (two random UUIDs).
+function makeKey_() {
+  const key = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '').toLowerCase();
+  PropertiesService.getScriptProperties().setProperty('KEY', key);
+  return key;
+}
+
+function doGet() {
+  return ContentService.createTextOutput('This link only accepts updates from the attendance page.');
+}
+function doPost(e) {
+  let reply;
+  try { reply = receive_(e); }
+  catch (err) { reply = { ok: false, error: 'failed', message: String((err && err.message) || err).slice(0, 300) }; }
+  return ContentService.createTextOutput(JSON.stringify(reply)).setMimeType(ContentService.MimeType.JSON);
+}
+function receive_(e) {
+  const body = (e && e.postData && e.postData.contents) || '';
+  if (body.length > 5000000) return { ok: false, error: 'too-big' };
+  let m;
+  try { m = JSON.parse(body); } catch (x) { return { ok: false, error: 'bad-request' }; }
+  const key = storedKey_();
+  if (!m || typeof m !== 'object' || !key || !same_(String(m.key || ''), key)) return { ok: false, error: 'bad-key' };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (m.ping) return { ok: true, version: VERSION, name: ss.getName(), url: ss.getUrl() };
+  if (m.v !== VERSION) return { ok: false, error: 'version', version: VERSION };
+  const cls = tabName_(m.cls), sum = table_(m.summary, false), days = table_(m.days, true);
+  if (!cls || !sum || !days) return { ok: false, error: 'bad-request' };
+  const names = [cls + ' · Summary', cls + ' · Days'];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    // Both tabs are checked before either one is changed.
+    const taken = names.filter(n => { const sh = ss.getSheetByName(n); return sh && !mine_(sh); });
+    if (taken.length) return { ok: false, error: 'tab-taken', tab: taken[0] };
+    writeSummary_(tab_(ss, names[0]), sum);
+    writeDays_(tab_(ss, names[1]), days);
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  return { ok: true, tabs: names, url: ss.getUrl() };
+}
+// Compares the whole key every time, so how long it takes says nothing about how much of a guess was right.
+function same_(a, b) {
+  if (!b || a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+const own_ = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+function text_(v, max) { return typeof v === 'string' ? v.slice(0, max || MAX_TEXT) : ''; }
+// A cell's value: a number, or text. Text a spreadsheet would read as a formula is kept as plain text.
+function cell_(v) {
+  if (typeof v === 'number' && isFinite(v)) return v;
+  const s = text_(v);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+function tabName_(v) { return text_(v, 80).replace(/[\[\]*?\/\\:]/g, '').replace(/\s+/g, ' ').trim(); }
+// Checks an update's shape and sizes before anything is written. Anything unexpected turns the whole update down.
+function table_(t, grid) {
+  if (!t || typeof t !== 'object' || !Array.isArray(t.head) || !Array.isArray(t.rows)) return null;
+  const w = t.head.length;
+  if (w < 1 || w > MAX_COLS || t.rows.length > MAX_ROWS) return null;
+  const out = { title: cell_(text_(t.title, 120)), note: cell_(text_(t.note)), head: t.head.map(h => cell_(text_(h, 60))), rows: [], colors: [], notes: [] };
+  for (const r of t.rows) {
+    if (!grid) {
+      if (!Array.isArray(r) || r.length !== w) return null;
+      out.rows.push(r.map(cell_));
+      continue;
+    }
+    if (!r || typeof r !== 'object' || !Array.isArray(r.cells) || r.cells.length !== w - 1) return null;
+    const vals = [cell_(text_(r.name, 120))], colors = ['#ffffff'], notes = [''];
+    for (const c of r.cells) {
+      if (!Array.isArray(c) || !own_(COLORS, c[0])) return null;
+      vals.push(cell_(text_(c[1], 12))); colors.push(COLORS[c[0]]); notes.push(text_(c[2]));
+    }
+    out.rows.push(vals); out.colors.push(colors); out.notes.push(notes);
+  }
+  return out;
+}
+function tab_(ss, name) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name, ss.getNumSheets()); sh.addDeveloperMetadata(MARK); }
+  return sh;
+}
+function mine_(sh) { return sh.getDeveloperMetadata().some(d => d.getKey() === MARK); }
+function fit_(sh, rows, cols) {
+  if (sh.getMaxRows() < rows) sh.insertRowsAfter(sh.getMaxRows(), rows - sh.getMaxRows());
+  if (sh.getMaxColumns() < cols) sh.insertColumnsAfter(sh.getMaxColumns(), cols - sh.getMaxColumns());
+}
+function heading_(sh, t) {
+  sh.clear(); sh.clearNotes();
+  sh.getRange(1, 1).setValue(t.title).setFontWeight('bold').setFontSize(14);
+  sh.getRange(2, 1).setValue(t.note).setFontColor('#555555');
+}
+function writeSummary_(sh, t) {
+  const w = t.head.length, n = t.rows.length;
+  fit_(sh, 5 + n, w);
+  heading_(sh, t);
+  sh.getRange(4, 1, 1, w).setValues([t.head]).setFontWeight('bold').setBackground('#eef1f5').setWrap(true).setVerticalAlignment('bottom');
+  if (n) sh.getRange(5, 1, n, w).setValues(t.rows);
+  sh.setFrozenRows(4); sh.setFrozenColumns(1);
+  sh.setColumnWidth(1, 180);
+  if (w > 1) sh.setColumnWidths(2, w - 1, 96);
+}
+function writeDays_(sh, t) {
+  const w = t.head.length, n = t.rows.length, keyAt = 6 + n;
+  fit_(sh, keyAt + KEY_WORDS.length + 2, Math.max(w, 3));
+  heading_(sh, t);
+  sh.getRange(4, 1, 1, w).setValues([t.head]).setFontWeight('bold').setHorizontalAlignment('center').setWrap(true);
+  sh.getRange(4, 1).setHorizontalAlignment('left');
+  if (n) {
+    sh.getRange(5, 1, n, w).setValues(t.rows).setBackgrounds(t.colors).setNotes(t.notes).setHorizontalAlignment('center').setFontWeight('bold')
+      .setBorder(true, true, true, true, true, true, '#ffffff', SpreadsheetApp.BorderStyle.SOLID);
+    sh.getRange(5, 1, n, 1).setHorizontalAlignment('left').setFontWeight('normal');
+  }
+  sh.getRange(keyAt, 1).setValue('Key').setFontWeight('bold');
+  KEY_WORDS.forEach((k, i) => { sh.getRange(keyAt + 1 + i, 2).setBackground(COLORS[k[0]]); sh.getRange(keyAt + 1 + i, 3).setValue(k[1]); });
+  sh.getRange(keyAt + 1 + KEY_WORDS.length, 3).setValue(LETTERS);
+  sh.setFrozenRows(4); sh.setFrozenColumns(1);
+  sh.setColumnWidth(1, 180);
+  if (w > 1) sh.setColumnWidths(2, w - 1, 52);
+}
+</script>
 
 <script>
 'use strict';
 /* ------------------------------------------------------------------
-   Everything below runs locally. There are no network requests, and the
-   Content-Security-Policy above blocks them even if one were attempted.
+   Everything below runs locally. The only network request is the Google Sheet update, sent when you click
+   "Update Google Sheet", and the Content-Security-Policy above blocks any other.
    Data written: one file, attendance-tracker-data.json, inside the folder
    you choose (schedule and its history, settings, linked Zoom names,
    "finished work", excused-absence and no-class marks, notes and follow-ups).
@@ -1012,7 +1189,8 @@ const state = {
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
   selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null,
-  demo: false, undo: [], redo: [], snap: null, saveFailed: false   // demo: the sample class is open; undo/redo: the data before each change
+  demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
+  sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
 };
 
 /* ---------------- Text helpers ---------------- */
@@ -2087,7 +2265,7 @@ function renderOverview(){
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     ${addDayMenu(A)}
-    <button class="btn small ghost" data-printlist>Print</button></div>`;
+    <button class="btn small ghost" data-printlist>Print</button>${sheetButton()}</div>`;
   if (!A.days.length) h += setupCard(A);
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files couldn’t be read:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   // Zoom names (on the days shown) and Formative names that didn't match anyone on the schedule can be linked once, or ignored.
@@ -2527,7 +2705,7 @@ function renderStudents(){
       ['dose', 'Minutes received, lowest first'], ['absent', 'Most absences']]
       .map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" id="exportSummary">Export CSV</button>
-    ${printMenu(all.length)}</span></div>`;
+    ${printMenu(all.length)}${sheetButton()}</span></div>`;
   h += missingNotice(A, period) + gradeNotice;
   if (!days.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`; return; }
   h += `<p class="listinfo">${plural(days.length, 'class day')} with Zoom reports · ${plural(all.length, 'student')}<span class="printonly"> · ${esc(fmtPeriod(period))}${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</span></p>`;
@@ -3198,8 +3376,10 @@ function zoomHelp(){
 }
 // One main button (the folder), with the sample class beside it for a first look. With a folder remembered from
 // last time, that folder is the main button and the setup steps are tucked away below.
+const privacyNote = () => state.sheet ? 'Runs entirely on this computer. Nothing is sent anywhere except to your Google Sheet, when you click Update Google Sheet.'
+  : 'Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.';
 function startScreen(){
-  const h = state.savedHandle, privacy = '<p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>';
+  const h = state.savedHandle, privacy = `<p class="small muted">${esc(privacyNote())}</p>`;
   const demo = '<button class="btn ghost" data-demo>Try a sample class</button>';
   const steps = `<ol><li>Make a folder on this computer and put this file in it.</li>
       <li>Save Zoom participant reports (CSV files) into the same folder.</li>
@@ -3322,7 +3502,7 @@ function helpHTML(){
       <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share. <b>Copy message</b> writes a weekly note for a family.</li>
       ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
       <li><b>Schedule</b>: your weekly class schedule, pasted from your spreadsheet.</li>
-      <li><b>Settings</b>: how many minutes count as late, your name for notes to families, and your data.</li></ul>
+      <li><b>Settings</b>: how many minutes count as late, your name for notes to families, your data, and the Google Sheet.</li></ul>
     <h3>What the colors and letters mean</h3>
     <p>On the Overview:</p>
     <ul class="helpkey">${Object.entries(OV_CAT).map(([k, v]) => `<li><i class="ovsw c-${k}"></i>${esc(v)}</li>`).join('')}<li><i class="ovsw c-noclass">–</i>No class</li><li><i class="ovsw c-missing">?</i>No Zoom report yet</li>
@@ -3341,7 +3521,7 @@ function helpHTML(){
     <div class="keyrow">${kb(['?'], 'Open this help')}${kb(['/'], 'Find a student')}${kb([MOD, 'Z'], 'Undo your last change')}${kb([MOD, 'Shift', 'Z'], 'Redo')}
       ${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid, a student’s calendar, or the tabs')}${kb(['Enter'], 'Open the day you’re on')}${kb(['Esc'], 'Close a box, menu or the tour')}</div>
     <h3>Your data</h3>
-    <p>Everything stays on this computer. Your schedule, marks and notes are saved in <b>${DATA_FILE}</b> in your folder. Zoom, Formative and grades files are only read, never changed. The page works with Wi-Fi turned off.</p>
+    <p>Everything stays on this computer. Your schedule, marks and notes are saved in <b>${DATA_FILE}</b> in your folder. Zoom, Formative and grades files are only read, never changed. The page works with Wi-Fi turned off. The one exception is the Google Sheet, if you connect one: <b>Update Google Sheet</b> sends each student’s totals and the attendance grid to it, and nothing else.</p>
     <h3>Something not working?</h3>
     <dl class="faq">
       <dt>A Zoom file “has no join or leave times.”</dt><dd>It was exported with <b>Show unique users</b> checked. Export it again with that box unchecked.</dd>
@@ -3350,6 +3530,7 @@ function helpHTML(){
       <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download data file</b> after making changes and put the file in your folder.</dd>
       <dt>Formative colors don’t show on the Overview.</dt><dd>Put the class date in each export’s file name, like <b>formative-10-14-2026.csv</b>, then click Refresh.</dd>
       <dt>The text is too small.</dt><dd>Press <kbd>${MOD}</kbd> <kbd>+</kbd> to make everything bigger, and <kbd>${MOD}</kbd> <kbd>0</kbd> to go back.</dd>
+      <dt>How do I share attendance with other teachers?</dt><dd>Connect a Google Sheet on the <b>Settings</b> tab (about five minutes, once). Then <b>Update Google Sheet</b> on the Overview or Students tab sends the latest to it. Share the spreadsheet with them as <b>Viewer</b>.</dd>
       <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
   </div>`;
 }
@@ -3434,6 +3615,113 @@ function endTour(){
   const card = $('#tour'), had = card && card.contains(document.activeElement);
   if (card) card.remove();
   if (had) $('#helpBtn').focus({ preventScroll: true });
+}
+
+/* ---------------- Google Sheet ----------------
+   "Update Google Sheet" sends each student's totals and the Overview grid to a spreadsheet in your school Google
+   account, to share with other teachers. It goes through the small script in that spreadsheet (Settings has it to copy),
+   and only when the button is clicked. The script's link and key are kept in this browser, never in the folder.
+   Notes, follow-ups, messages to families, Zoom names and grades are never sent. */
+const SHEET_URL = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.-]+|macros)\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
+const SHEET_KEY = /^[0-9a-f]{64}$/;
+const sheetLinkOk = u => /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[A-Za-z0-9_-]+(\/|$)/.test(String(u || ''));
+// The tabs are named for the class, as in Settings (or the folder, while that's still the default).
+const sheetClass = () => { const n = (state.data.settings.className || '').trim(); return n && n !== defaultData().settings.className ? n : state.folderName || 'My class'; };
+// One request to the spreadsheet's script. No cookies or address of this page go with it; the key goes in the body, over HTTPS.
+async function sheetCall(conn, msg){
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 90000);
+  try {
+    const r = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ v: 1, key: conn.key, ...msg }),
+      credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: ctl.signal });
+    try { const j = await r.json(); return j && typeof j === 'object' ? j : { ok: false, error: 'not-script' }; } catch (e){ return { ok: false, error: 'not-script' }; }
+  } catch (e){ return { ok: false, error: e && e.name === 'AbortError' ? 'timeout' : 'offline' }; }
+  finally { clearTimeout(timer); }
+}
+function sheetError(j){
+  return j.error === 'bad-key' ? 'Your Google Sheet didn’t accept the key. In the spreadsheet, click Attendance → Show connection key, and paste it again on the Settings tab.'
+    : j.error === 'tab-taken' ? `The spreadsheet already has a tab named “${j.tab}” that this page didn’t make, so nothing was changed. Rename that tab, or change “What families call this class” in Settings.`
+    : j.error === 'version' ? 'The script in your spreadsheet is a different version. On the Settings tab, copy the script again, paste it over the old one in Apps Script, and deploy it again.'
+    : j.error === 'not-script' ? 'That link didn’t answer like the attendance script. In Apps Script, click Deploy → Manage deployments, and copy the Web app link (it ends in /exec).'
+    : j.error === 'timeout' ? 'Google took too long to answer. Try again in a minute.'
+    : j.error === 'offline' ? 'Couldn’t reach your Google Sheet. Check that this computer is online. If it is, open Apps Script, click Deploy → Manage deployments, and check that “Who has access” is “Anyone”. (Some schools turn that off; your Google admin can tell you.)'
+    : `The Google Sheet couldn’t be updated.${j.message ? ` (${String(j.message).slice(0, 200)})` : ''}`;
+}
+// The letters a day shows on the Overview.
+const sheetLetters = c => [c.cat === 'noclass' ? '–' : c.early ? 'fin' : c.cat === 'missing' ? '?' : '', ...['L', 'C'].filter(l => c[l]), c.msg ? '✓' : ''].filter(Boolean).join(' ');
+// What's sent: every class day, whatever dates are picked on screen. Each student's totals (as on the Students tab),
+// and the Overview grid as letters, colors and the words for each day (as its hover text).
+function sheetPayload(){
+  const keep = state.range; state.range = { preset: 'all', from: '', to: '' };
+  try {
+    const A = analyze(), period = periodOf(A), S = state.data.settings, cls = sheetClass(), now = new Date();
+    const when = `${monthDay(todayDk())}, ${now.getFullYear()} at ${fmt(now)}`, dropped = key => dropOf(key) ? `Dropped ${monDay(dropOf(key))}` : '';
+    const sums = studentSummary(A.days).sort((a, b) => a.name.localeCompare(b.name));
+    const summary = { title: `${cls}: attendance summary`,
+      note: `Updated ${when}. ${A.days.length ? `${plural(A.days.length, 'class day')} with Zoom reports, ${fmtPeriod(period)}. ` : ''}Excused absences and finished-work time aren’t counted. Late: joined more than ${S.lateGrace} min after the start. Left early: left more than ${S.leaveGrace} min before the end.`,
+      head: ['Student', 'Days attended', 'Days counted', 'Days attended %', 'Minutes received', 'Minutes counted', 'Minutes received %', 'Absent', 'Excused absences', 'Late', 'Left early', 'Out mid-class', 'Absent in a row (latest)', 'Status'],
+      rows: sums.map(s => [s.name, s.attended, s.n, s.rate ?? '', s.pres, s.req, s.dose ?? '', s.absent, s.excused, s.late, s.early + s.soft, s.drop, s.streak, dropped(s.key)]) };
+    const dates = overviewDates(A, period), recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))]));
+    const rows = A.roster.map(r => ({ r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) })).filter(x => x.cells.some(c => c.cat !== 'nosched' || c.ov.cat));
+    const days = { title: `${cls}: attendance by day`, note: `Updated ${when}. Point at a day to see what happened.`,
+      head: ['Student', ...dates.map(dk => `${dtf({ weekday: 'short' }).format(parseDk(dk))}\n${parseDk(dk).getMonth() + 1}/${parseDk(dk).getDate()}`)],
+      rows: rows.map(({ r, cells }) => ({ name: r.name + (dropped(r.key) ? ` (${dropped(r.key).toLowerCase()})` : ''), cells: cells.map(c => [c.cat, sheetLetters(c), cellWords(c)]) })) };
+    return { cls, summary, days, students: sums.length, dayCount: A.days.length };
+  } finally { state.range = keep; }
+}
+const sheetTitle = () => { const t = state.sheet && state.sheet.sent && state.sheet.sent[sheetClass()];
+  return t ? `Last sent ${monDay(dkOf(new Date(t)))} at ${fmt(t)}` : 'Send each student’s totals and the attendance grid to your Google Sheet'; };
+const sheetButton = () => state.sheet && !state.demo ? `<button class="btn small ghost gsbtn" data-sheetsend title="${esc(sheetTitle())}"${state.sheetBusy ? ' disabled' : ''}>${state.sheetBusy ? 'Updating…' : 'Update Google Sheet'}</button>` : '';
+// The buttons change in place while sending, so nothing on the page moves.
+function sheetButtons(){ document.querySelectorAll('[data-sheetsend]').forEach(b => { b.disabled = state.sheetBusy; b.textContent = state.sheetBusy ? 'Updating…' : 'Update Google Sheet'; b.title = sheetTitle(); }); }
+async function sendToSheet(){
+  const conn = state.sheet;
+  if (!conn || state.sheetBusy) return;
+  if (state.demo) return setStatus('The sample class is never sent to a Google Sheet. Open your own folder first.');
+  const p = sheetPayload();
+  if (!p.summary.rows.length && !p.days.rows.length) return setStatus('There’s nothing to send yet. Add your schedule and Zoom reports first.');
+  state.sheetBusy = true; sheetButtons(); setStatus('Updating your Google Sheet…', 'info');
+  const j = await sheetCall(conn, { cls: p.cls, summary: p.summary, days: p.days });
+  state.sheetBusy = false;
+  if (j.ok){
+    conn.sent = { ...conn.sent, [p.cls]: Date.now() }; if (sheetLinkOk(j.url)) conn.link = j.url; idbSet('sheet', conn);
+    setStatus(`Google Sheet updated: ${plural(p.students, 'student')} and ${plural(p.dayCount, 'class day')}, in the tabs “${p.cls} · Summary” and “${p.cls} · Days”.`, 'info', conn.link ? { label: 'Open the sheet', act: 'opensheet' } : null);
+  } else setStatus(sheetError(j));
+  sheetButtons();
+}
+// Connecting checks the link and key with the script before keeping them.
+async function connectSheet(){
+  const u = $('#gs-url').value.trim(), k = $('#gs-key').value.trim().toLowerCase(), say = (m, f) => { $('#gs-msg').textContent = m; if (f) $(f).focus(); };
+  if (!SHEET_URL.test(u)) return say('That isn’t a web app link. In Apps Script, click Deploy → Manage deployments and copy the Web app link. It starts with https://script.google.com/ and ends in /exec.', '#gs-url');
+  if (!SHEET_KEY.test(k)) return say('That isn’t the whole connection key. In the spreadsheet, click Attendance → Show connection key and copy all of it.', '#gs-key');
+  say('Checking…'); $('[data-sheeton]').disabled = true;
+  const j = await sheetCall({ url: u, key: k }, { ping: true });
+  $('[data-sheeton]').disabled = false;
+  if (!j.ok) return say(sheetError(j));
+  state.sheet = { url: u, key: k, name: String(j.name || '').slice(0, 120), link: sheetLinkOk(j.url) ? j.url : '', sent: {} };
+  await idbSet('sheet', state.sheet);
+  render(); setStatus(`Connected to “${state.sheet.name || 'your spreadsheet'}”. Click Update Google Sheet on the Overview or Students tab to send attendance.`, 'info');
+}
+function sheetPanel(){
+  const c = state.sheet;
+  const sends = '<p class="small muted">Sends each student’s totals and the Overview grid, for every class day. Never sends your notes, follow-ups, messages to families, Zoom names or grades.</p>';
+  if (c) return `<div class="panel"><h2>Google Sheet</h2>
+    <p class="small">Connected to <b>${esc(c.name || 'your spreadsheet')}</b>. ${state.demo ? 'The sample class is never sent to it.' : 'Click <b>Update Google Sheet</b> on the Overview or Students tab to send the latest.'}</p>
+    ${sends}
+    <p class="small muted">The link and key are kept in this browser only, not in your folder. Share the spreadsheet with other teachers as <b>Viewer</b>: an editor could open its script and see the key.</p>
+    <div class="actions">${state.demo ? '' : `<button class="btn" data-sheetsend title="${esc(sheetTitle())}">Update Google Sheet</button>`}${sheetLinkOk(c.link) ? '<button class="btn ghost" data-statusact="opensheet">Open the sheet</button>' : ''}<button class="linkish" data-sheetoff>Disconnect</button></div></div>`;
+  return `<div class="panel"><h2>Google Sheet</h2>
+    <p class="small" style="margin-top:0">Share attendance with other teachers: one click sends it to a spreadsheet in your school Google account. It takes about five minutes to set up, once.</p>
+    ${sends}
+    <ol class="small gs-steps">
+      <li>Open the spreadsheet in Google Sheets: a new one, or your attendance sheet (its tabs won’t be touched). Click <b>Extensions</b> → <b>Apps Script</b>.</li>
+      <li><button class="btn small" data-copyscript>Copy the script</button> In Apps Script, delete what’s there, paste the script, and click <b>Save</b>.</li>
+      <li>Click <b>Deploy</b> → <b>New deployment</b>. Click the gear next to “Select type” and choose <b>Web app</b>. Set <b>Execute as</b> to <b>Me</b> and <b>Who has access</b> to <b>Anyone</b>. Click <b>Deploy</b>, and allow access when Google asks. (If Google says it hasn’t verified the app, that’s because you made it: click <b>Advanced</b>, then <b>Go to</b>.) Copy the <b>Web app</b> link.</li>
+      <li>Go back to the spreadsheet and reload it. Click <b>Attendance</b> → <b>Show connection key</b>, and copy the key.</li>
+      <li>Paste both here and click <b>Connect</b>.</li></ol>
+    <div class="settext gs-form"><label for="gs-url">Web app link</label><input id="gs-url" type="url" placeholder="https://script.google.com/…/exec" autocomplete="off" spellcheck="false">
+      <label for="gs-key">Connection key</label><input id="gs-key" type="password" autocomplete="off" spellcheck="false"></div>
+    <div class="actions"><button class="btn" data-sheeton>Connect</button><span class="small" id="gs-msg" role="status"></span></div>
+    <p class="small muted">Why “Anyone”: this page has no Google sign-in, so the script has to take requests without one. It still turns down anything without your key, it only changes the tabs it makes itself, and it never sends your spreadsheet’s data back.</p></div>`;
 }
 
 /* ---------------- Schedule tab (with history, so a new schedule doesn't rewrite past days) ---------------- */
@@ -3613,6 +3901,7 @@ function renderSettings(){
         <label for="s-contact">How families can reach you</label><input id="s-contact" type="text" maxlength="120" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="Email or phone">
       </div>
       <p class="small muted" style="margin:12px 0 0">Grades: save your gradebook export (CSV) in the folder with “grades” and the date in its name, like <b>grades-12-10-2026.csv</b>, then click Refresh. “Copy message” on the Students tab uses each student’s grade from the newest one.</p></div>
+    ${sheetPanel()}
     <div class="panel"><h2>Days with no class</h2>
       ${noClass.length ? `<ul class="list">${noClass.map(dk => `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}: ${esc(NOCLASS_REASONS[state.data.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${esc(dk)}">Undo</button></li>`).join('')}</ul>`
         : '<p class="small muted">None yet.</p>'}
@@ -3626,13 +3915,13 @@ function renderSettings(){
     <div class="panel"><h2>Your data</h2>${state.demo ? `
       <p class="small"><b>This is the sample class.</b> The students are made up, and nothing you change here is saved. When you open your own folder, the sample goes away.</p>
       <div class="actions"><button class="btn" data-pick>Open your folder</button></div>` : `
-      <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added or deleted, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved.</p>
+      <p class="small">Everything you enter or mark here (the schedule and its history, settings, marks, notes, follow-ups, days you added or deleted, dropped and deleted students) is saved in <b>${DATA_FILE}</b> in your folder. Zoom and Formative files are only read, never changed. Notes to families are never saved. The Google Sheet link and key are kept in this browser, not in the folder.</p>
       ${state.canWrite ? `<p class="small">Changes save automatically.</p>`
         : state.dirHandle ? `<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your attendance folder.</p>`
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your attendance folder, replacing the old one.${state.dirty ? ' <b>You have unsaved changes.</b>' : ''}</p>`}
       <div class="actions">${state.dirHandle && !state.canWrite ? '<button class="btn" id="grantSave">Allow saving to folder</button>' : ''}
         <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download data file</button></div>`}
-      <p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere. For IT review: this page has a Content-Security-Policy that blocks all network requests, uses no outside code, and works with Wi‑Fi turned off.</p>
+      <p class="small muted">${esc(privacyNote())} For IT review: this page has a Content-Security-Policy that blocks every network request except to Google Apps Script (script.google.com, which answers from script.googleusercontent.com). It contacts them only when you click Connect or Update Google Sheet, and only the script in your own spreadsheet. It uses no outside code, and everything else works with Wi‑Fi turned off.</p>
     </div></div>`;
 }
 
@@ -3677,6 +3966,7 @@ const tabHidden = t => t === 'support' && state.loaded && !hasSupport();
 function render(){
   if (tabHidden(state.tab)) state.tab = 'overview';
   renderFolderBar(); renderSaveState(); renderStatus(); renderBanner();
+  $('#privacyLine').textContent = state.sheet ? 'Runs on this computer. Sends nothing until you click Update Google Sheet.' : 'Runs only on this computer. Nothing is uploaded.';
   // Tabs work like tabs everywhere else: one Tab stop, and the arrow keys move between them.
   document.querySelectorAll('nav.tabs button').forEach(b => { const on = b.dataset.tab === state.tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; b.hidden = tabHidden(b.dataset.tab); });
   for (const t of Object.keys(RENDER)) $('#tab-' + t).hidden = state.tab !== t;
@@ -3962,7 +4252,20 @@ async function onClick(t){
     const a = d.statusact; setStatus(null);
     if (a === 'undo' || a === 'redo') return undo(a === 'redo');
     if (a === 'grantsave') return grantSave();
+    if (a === 'opensheet'){ if (state.sheet && sheetLinkOk(state.sheet.link)) window.open(state.sheet.link, '_blank', 'noopener'); return; }
     if (a === 'download'){ downloadData(); state.dirty = false; renderSaveState(); if (state.tab === 'settings') renderSettings(); }
+    return;
+  }
+  if (has('data-sheetsend')) return sendToSheet();
+  if (has('data-sheeton')) return connectSheet();
+  if (has('data-sheetoff')){
+    state.sheet = null; await idbSet('sheet', null); render();
+    setStatus('Disconnected. The link and key are gone from this browser. To turn the old key off everywhere, click Attendance → Make a new key in the spreadsheet.', 'info');
+    return;
+  }
+  if (has('data-copyscript')){
+    const text = $('#gsScript').textContent.trim() + '\n';
+    if (await copyText(text)) setStatus('Script copied. Paste it into the Apps Script editor.', 'info'); else showCopyBox(text);
     return;
   }
   if (has('data-clearsearch')){
@@ -4291,6 +4594,7 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
+  if (e.key === 'Enter' && (t.id === 'gs-url' || t.id === 'gs-key')){ e.preventDefault(); connectSheet(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
   });
@@ -4445,6 +4749,8 @@ window.addEventListener('beforeunload', e => { if (state.dirty && !state.demo &&
 
 (async function init(){
   render(); navReplace();
+  const sh = await idbGet('sheet');
+  if (sh && SHEET_URL.test(sh.url) && SHEET_KEY.test(sh.key)){ state.sheet = sh; render(); }
   if (!HAS_FSA) return;
   const h = await idbGet('dir');
   if (!h) return;
