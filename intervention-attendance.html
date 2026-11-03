@@ -1231,7 +1231,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, schAddDraft: {}, lastAnalysis: null,
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, schAddDraft: {}, pasteWarn: null, lastAnalysis: null,
   demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
   sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
 };
@@ -1281,7 +1281,7 @@ function parseSchedule(text){
   const out = { days: {}, roster: [], nameOf: {}, warnings: [], lookalikes: [] };
   if (!text || !text.trim()) return out;
   const rows = text.replace(/\r/g, '').split('\n').map(r => r.split('\t').map(c => c.trim()));
-  const colDay = {}, colSec = {}, stray = [];
+  const colDay = {}, colSec = {}, stray = [], noKey = [];
   const dayFor = c => { if (colDay[c]) return colDay[c]; let best = null, bc = -1;
     for (const k in colDay){ const kc = +k; if (kc <= c && kc > bc){ bc = kc; best = colDay[k]; } } return best; };
   rows.forEach(row => row.forEach((cell, c) => {
@@ -1295,10 +1295,11 @@ function parseSchedule(text){
       out.days[day].push(sec); colSec[c] = sec; return;
     }
     const s = colSec[c];
-    if (s){ const name = cell.replace(/\s+/g, ' '); if (!s.students.some(n => normKey(n) === normKey(name))) s.students.push(name); }
+    if (s){ const name = cell.replace(/\s+/g, ' '); if (!normKey(name)) noKey.push(name); else if (!s.students.some(n => normKey(n) === normKey(name))) s.students.push(name); }
     else stray.push(cell);
   }));
   if (stray.length) out.warnings.push(`Skipped ${stray.length} cell${stray.length > 1 ? 's' : ''} that weren’t under a section heading (for example “${stray[0]}”).`);
+  if (noKey.length) out.warnings.push(`${listJoin([...new Set(noKey)].map(n => `“${n}”`), 4)} ${noKey.length > 1 ? 'have' : 'has'} no letters A to Z, so ${noKey.length > 1 ? 'they aren’t' : 'it isn’t'} counted.`);
   for (const day of Object.keys(out.days)) for (const s of out.days[day]) for (const n of s.students){
     const k = normKey(n); if (k && !out.nameOf[k]){ out.nameOf[k] = n; out.roster.push({ key: k, name: n }); }
   }
@@ -1327,7 +1328,7 @@ const secLabel = s => `${secKind(s)} ${fmtRange(s.startMin, secEnd(s))}`;
 function scheduleText(P){
   const cols = [];
   for (const d of SCHED_ORDER) [...(P.days[d] || [])].sort((a, b) => a.startMin - b.startMin || (a.type === b.type ? 0 : a.type < b.type ? -1 : 1))
-    .forEach((x, i) => cols.push([i ? '' : cap(d), x.label, ...x.students]));
+    .forEach((x, i) => cols.push([i ? '' : cap(d), x.label, ...[...x.students].sort((p, q) => normKey(p).localeCompare(normKey(q)))]));
   const n = Math.max(0, ...cols.map(c => c.length));
   return Array.from({ length: n }, (_, r) => cols.map(c => c[r] || '').join('\t').replace(/\t+$/, '')).join('\n');
 }
@@ -1336,6 +1337,7 @@ const canonSched = t => scheduleText(parseSchedule(t));
 // A name the schedule can't hold: one that would read as a day name or as a class heading.
 function schedNameProblem(name){
   if (!name) return 'Type a name first.';
+  if (!normKey(name)) return 'Type the name with the letters A to Z, as it is in your gradebook.';
   if (DAYS.includes(name.toLowerCase().replace(/[^a-z]/g, '')) || parseSectionHeader(name)) return `“${name}” would read as a day or a class heading. Add a last name or an initial.`;
   return '';
 }
@@ -1346,14 +1348,23 @@ function schedChanges(oldText, newText, renames = []){
   const a = parseSchedule(oldText), b = parseSchedule(newText);
   const list = P => SCHED_ORDER.flatMap(d => (P.days[d] || []).map(x => ({ ...x, day: d, end: secEnd(x), keys: new Set(x.students.map(normKey)) })));
   const A = list(a), B = list(b), to = new Map(), used = new Set();
-  const pair = test => { for (const x of A) if (!to.has(x)){ const y = B.find(z => !used.has(z) && test(x, z)); if (y){ to.set(x, y); used.add(y); } } };
+  // Within each step, the pairs that share the most students go first (then the nearest start), so with two classes of one
+  // kind on a day, each is paired with the class its students moved to.
+  const pair = test => {
+    const c = [];
+    for (const x of A) if (!to.has(x)) for (const y of B) if (!used.has(y) && test(x, y)) c.push([x, y, [...x.keys].filter(k => y.keys.has(k)).length, Math.abs(x.startMin - y.startMin)]);
+    c.sort((p, q) => q[2] - p[2] || p[3] - q[3]);
+    for (const [x, y] of c) if (!to.has(x) && !used.has(y)){ to.set(x, y); used.add(y); }
+  };
   pair((x, y) => x.day === y.day && x.type === y.type && x.startMin === y.startMin && x.end === y.end);
   pair((x, y) => x.day === y.day && x.type === y.type);
   pair((x, y) => x.type === y.type && x.startMin === y.startMin && x.end === y.end);
   pair((x, y) => x.day === y.day && x.startMin === y.startMin);
-  const full = x => `${cap(x.day)} ${secKind(x).toLowerCase()} ${shortRange(x.startMin, x.end)}`;
-  // A class named by its day and kind, with its time only when that day has two of the kind.
-  const short = (P, x) => `${cap(x.day)} ${secKind(x).toLowerCase()}${(P.days[x.day] || []).filter(z => z.type === x.type).length > 1 ? ` ${shortRange(x.startMin, x.end)}` : ''}`;
+  // Two classes of one kind at the same time on a day are told apart by their headings.
+  const twin = (P, x) => (P.days[x.day] || []).filter(z => z.type === x.type && z.startMin === x.startMin).length > 1;
+  const full = x => twin(x.keys === undefined ? b : A.includes(x) ? a : b, x) ? `${cap(x.day)} “${x.label}”` : `${cap(x.day)} ${secKind(x).toLowerCase()} ${shortRange(x.startMin, x.end)}`;
+  // A class named by its day and kind, with its time when either schedule has two of the kind that day.
+  const short = (P, x) => twin(P, x) ? `${cap(x.day)} “${x.label}”` : `${cap(x.day)} ${secKind(x).toLowerCase()}${[a, b].some(Q => (Q.days[x.day] || []).filter(z => z.type === x.type).length > 1) ? ` ${shortRange(x.startMin, x.end)}` : ''}`;
   const out = [];
   for (const x of A){
     const y = to.get(x);
@@ -1370,7 +1381,7 @@ function schedChanges(oldText, newText, renames = []){
   const keys = [...new Set([...b.roster.map(r => r.key), ...a.roster.map(r => r.key).filter(k => !renamed.has(k))])].sort((x, y) => names.get(x).localeCompare(names.get(y)));
   for (const k of keys){
     const ok = oldOf.get(k) || k, nm = names.get(k);
-    const had = A.filter(x => x.keys.has(ok)), has = B.filter(y => y.keys.has(k)), hadNow = new Set(had.map(x => to.get(x)).filter(Boolean));
+    const had = A.filter(x => x.keys.has(ok) || (ok !== k && x.keys.has(k))), has = B.filter(y => y.keys.has(k)), hadNow = new Set(had.map(x => to.get(x)).filter(Boolean));
     const gone = had.filter(x => !has.includes(to.get(x))), added = has.filter(y => !hadNow.has(y));
     if (!gone.length && !added.length) continue;
     const was = gone.map(x => short(a, x)).join(', '), now = added.map(y => short(b, y)).join(', ');
@@ -3649,6 +3660,7 @@ function loadSample(){
 function leaveSample(){
   endTour();
   Object.assign(state, { demo: false, loaded: false, data: defaultData(), files: [], folderName: '', dirty: false, undo: [], redo: [], snap: null,
+    draft: null, schedChange: null, schRenames: [], draftUndo: [], schAddDraft: {}, pasteWarn: null, schPop: null,
     tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ovDay: null, ovMark: null });
   setStatus(null); render(); navReplace();
 }
@@ -3900,7 +3912,7 @@ function schedStepHint(sc){
   const latestFrom = state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from;
   if (sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom) return `Pick ${monDay(latestFrom)} or later, or “It was a mistake”.`;
   if (sc.mode === 'start' && isDk(sc.date)) return `Days before ${monDay(sc.date)} keep the schedule they had.`;
-  if (sc.mode === 'fix') return 'Recorded days are checked again with this schedule.';
+  if (sc.mode === 'fix') return latestFrom > todayDk() ? `Only the schedule that starts ${monDay(latestFrom)} is changed.` : 'Recorded days are checked again with this schedule.';
   return 'Pick one to save.';
 }
 function updateSchedStep(){
@@ -3935,17 +3947,17 @@ const schedDirty = () => state.draft !== null && (!!state.schRenames.length || c
 const boardSched = () => parseSchedule(canonSched(state.draft ?? state.data.scheduleText));
 function editSchedule(fn){
   const P = boardSched();
-  state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] });
+  state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] }); state.redo = [];
   fn(P);
   state.draft = scheduleText(P); state.viewVersion = null;
-  if (!schedDirty()){ state.draft = null; state.schedChange = null; }
+  if (!schedDirty()){ state.draft = null; state.schedChange = null; state.pasteWarn = null; }
   renderSchedule();
 }
 // A class's card: its kind and time, a box to add a student, and who comes to it (click a name to change that student).
-function schedCard(d, i, x, edit){
+function schedCard(d, i, x, edit, twin){
   const id = `${d}|${i}`, what = `${cap(d)} ${secKind(x).toLowerCase()}`, names = [...x.students].sort((a, b) => a.localeCompare(b));
   const tag = n => { const k = normKey(n), dr = dropOf(k); return state.data.deleted[k] ? ' <span class="schtag">deleted</span>' : dr ? ` <span class="schtag">${dr <= todayDk() ? 'dropped' : 'drops'} ${esc(monDay(dr))}</span>` : ''; };
-  return `<div class="scard ${x.type}"><div class="scard-h"><b>${secKind(x)}</b><span>${esc(shortRange(x.startMin, secEnd(x)))}</span>
+  return `<div class="scard ${x.type}"><div class="scard-h"><b>${secKind(x)}</b><span>${esc(shortRange(x.startMin, secEnd(x)))}</span>${twin ? `<span class="schtag">${esc(x.label)}</span>` : ''}
       ${edit ? `<button class="btn small ghost" data-schclass="${id}" aria-label="Change ${esc(what)}: its day and time">Edit</button>` : ''}</div>
     ${edit ? `<div class="scard-add"><input data-schadd="${id}" list="schNames" autocomplete="off" spellcheck="false" placeholder="Add a student" aria-label="Add a student to ${esc(what)}" value="${esc(state.schAddDraft[id] || '')}">
       <button class="btn small" data-schaddgo="${id}">Add</button></div>` : ''}
@@ -3980,7 +3992,8 @@ function schedDialog(P){
       ${p.key ? '<p class="small muted">To fix the spelling, change it here. Their notes, marks and follow-ups go with them.</p>' : ''}
       <p style="margin-bottom:4px"><b>Comes to</b></p>
       ${byDay.length ? `<div class="ssdays">${byDay.map(([d, xs]) => `<fieldset><legend>${cap(d)}</legend>${xs.map(([x, i]) =>
-        `<label><input type="checkbox" data-ssclass="${d}|${i}"${p.key && x.students.some(n => normKey(n) === p.key) ? ' checked' : ''}> ${secKind(x)} ${esc(shortRange(x.startMin, secEnd(x)))}</label>`).join('')}</fieldset>`).join('')}</div>`
+        `<label><input type="checkbox" data-ssclass="${d}|${i}"${p.key && x.students.some(n => normKey(n) === p.key) ? ' checked' : ''}> ${secKind(x)} ${esc(shortRange(x.startMin, secEnd(x)))}${
+          xs.filter(([z]) => z.type === x.type && z.startMin === x.startMin).length > 1 ? ` (${esc(x.label)})` : ''}</label>`).join('')}</fieldset>`).join('')}</div>`
         : '<p class="muted">There are no classes yet. Add a class first.</p>'}
       ${p.key ? `<p class="small muted">To take ${esc(first)} off the schedule, uncheck every class.</p>` : ''}
       ${foot('data-sssave')}</div></dialog>`;
@@ -3991,7 +4004,7 @@ function renderSchedule(){
   const viewing = state.viewVersion !== null && vs[state.viewVersion] && state.viewVersion !== vs.length - 1 ? state.viewVersion : null;
   const text = state.draft ?? state.data.scheduleText, edit = viewing === null;
   const P = viewing !== null ? parseSchedule(vs[viewing].text) : boardSched(), raw = viewing !== null ? P : parseSchedule(text);
-  const warn = viewing !== null ? [] : [...raw.warnings];
+  const warn = viewing !== null ? [] : [...new Set([...(state.draft !== null && state.pasteWarn ? state.pasteWarn : []), ...raw.warnings])];
   const delIn = viewing !== null ? [] : P.roster.filter(r => state.data.deleted[r.key]).map(r => r.name);
   if (delIn.length) warn.push(`Still in this schedule but deleted, so not counted: ${listJoin(delIn, 6)}. To count ${delIn.length === 1 ? 'them' : 'one'} again, use “Bring back” under Deleted students.`);
   if (viewing === null && P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, click one and fix its spelling: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
@@ -3999,24 +4012,30 @@ function renderSchedule(){
   // The bar along the bottom: what the change does, and when it starts. It covers the page instead of pushing anything.
   let bar = '';
   if (dirty){
-    if (!state.schedChange) state.schedChange = { mode: null, date: todayDk() };
-    const sc = state.schedChange, latestFrom = vs[vs.length - 1].from, list = schedChanges(state.data.scheduleText, state.draft, state.schRenames);
-    // A pasted sheet that spells a name a little differently: saying it was a mistake carries the student's notes over.
-    for (const [x, y] of scheduleDiff(state.data.scheduleText, state.draft).respelled) if (!state.schRenames.some(r => normKey(r[1]) === normKey(y)))
-      list.push(`“${x}” and “${y}” look like the same student. If you fixed a spelling, pick “It was a mistake”.`);
-    const needDate = !!state.data.scheduleText.trim() && !!state.files.length && A.days.length > 0;
+    const latestFrom = vs[vs.length - 1].from, ahead = latestFrom > todayDk();
+    if (!state.schedChange) state.schedChange = { mode: null, date: ahead ? latestFrom : todayDk() };
+    const sc = state.schedChange;
+    // A pasted name spelled a little differently is the same student only if the teacher says so (their notes and Zoom names
+    // then go with them); left unchecked, it's one student leaving and another joining.
+    const same = scheduleDiff(state.data.scheduleText, state.draft).respelled, sameLine = new Set(same.map(([x, y]) => `“${x}” is now spelled “${y}”`));
+    const list = schedChanges(state.data.scheduleText, state.draft, state.schRenames).filter(l => !sameLine.has(l)).map(l => `<li>${esc(l)}</li>`);
+    for (const [x, y] of same){ const on = state.schRenames.some(r => normKey(r[0]) === normKey(x) && normKey(r[1]) === normKey(y));
+      list.push(`<li class="schsame"><label><input type="checkbox" data-schsame="${esc(JSON.stringify([x, y]))}"${on ? ' checked' : ''}> One student: “${esc(x)}” is now spelled “${esc(y)}”</label></li>`); }
+    const needDate = A.days.length > 0 && vs.some(v => v.text.trim());
     bar = `<div class="schbar" role="region" aria-label="Schedule changes not saved yet"><div class="schbar-in">
-      <div class="schbar-l"><b>Not saved yet</b>${list.length ? `<ul>${list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="small muted">It reads the same as the saved schedule.</p>'}</div>
+      <div class="schbar-l"><b>Not saved yet</b>${ahead ? ` <span class="small muted">This changes the schedule that starts ${esc(monDay(latestFrom))}; the one in use until then stays as it is.</span>` : ''}${
+        list.length ? `<ul>${list.join('')}</ul>` : '<p class="small muted">It reads the same as the saved schedule.</p>'}</div>
       <div class="schbar-r">${needDate ? `<div class="schwhen" role="radiogroup" aria-label="When does this change start?">
           <label><input type="radio" name="schedmode" data-schedmode="start"${sc.mode === 'start' ? ' checked' : ''}> Starting on
             <input type="date" data-schedfrom value="${esc(sc.date)}"${latestFrom ? ` min="${esc(latestFrom)}"` : ''} aria-label="Start date"></label>
           <label><input type="radio" name="schedmode" data-schedmode="fix"${sc.mode === 'fix' ? ' checked' : ''}> It was a mistake: check every day${latestFrom ? ` since ${esc(monDay(latestFrom))}` : ''} again</label></div>
-        <p class="small schhint" data-schedhint>${esc(schedStepHint(sc))}</p>` : `<p class="small schhint">${state.data.scheduleText.trim() ? 'There are no Zoom reports yet, so this is the schedule from the start.' : 'Your first schedule: every day is checked with it.'}</p>`}
+        <p class="small schhint" data-schedhint>${esc(schedStepHint(sc))}</p>` : `<p class="small schhint">${vs.length > 1 ? `This replaces the schedule used since ${esc(monDay(latestFrom))}.` : vs[0].text.trim() ? 'There are no Zoom reports yet, so this is the schedule from the start.' : 'Your first schedule: every day is checked with it.'}</p>`}
         <div class="actions">${needDate ? `<button class="btn" data-schedconfirm${schedStartOk(sc) ? '' : ' disabled'}>Save</button>` : '<button class="btn" id="saveSched">Save</button>'}
           <button class="btn ghost" id="revertSched">Discard changes</button></div></div></div></div>`;
   }
   const board = days.length ? `<div class="schboard">${days.map(d => `<div class="schday"><h3>${cap(d)}</h3>${
-      P.days[d].map((x, i) => [x, i]).sort(([a], [b]) => a.startMin - b.startMin).map(([x, i]) => schedCard(d, i, x, edit)).join('')}</div>`).join('')}</div>`
+      P.days[d].map((x, i) => [x, i]).sort(([a], [b]) => a.startMin - b.startMin).map(([x, i]) => schedCard(d, i, x, edit,
+        P.days[d].filter(z => z.type === x.type && z.startMin === x.startMin).length > 1)).join('')}</div>`).join('')}</div>`
     : `<p class="muted schempty">No classes yet. Paste your schedule from your spreadsheet below, or click <b>Add a class</b>.</p>`;
   const sub = viewing !== null ? '' : vs.length > 1 ? versionLabel(vs.length - 1) : '';
   const history = vs.length > 1 ? `<div class="small" style="margin-top:4px"><b>Schedule history</b><ul class="hist-list">${vs.map((v, i) => i).reverse().map(i => {
@@ -4062,9 +4081,10 @@ function schedAdd(id){
   const box = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (!box) return;
   const raw = box.value.replace(/\s+/g, ' ').trim(), k = normKey(raw), [d, i] = id.split('|');
   const P = boardSched(), x = (P.days[d] || [])[+i]; if (!x) return;
-  const name = P.nameOf[k] || (state.lastAnalysis || analyze()).nameOf[k] || raw, bad = schedNameProblem(name);
+  const ren = state.schRenames.find(([a]) => normKey(a) === k);
+  const name = ren ? ren[1] : P.nameOf[k] || (state.lastAnalysis || analyze()).nameOf[k] || raw, bad = schedNameProblem(name);
   if (bad){ setStatus(bad); box.focus(); return; }
-  if (x.students.some(n => normKey(n) === k)){ setStatus(`${name} is already in this class.`); box.select(); return; }
+  if (x.students.some(n => normKey(n) === normKey(name))){ setStatus(`${name} is already in this class.`); box.select(); return; }
   delete state.schAddDraft[id];
   editSchedule(Q => { Q.days[d][+i].students.push(name); });
   const nb = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (nb) nb.focus();
@@ -4075,8 +4095,9 @@ function schedClassDone(){
   const p = state.schPop, day = $('#sc-day').value, type = $('#sc-type').value, st = minOf($('#sc-start').value), en = minOf($('#sc-end').value);
   if (st === null || en === null) return schedMsg('Fill in both times.', $(st === null ? '#sc-start' : '#sc-end'));
   if (en <= st) return schedMsg('The class has to end after it starts.', $('#sc-end'));
-  const P = boardSched();
-  const clash = (P.days[day] || []).some((x, i) => `${day}|${i}` !== p.id && x.type === type && x.startMin === st);
+  const P = boardSched(), cur = p.id ? P.days[p.id.split('|')[0]][+p.id.split('|')[1]] : null, curDay = p.id ? p.id.split('|')[0] : null;
+  if (cur && curDay === day && cur.type === type && cur.startMin === st && secEnd(cur) === en){ state.schPop = null; renderSchedule(); return schedFocus(`[data-schclass="${p.id}"]`); }
+  const clash = !(cur && curDay === day && cur.type === type && cur.startMin === st) && (P.days[day] || []).some((x, i) => `${day}|${i}` !== p.id && x.type === type && x.startMin === st);
   if (clash) return schedMsg(`There’s already a ${cap(day)} ${type === 'instruction' ? 'instruction class' : 'support hour'} at ${fmtMin(st)}.`, $('#sc-start'));
   state.schPop = null;
   editSchedule(Q => {
@@ -4094,11 +4115,16 @@ function schedStudentDone(){
   const name = $('#ss-name').value.replace(/\s+/g, ' ').trim(), k = normKey(name), A = state.lastAnalysis || analyze();
   const bad = schedNameProblem(name); if (bad) return schedMsg(bad, $('#ss-name'));
   const on = new Set([...document.querySelectorAll('#schDlg [data-ssclass]')].filter(c => c.checked).map(c => c.dataset.ssclass));
+  const pending = state.schRenames.find(([a]) => normKey(a) === k && k !== p.key);
+  if (pending) return schedMsg(`“${pending[0]}” is spelled “${pending[1]}” in this change. Save it first, then add the other student.`, $('#ss-name'));
   if (!p.key){
     if (P.nameOf[k]) return schedMsg(`${P.nameOf[k]} is already on the schedule. Click their name on the board to change their classes.`, $('#ss-name'));
     if (!on.size) return schedMsg('Check the classes they come to.');
-  } else if (k !== p.key && P.nameOf[k]) return schedMsg(`${P.nameOf[k]} is already on the schedule.`, $('#ss-name'));
-  const was = p.key ? P.nameOf[p.key] : null, spell = p.key ? name : A.nameOf[k] && normKey(A.nameOf[k]) === k ? A.nameOf[k] : name;
+  }
+  // Renaming to a student already on the schedule makes them one student (asked once, with Done again).
+  const merge = !!p.key && k !== p.key && !!P.nameOf[k];
+  if (merge && p.merge !== k){ p.merge = k; return schedMsg(`${P.nameOf[k]} is already on the schedule. Click Done again to make them one student, spelled ${P.nameOf[k]}.`); }
+  const was = p.key ? P.nameOf[p.key] : null, spell = merge ? P.nameOf[k] : p.key ? name : A.nameOf[k] && normKey(A.nameOf[k]) === k ? A.nameOf[k] : name;
   state.schPop = null;
   if (was && was !== spell){
     const r = state.schRenames.find(z => normKey(z[1]) === p.key);   // renamed twice: one rename, from the first spelling
@@ -4106,9 +4132,8 @@ function schedStudentDone(){
   }
   editSchedule(Q => {
     for (const d of SCHED_ORDER) (Q.days[d] || []).forEach((x, i) => {
-      const at = x.students.findIndex(n => normKey(n) === (p.key || k));
-      if (on.has(`${d}|${i}`)){ if (at < 0) x.students.push(spell); else x.students[at] = spell; }
-      else if (at >= 0) x.students.splice(at, 1);
+      const others = x.students.filter(n => normKey(n) !== (p.key || k) && normKey(n) !== k), had = merge && x.students.some(n => normKey(n) === k);
+      x.students = on.has(`${d}|${i}`) || had ? [...others, spell] : others;
     });
   });
   const card = p.card && $(`#tab-schedule [data-schstu="${CSS.escape(k)}"][data-schcard="${CSS.escape(p.card)}"]`);
@@ -4120,31 +4145,40 @@ function renameStudentKey(oldK, newK){
   const D = state.data;
   for (const bag of [D.notes, D.excused, D.excusedAbsent, D.dayStatus]) for (const k of Object.keys(bag)){
     const i = k.indexOf('|');
-    if (k.slice(i + 1) === oldK){ const nk = k.slice(0, i + 1) + newK; if (!(nk in bag)) bag[nk] = bag[k]; delete bag[k]; }
+    if (k.slice(i + 1) === oldK){ const nk = k.slice(0, i + 1) + newK; if (!(nk in bag)) bag[nk] = bag[k]; else if (bag === D.notes && bag[nk] !== bag[k]) bag[nk] += ` · ${bag[k]}`; delete bag[k]; }
   }
   if (D.followUps[oldK]){ D.followUps[newK] = [...(D.followUps[newK] || []), ...D.followUps[oldK]]; delete D.followUps[oldK]; }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
   for (const bag of [D.drops, D.deleted]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
 }
-const respellText = (text, a, b) => text.split('\n').map(r => r.split('\t').map(c => normKey(c) === normKey(a) ? b : c).join('\t')).join('\n');
 function applySchedule(mode, from){
   const vs = state.data.scheduleVersions, text = state.draft;
   if (mode === 'start' && !schedStartOk({ mode, date: from })) return;
+  const A0 = state.schRenames.length ? analyze() : null;   // who each Zoom name matched, before any spelling changes
+  let written;
   if (mode === 'start'){
     const i = vs.findIndex(v => v.from === from);
-    if (i >= 0) vs[i].text = text; else { vs.push({ from, text }); vs.sort((a, b) => a.from.localeCompare(b.from)); }
-  } else {
-    for (const [a, b] of scheduleDiff(state.data.scheduleText, text).respelled){
-      for (const v of vs.slice(0, -1)) v.text = respellText(v.text, a, b);
-      renameStudentKey(normKey(a), normKey(b));
+    if (i >= 0) (written = vs[i]).text = text; else { vs.push(written = { from, text }); vs.sort((a, b) => a.from.localeCompare(b.from)); }
+  } else (written = vs[vs.length - 1]).text = text;
+  // A spelling fixed (on the board, or a pasted name checked as the same student) is fixed in every other schedule too, all at
+  // once, so two fixes can't run into each other. The student's notes and marks move with them (through a placeholder, so a
+  // student given another's old spelling doesn't pick up theirs), and the Zoom names that were theirs stay linked to them.
+  if (state.schRenames.length){
+    const D = state.data, to = new Map(state.schRenames.map(([a, b]) => [normKey(a), b]));
+    for (const v of vs) if (v !== written) v.text = v.text.split('\n').map(r => r.split('\t').map(c => to.has(normKey(c)) ? to.get(normKey(c)) : c).join('\t')).join('\n');
+    state.schRenames.forEach(([a], n) => renameStudentKey(normKey(a), `\u0000${n}`));
+    state.schRenames.forEach(([, b], n) => renameStudentKey(`\u0000${n}`, normKey(b)));
+    const now = new Set(vs.flatMap(v => parseSchedule(v.text).roster.map(r => r.key)));
+    for (const [a, b] of state.schRenames){
+      const ok = normKey(a), nk = normKey(b), zoom = new Set([ok]);
+      for (const d of A0.days) for (const st of d.students) if (st.key === ok) for (const g of st.segs || []) zoom.add(normKey(g.name));
+      for (const z of zoom) if (z && z !== nk && !now.has(z) && !D.aliases[z]) D.aliases[z] = nk;
+      if (D.deleted[nk]) D.deleted[nk].name = b;
     }
-    vs[vs.length - 1].text = text;
   }
-  // A spelling fixed on the board is fixed in every schedule, and the student's notes and marks go with them.
-  for (const [a, b] of state.schRenames){ for (const v of vs) v.text = respellText(v.text, a, b); renameStudentKey(normKey(a), normKey(b)); }
   vs[0].from = '';
   state.data.scheduleText = vs[vs.length - 1].text;
-  state.draft = null; state.schedChange = null; state.viewVersion = null; state.schRenames = []; state.draftUndo = [];
+  state.draft = null; state.schedChange = null; state.viewVersion = null; state.schRenames = []; state.draftUndo = []; state.pasteWarn = null;
   changed(); renderSchedule(); schedFocus();
   setStatus(mode === 'start' ? `Saved. The change starts ${monDay(from)}; days before it keep the schedule they had.` : 'Saved.', 'info', { label: 'Undo', act: 'undo' });
 }
@@ -4276,6 +4310,7 @@ async function idbSet(k, v){ try { const db = await idb(); await new Promise((re
 // Asked once the chosen folder is known, and only when it's a different folder: switching would drop changes
 // that never reached the old folder. (Refreshing the same folder keeps them; see ingest.)
 function okToSwitch(folderName){
+  if (state.loaded && folderName !== state.folderName && schedDirty() && !confirm('Your schedule changes aren’t saved yet. Click Cancel to go back and save them, or OK to open this folder without them.')) return false;
   return !(state.loaded && state.dirty && !state.demo && folderName !== state.folderName)
     || confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download data file” to keep them. Or click OK to open this folder without them.');
 }
@@ -4351,8 +4386,10 @@ function ingest(files, dataText, folderName, demo = false){
   // Undo goes back through this folder's changes only.
   if (!same){ state.undo = []; state.redo = []; }
   state.snap = JSON.stringify(state.data); state.saveFailed = false;
-  state.folderName = folderName; state.loaded = true; state.dirty = keep; state.draft = null; state.noteEdit = null;
-  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null; state.schPop = null; state.schRenames = []; state.draftUndo = [];
+  state.folderName = folderName; state.loaded = true; state.dirty = keep; state.noteEdit = null;
+  state.fuEdit = null; state.fuEditDraft = null; state.viewVersion = null; state.schPop = null;
+  // Refresh keeps a schedule change that isn't saved yet; another folder (another class) starts without it.
+  if (!same) Object.assign(state, { draft: null, schedChange: null, schRenames: [], draftUndo: [], schAddDraft: {}, pasteWarn: null });
   if (!same){
     state.openDays.clear(); state.autoOpened = false; state.student = null; state.studentFrom = null; state.returnTo = null;
     state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyCopied = null;
@@ -4374,9 +4411,9 @@ function changed(){
   state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState();
 }
 // Undo (or Redo) puts the data back as it was, saves it, and redraws. Boxes open on something that may be gone close.
-function undo(redo){
-  if (!redo && state.tab === 'schedule' && state.draftUndo.length){
-    const p = state.draftUndo.pop(); state.draft = p.draft; state.schRenames = p.renames; if (!schedDirty()){ state.draft = null; state.schedChange = null; }
+function undo(redo, dataOnly){
+  if (!redo && !dataOnly && state.tab === 'schedule' && state.draftUndo.length){
+    const p = state.draftUndo.pop(); state.draft = p.draft; state.schRenames = p.renames; if (!schedDirty()){ state.draft = null; state.schedChange = null; state.pasteWarn = null; }
     renderSchedule(); schedFocus(); setStatus('Took back your last change to the schedule. It isn’t saved yet.', 'info'); return;
   }
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
@@ -4540,7 +4577,7 @@ async function onClick(t){
   if (has('data-undo')) return undo(false);
   if (d.statusact){
     const a = d.statusact; setStatus(null);
-    if (a === 'undo' || a === 'redo') return undo(a === 'redo');
+    if (a === 'undo' || a === 'redo') return undo(a === 'redo', true);
     if (a === 'grantsave') return grantSave();
     if (a === 'opensheet'){ if (state.sheet && sheetLinkOk(state.sheet.link)) window.open(state.sheet.link, '_blank', 'noopener'); return; }
     if (a === 'download'){ downloadData(); state.dirty = false; renderSaveState(); if (state.tab === 'settings') renderSettings(); }
@@ -4774,7 +4811,7 @@ async function onClick(t){
   if (has('data-scdel')){ const [dd, i] = state.schPop.id.split('|'); state.schPop = null; editSchedule(Q => { Q.days[dd].splice(+i, 1); }); schedFocus(); return; }
   if (has('data-schedconfirm')){ const sc = state.schedChange; if (sc && sc.mode) applySchedule(sc.mode, sc.date); return; }
   if (has('data-schedcancel')){ state.schedChange = null; renderSchedule(); return; }
-  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; state.schRenames = []; state.draftUndo = []; renderSchedule(); schedFocus(); return; }
+  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; state.schRenames = []; state.draftUndo = []; state.pasteWarn = null; renderSchedule(); schedFocus(); return; }
   if (has('data-viewversion')){ state.viewVersion = d.viewversion === '' ? null : +d.viewversion; renderSchedule(); return; }
   if (has('data-delversion')){
     const i = +d.delversion, vs = state.data.scheduleVersions;
@@ -4795,8 +4832,17 @@ document.addEventListener('input', e => {
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (d.schadd !== undefined){ if (t.value) state.schAddDraft[d.schadd] = t.value; else delete state.schAddDraft[d.schadd]; }
-  if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
+  if (d.schsame !== undefined){
+    const [x, y] = JSON.parse(d.schsame), at = state.schRenames.findIndex(r => normKey(r[0]) === normKey(x) && normKey(r[1]) === normKey(y));
+    state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] });
+    if (at >= 0) state.schRenames.splice(at, 1); else state.schRenames.push([x, y]);
+    renderSchedule(); const c = $(`#tab-schedule [data-schsame="${CSS.escape(d.schsame)}"]`); if (c) c.focus(); return;
+  }
+  if (t.id === 'schedText'){
+    if (!state.schedTimer){ state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] }); state.redo = []; }   // a paste or a burst of typing is one step
+    state.draft = t.value; state.pasteWarn = parseSchedule(t.value).warnings; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
     state.schedTimer = setTimeout(() => {
+      state.schedTimer = null;
       const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop, h = ta.style.height, open = [...document.querySelectorAll('#tab-schedule details')].map(x => x.open);
       const y0 = ta.getBoundingClientRect().top;
       renderSchedule();
@@ -5059,7 +5105,7 @@ window.addEventListener('afterprint', () => {
   document.body.classList.remove('print-reports');
   closedForPrint.forEach(d => { d.open = false; }); closedForPrint = [];
 });
-window.addEventListener('beforeunload', e => { if (state.dirty && !state.demo && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if ((state.dirty && !state.demo && !(state.dirHandle && state.canWrite)) || (!state.demo && schedDirty())){ e.preventDefault(); e.returnValue = ''; } });
 
 (async function init(){
   render(); navReplace();
