@@ -1271,6 +1271,7 @@ function parseCSV(text){
 }
 function parseZoomTime(s){
   if (!s) return null; s = String(s).trim(); if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d\d:?\d\d)$/i.test(s)){ const t = Date.parse(s); if (!isNaN(t)) return new Date(t); }   // a time with its zone
   let y, mo, d, h, mi, se, ap, m;
   if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[\s,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
     mo = +m[1]; d = +m[2]; y = +m[3]; if (y < 100) y += 2000; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
@@ -1417,11 +1418,13 @@ function dateInName(name, year){
   if ((m = name.toLowerCase().match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)[ _-]?(\d{1,2})(?!\d)/))) month = real(year, mon.indexOf(m[1]) + 1, +m[2]);
   return { num, month };
 }
+const hNorm = c => c.trim().replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_+/g, ' ').replace(/\s+/g, ' ').toLowerCase();
 function parseFormativeFile(name, text, modified){
   const rows = parseCSV(String(text).replace(/^﻿/, '')).filter(r => r.some(c => c.trim()));
-  const named = /formative/i.test(name), hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(c.trim().toLowerCase())));
+  const named = /formative/i.test(name), hi = rows.slice(0, 8).findIndex(r => r.some(c => F_NAME.test(hNorm(c))));
   if (hi < 0) return named ? { error: 'This looks like a Formative export, but no student name column (like “Student Name” or “First Name”) was found in it.' } : null;
-  const h = rows[hi].map(c => c.trim().toLowerCase()), col = re => h.findIndex(c => re.test(c));
+  const h = rows[hi].map(hNorm), col = re => h.findIndex(c => re.test(c));
+  if (h.includes('student first name') && h.some(c => /^(possible points|percent score|formative id|grade grouping)$/.test(c))) return parseFormativeResults(name, rows, hi, h, modified);
   // Only a file named for Formative, or one with score or question columns, counts. Any other file with a student column
   // gets a hint, except Zoom's "unique users" export (a Name column and a duration), which keeps Zoom's own message.
   if (!named && !h.some(c => /score|points|percent|question|response|answer/.test(c)))
@@ -1449,6 +1452,52 @@ function parseFormativeFile(name, text, modified){
     : modified ? [dkOf(new Date(modified)), 'the day the file was saved'] : [];
   if (!dk) return { error: 'This Formative export has no date. Put the class date in the file name, like formative-10-14-2026.csv.' };
   return { formative: true, dk, dated, questions: qCols.length, qs: qCols.map(i => h[i]), rows: out };
+}
+
+// Formative's results export: one row per student per class section (like "IM1A Intervention: Monday"), with answer times,
+// points and possible points, and no question columns. One file can hold a whole week: each row counts for the class day named
+// in its section, in the week the answers are from. Days after the file was made aren't read, and neither is the day it was
+// made if no one had answered yet. How much a student answered is their possible points (the points of the questions they
+// answered) out of the most any student has in that Formative.
+const F_WD = { sun: 'sunday', mon: 'monday', tue: 'tuesday', tues: 'tuesday', wed: 'wednesday', thu: 'thursday', thur: 'thursday', thurs: 'thursday', fri: 'friday', sat: 'saturday' };
+function sectionWeekday(title){
+  const ws = new Set((String(title || '').toLowerCase().match(/[a-z]+/g) || []).map(w => DAYS.includes(w) ? w : F_WD[w]).filter(Boolean));
+  return ws.size === 1 ? [...ws][0] : null;
+}
+function parseFormativeResults(name, rows, hi, h, modified){
+  const col = re => h.findIndex(c => re.test(c)), num = v => { const x = parseFloat(String(v || '').replace('%', '')); return Number.isFinite(x) ? x : null; };
+  const first = col(/^student first( name)?$/), last = col(/^student last( name)?$/), sec = col(/^(section( title| name)?|class( name)?)$/);
+  const fid = col(/^formative id$/), ftitle = col(/^formative (title|name)$/), poss = col(/^possible points$/), pct = col(/^percent( score)?$/), status = col(/^grade grouping$|^status$/);
+  const times = ['min answered at', 'max answered at', 'submitted at'].map(t => h.indexOf(t)).filter(i => i >= 0);
+  const out = [], weeks = new Map(), ats = new Map();
+  for (const r of rows.slice(hi + 1)){
+    const nm = [first >= 0 ? r[first] : '', last >= 0 ? r[last] : ''].join(' ').replace(/\s+/g, ' ').trim();
+    if (!nm) continue;
+    const ts = times.map(i => parseZoomTime(r[i])).filter(Boolean), at = ts.length ? dkOf(new Date(Math.min(...ts))) : null;
+    const st = status >= 0 ? String(r[status] || '').trim() : '', started = ts.length > 0 || (!!st && !/not started/i.test(st));
+    const pp = started ? num(r[poss]) : null;
+    if (at){ weeks.set(weekKey(at), (weeks.get(weekKey(at)) || 0) + 1); ats.set(at, (ats.get(at) || 0) + 1); }
+    out.push({ name: nm, email: '', wd: sec >= 0 ? sectionWeekday(r[sec]) : null, at, answered: pp > 0 ? pp : 0, some: started && !(pp > 0),
+      pct: started ? num(r[pct]) : null, fk: String((fid >= 0 && r[fid]) || (ftitle >= 0 && r[ftitle]) || name).trim(), title: String((ftitle >= 0 && r[ftitle]) || '').trim() });
+  }
+  if (!out.length) return { error: 'This looks like a Formative export, but no student rows were found in it.' };
+  const top = m => [...m].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))[0]?.[0] || null;
+  const nd = dateInName(name, new Date(modified || Date.now()).getFullYear()), saved = modified ? dkOf(new Date(modified)) : null;
+  const made = nd.num || [...ats.keys()].sort().pop() || saved, week = top(weeks) || (made ? weekKey(made) : null), plain = top(ats) || made;
+  const parts = new Map(), most = new Map();
+  for (const r of out){
+    const dk = r.wd && week ? addDays(week, (DAYS.indexOf(r.wd) + 6) % 7) : r.at || plain;
+    if (!dk || (made && dk > made)) continue;
+    const pk = `${dk}|${r.fk}`;
+    if (!parts.has(pk)) parts.set(pk, { dk, dated: r.wd ? 'the class day in the section name' : 'submission times', qs: [`formative ${r.fk}`], title: r.title, rows: [] });
+    parts.get(pk).rows.push(r); most.set(r.fk, Math.max(most.get(r.fk) || 0, r.answered));
+  }
+  for (const [pk, p] of parts){
+    if (p.dk === made && !p.rows.some(r => r.answered || r.some)) parts.delete(pk);   // made before that day's class
+    else p.questions = most.get(p.rows[0].fk);
+  }
+  const ps = [...parts.values()];
+  return { formative: true, unit: 'point', parts: ps, rows: out, dk: ps.length ? ps[0].dk : made, dated: ps.length ? ps[0].dated : '', questions: 0, qs: [] };
 }
 
 // A gradebook export (a CSV with "grades" and the date in its name): each student's current grade.
@@ -1536,7 +1585,7 @@ function analyze(){
   for (const f of state.files){
     const z = parsedFile(f);
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
-    if (z.formative){ forms.push({ name: f.name, ...z }); continue; }
+    if (z.formative){ for (const part of z.parts || [z]) forms.push({ name: f.name, ...z, ...part }); continue; }
     if (z.grades){ gradeFiles.push({ name: f.name, ...z }); continue; }
     for (const r of z.rows){
       const dk = dkOf(r.join);
@@ -1550,26 +1599,30 @@ function analyze(){
   // Formative results by class day: per student, questions answered of the questions they were given. Files with the same
   // questions are one Formative (a second export, or one file per group), where a student counts once, with their best file.
   // A student's total adds up only the Formatives whose files list them.
-  const formByDk = new Map();
+  // A results export counts points, out of the most any student has in that Formative in any of its files.
+  const formByDk = new Map(), most = new Map();
+  for (const F of forms) if (F.unit === 'point') most.set(F.qs[0], Math.max(most.get(F.qs[0]) || 0, F.questions));
   for (const F of forms){
     if (state.data.deletedDays[F.dk]) continue;
-    if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], dated: new Set(), questions: 0, sets: new Map(), byKey: new Map(), unmatched: new Map() });
-    const g = formByDk.get(F.dk), match = matchFor(F.dk), qk = F.qs.join('\u0001');
-    g.files.push(F.name); g.dated.add(F.dated);
-    if (!g.sets.has(qk)){ g.sets.set(qk, { questions: F.questions, byKey: new Map() }); g.questions += F.questions; }
+    if (!formByDk.has(F.dk)) formByDk.set(F.dk, { dk: F.dk, files: [], dated: new Set(), questions: 0, units: new Set(), sets: new Map(), byKey: new Map(), unmatched: new Map() });
+    const g = formByDk.get(F.dk), match = matchFor(F.dk), qk = F.qs.join('\u0001'), questions = F.unit === 'point' ? most.get(qk) : F.questions;
+    if (!g.files.includes(F.name)) g.files.push(F.name);
+    g.dated.add(F.dated); g.units.add(F.unit || 'question');
+    if (!g.sets.has(qk)){ g.sets.set(qk, { questions, unit: F.unit || 'question', title: F.title || F.name.replace(/\.csv$/i, ''), byKey: new Map() }); g.questions += questions; }
     const seen = g.sets.get(qk).byKey;
     for (const r of F.rows){
       const m = match(r.name, r.email);
       if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
       if (deleted.has(m.key)) continue;
-      const e = seen.get(m.key) || { answered: 0, pct: null };
-      e.answered = Math.max(e.answered, r.answered); if (r.pct !== null) e.pct = Math.max(e.pct ?? 0, r.pct);
+      const e = seen.get(m.key) || { answered: 0, pct: null, some: false };
+      e.answered = Math.max(e.answered, r.answered); if (r.pct !== null) e.pct = Math.max(e.pct ?? 0, r.pct); e.some = e.some || !!r.some;
       seen.set(m.key, e);
     }
   }
   for (const g of formByDk.values()) for (const set of g.sets.values()) for (const [k, e] of set.byKey){
-    const t = g.byKey.get(k) || { answered: 0, total: 0, pcts: [] };
-    t.answered += e.answered; t.total += set.questions; if (e.pct !== null) t.pcts.push(e.pct);
+    const t = g.byKey.get(k) || { answered: 0, total: 0, pcts: [], some: false, parts: [] };
+    t.answered += e.answered; t.total += set.questions; if (e.pct !== null) t.pcts.push(e.pct); t.some = t.some || e.some;
+    t.parts.push({ title: set.title, answered: e.answered, total: set.questions, unit: set.unit, pct: e.pct === null ? null : Math.round(e.pct), some: e.some && !e.answered, inFile: true });
     g.byKey.set(k, t);
   }
   // Grades: each student's grade from the newest grades file that lists them (newest by the date in its name).
@@ -2170,11 +2223,16 @@ function scheduleInfo(A, key, period){
 function formOf(A, key, dk){
   const g = A.formByDk.get(dk); if (!g) return null;
   const t = g.byKey.get(key), pct = t && t.pcts.length ? Math.round(t.pcts.reduce((a, b) => a + b, 0) / t.pcts.length) : null;
-  const answered = t ? t.answered : 0, total = t ? t.total : g.questions;
+  const answered = t ? t.answered : 0, total = t ? t.total : g.questions, some = !!(t && t.some && !t.answered);
   // Share of the questions answered. With no question columns, any score (0% too) counts as taking part, and no score doesn't.
-  const share = !t ? 0 : total ? Math.min(1, answered / total) : pct !== null ? 1 : 0;
-  return { answered, total, pct, inFile: !!t, share, files: g.files };
+  // Answers with no points yet (a results export) count as some, but less than the engaged share.
+  const share = !t ? 0 : total ? Math.min(1, answered / total) || (some ? 1e-6 : 0) : pct !== null || some ? 1 : 0;
+  return { answered, total, pct, inFile: !!t, share, some, unit: g.units.size === 1 && g.units.has('point') ? 'point' : 'question', files: g.files, parts: t ? t.parts : [] };
 }
+// "answered 3 of 5" (questions) or "answered 3 of 6 points" (a results export, where 6 is the most any student has).
+const fAnswered = (f, unit) => f.some ? 'answered some (no points yet)' : `answered ${f.answered} of ${f.unit === 'point' ? plural(f.total, 'point') : unit ? plural(f.total, 'question') : f.total}`;
+// With two or more Formatives that day, each one on its own: "Week 11: answered 3 of 6 points, score 0%".
+const fEach = f => f.parts.length > 1 ? f.parts.map(p => `${p.title}: ${fAnswered(p, true)}${p.pct !== null ? `, score ${p.pct}%` : ''}`) : [];
 const dropOf = key => (state.data.drops[key] || {}).date || null;
 const isDropped = key => { const d = dropOf(key); return !!d && d <= todayDk(); };
 const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day === dk);
@@ -2201,7 +2259,7 @@ function cellState(A, key, dk, recs){
     if (isExcused(rec)) ov.cat = 'excused';
     if (rec.isAbsent){
       base = 'absent';
-      if (f && f.share > 0) fact = f.total ? `Answered ${f.answered} of ${f.total} on Formative` : 'Has a Formative score';
+      if (f && f.share > 0) fact = f.total ? `${cap(fAnswered(f))} on Formative` : 'Has a Formative score';
     } else {
       const eng = state.data.settings.engagedPct / 100;
       // Formative counts for a student who had instruction that day or answered something. A student who only had
@@ -2388,8 +2446,9 @@ function ovEditor(A, c, name){
   // (a date from the file name is noted on the F over the date instead).
   const form = A.formByDk.get(c.dk), f = form && formOf(A, c.key, c.dk), guessed = form ? [...form.dated].filter(x => x !== 'the file name') : [];
   const dated = guessed.length ? `date from ${guessed.join(' and ')}` : '', score = f && f.pct !== null ? `score ${f.pct}%` : '';
-  const formLine = !form ? 'Formative: no export for this day' : !f.inFile ? `Formative: not in the export${f.total || dated ? ` (${[f.total ? plural(f.total, 'question') : '', dated].filter(Boolean).join(', ')})` : ''}`
-    : `Formative: ${f.total ? `answered ${f.answered} of ${f.total}${score ? `, ${score}` : ''}` : score || 'no score'}${dated ? ` (${dated})` : ''}`;
+  const formLine = !form ? 'Formative: no export for this day' : !f.inFile ? `Formative: not in the export${f.total || dated ? ` (${[f.total ? plural(f.total, f.unit) : '', dated].filter(Boolean).join(', ')})` : ''}`
+    : f.parts.length > 1 ? `Formative, ${f.parts.length} together: ${fAnswered(f)}${dated ? ` (${dated})` : ''}`
+    : `Formative: ${f.total ? `${fAnswered(f)}${score ? `, ${score}` : ''}` : score || 'no score'}${dated ? ` (${dated})` : ''}`;
   const autoName = OV_CAT[c.base] || OV_STATE[c.base], day = A.dayByDk.get(c.dk), others = c.fx && day ? day.unmatched.map(u => `“${u.raw}”`) : [];
   const clash = others.length ? `Unmatched Zoom names that day: ${others.join(', ')}.` : '';
   const canFin = s ? s.canFinish || c.fin : !!c.plan;
@@ -2398,7 +2457,7 @@ function ovEditor(A, c, name){
   // "Finished work" is always there, hidden on days it doesn't apply, so the editor is the same size on every day.
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
-    <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${clash ? `<br>${esc(clash)}` : ''}</p>
+    <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${f ? fEach(f).map(x => `<br>· ${esc(x)}`).join('') : ''}${clash ? `<br>${esc(clash)}` : ''}</p>
     <div class="ovcols"><div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
       <div class="ovgrp"><span class="small muted">Letters</span>${lets}
         <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Message sent home</label>
@@ -3128,7 +3187,7 @@ function dayDetail(ctx){
       ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
-    ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${!f.inFile ? 'not in the export' : f.total ? `answered ${f.answered} of ${plural(f.total, 'question')}${f.pct !== null ? `, score ${f.pct}%` : ''}` : f.pct !== null ? `score ${f.pct}%` : 'no score'}</p>` : ''; })()}
+    ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${!f.inFile ? 'not in the export' : f.parts.length > 1 ? `${f.parts.length} together, ${fAnswered(f, true)}${fEach(f).map(x => `<br>· ${esc(x)}`).join('')}` : f.total ? `${fAnswered(f, true)}${f.pct !== null ? `, score ${f.pct}%` : ''}` : f.pct !== null ? `score ${f.pct}%` : 'no score'}</p>` : ''; })()}
     <div class="ddact">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
       ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
       <label class="ddnote"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(s.xkey)}" value="${esc(s.note)}" placeholder="Optional"></label></div></div>`;
@@ -3866,7 +3925,9 @@ function renderSettings(){
         ${setRow('s-len', 'sectionLen', 'Class length when a heading gives only a start time', 'min', 15, 180)}
       </div></div>
     <div class="panel"><h2>Overview colors from Formative</h2>
-      <p class="small muted" style="margin:0 0 12px">Save each Formative export (CSV) in the folder with the class date in its name, like <b>formative-10-14-2026.csv</b>, then click Refresh.</p>
+      <p class="small muted" style="margin:0 0 12px">Save each Formative export (CSV) in the folder with the class date in its name, like <b>formative-10-14-2026.csv</b>, then click Refresh.
+        Formative’s results export works as it downloads: each row counts for the class day in its section’s name (like “Intervention: Monday”), and how much a student answered is their possible points out of the most any student has.
+        Two Formatives on the same day (like a lesson and a self-paced mini lesson) count together, each in its own file.</p>
       <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they answered at least', '% of the questions', 1, 100)}</div>
       <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered:</p>
       <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none']].map(([k, w]) =>
