@@ -227,6 +227,57 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sec details summary{cursor:pointer;color:var(--muted);font-size:.8rem}
 .sec ul{margin:4px 0 0;padding-left:16px}
 .actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+/* The schedule board: a column for each day, a card for each class with the students who come to it */
+.schtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.schtop h2{margin:0}
+.schtop-b{display:flex;gap:8px;margin-left:auto}
+.schhow{margin:6px 0 0}
+.schmain .notice{margin:10px 0 0}
+.schboard{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(210px,1fr);gap:14px;margin-top:12px;overflow-x:auto;align-items:start;padding-bottom:4px}
+.schday h3{font-size:var(--fs-md);border-bottom:2px solid var(--ink);padding-bottom:3px;margin:0 0 8px}
+.scard{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:var(--surface);overflow:hidden}
+.scard-h{display:flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 10px;font-size:var(--fs-sm);color:var(--ink)}
+.scard.instruction .scard-h{background:var(--instr)} .scard.support .scard-h{background:var(--support)}
+.scard-h b{font-weight:600}
+.scard-h .btn{margin-left:auto}
+.scard-add{display:flex;gap:6px;padding:8px 8px 0}
+.scard-add input{flex:1;min-width:0;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 7px;font-size:var(--fs-sm)}
+.scard-n{margin:6px 10px 2px;font-size:var(--fs-xs);color:var(--muted)}
+.scard ul{list-style:none;margin:0;padding:0 0 6px}
+.scard li{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:28px;padding:0 4px 0 10px;font-size:var(--fs-sm)}
+.scard li:hover{background:var(--paper)}
+.scard li .name-btn{font-weight:500;text-decoration-color:transparent;min-width:0;overflow-wrap:anywhere}
+.scard li .name-btn:hover{text-decoration-color:var(--ink)}
+.schx{flex:none;width:26px;height:26px;border:0;border-radius:5px;background:none;color:var(--muted);font-size:1rem;line-height:1;cursor:pointer}
+.schx:hover{background:var(--grid);color:var(--ink)}
+.schempty{margin:14px 0 4px}
+.schlower{margin-top:18px}
+.schpaste > summary{cursor:pointer;list-style:none}
+.schpaste > summary::-webkit-details-marker{display:none}
+.schpaste > summary h2{display:inline}
+.schpaste > summary::after{content:' ▾';color:var(--muted)}
+.schpaste[open] > summary{margin-bottom:6px}
+/* Changes not saved yet: a bar over the bottom of the window, so nothing on the page moves when it appears */
+#tab-schedule.has-bar{padding-bottom:150px}
+.schbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.14)}
+.schbar-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px;height:138px;box-sizing:border-box}
+.schbar-l{min-width:0;display:flex;flex-direction:column}
+.schbar-l ul{margin:4px 0 0;padding-left:18px;overflow:auto;font-size:var(--fs-sm);line-height:1.45}
+.schbar-r .actions{margin-top:6px}
+.schwhen{display:grid;gap:4px;font-size:var(--fs-sm)}
+.schwhen input[type=date]{margin-left:4px}
+.schhint{margin:4px 0 0;height:1.4em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
+dialog.schdlg{width:min(560px,calc(100vw - 32px))}
+.schform{display:grid;grid-template-columns:repeat(4,max-content);gap:12px;align-items:end;margin:10px 0}
+.schform label,.ssname{display:grid;gap:4px;font-size:var(--fs-sm);font-weight:600}
+.schform select,.schform input,.ssname input{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 8px;font-size:var(--fs-md);font-weight:400}
+.ssname{margin-top:10px}
+.ssname input{width:100%;box-sizing:border-box}
+.ssdays{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ssdays fieldset{border:1px solid var(--line);border-radius:6px;margin:0;padding:4px 10px 8px}
+.ssdays legend{font-size:var(--fs-sm);font-weight:600;padding:0 4px}
+.ssdays label{display:flex;gap:6px;align-items:center;font-size:var(--fs-sm);min-height:26px}
+.schmsg{height:1.4em;margin:8px 0 0;color:var(--bad)}
 
 /* Settings */
 .set{display:grid;grid-template-columns:max-content 64px max-content;gap:10px;align-items:center;max-width:none}   /* label, number, unit: the numbers line up */
@@ -1171,7 +1222,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, lastAnalysis: null,
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, lastAnalysis: null,
   demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
   sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
 };
@@ -1253,6 +1304,71 @@ const schedCache = new Map();
 function parsedSchedule(text){
   if (!schedCache.has(text)){ if (schedCache.size > 30) schedCache.clear(); schedCache.set(text, parseSchedule(text)); }
   return schedCache.get(text);
+}
+
+/* ---------------- The schedule changed on the page ----------------
+   A class is a day, a kind (instruction or support hour), a start and end time, and the students who come to it.
+   A change made on the Schedule tab is written back as text laid out like a pasted sheet, so it's saved, kept in the
+   schedule's history and read by every tab exactly like a paste. */
+const SCHED_ORDER = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const secEnd = s => s.endMin ?? s.startMin + state.data.settings.sectionLen;
+const secKind = s => s.type === 'instruction' ? 'Instruction' : 'Support hour';
+const secLabel = s => `${secKind(s)} ${fmtRange(s.startMin, secEnd(s))}`;
+// Day names across the top, a heading over each class (a day's classes in time order), its students below.
+function scheduleText(P){
+  const cols = [];
+  for (const d of SCHED_ORDER) [...(P.days[d] || [])].sort((a, b) => a.startMin - b.startMin || (a.type === b.type ? 0 : a.type < b.type ? -1 : 1))
+    .forEach((x, i) => cols.push([i ? '' : cap(d), x.label, ...x.students]));
+  const n = Math.max(0, ...cols.map(c => c.length));
+  return Array.from({ length: n }, (_, r) => cols.map(c => c[r] || '').join('\t').replace(/\t+$/, '')).join('\n');
+}
+// Two schedules are the same when they're written out the same (however the sheet was laid out when pasted).
+const canonSched = t => scheduleText(parseSchedule(t));
+// A name the schedule can't hold: one that would read as a day name or as a class heading.
+function schedNameProblem(name){
+  if (!name) return 'Type a name first.';
+  if (DAYS.includes(name.toLowerCase().replace(/[^a-z]/g, '')) || parseSectionHeader(name)) return `“${name}” would read as a day or a class heading. Add a last name or an initial.`;
+  return '';
+}
+// What a change does, in plain words. Classes are matched up first (the same day, kind and times; the same day and kind;
+// the same kind and times on another day; the same day and start), so a class that moved or changed its time is one line,
+// not one line for each of its students.
+function schedChanges(oldText, newText, renames = []){
+  const a = parseSchedule(oldText), b = parseSchedule(newText);
+  const list = P => SCHED_ORDER.flatMap(d => (P.days[d] || []).map(x => ({ ...x, day: d, end: secEnd(x), keys: new Set(x.students.map(normKey)) })));
+  const A = list(a), B = list(b), to = new Map(), used = new Set();
+  const pair = test => { for (const x of A) if (!to.has(x)){ const y = B.find(z => !used.has(z) && test(x, z)); if (y){ to.set(x, y); used.add(y); } } };
+  pair((x, y) => x.day === y.day && x.type === y.type && x.startMin === y.startMin && x.end === y.end);
+  pair((x, y) => x.day === y.day && x.type === y.type);
+  pair((x, y) => x.type === y.type && x.startMin === y.startMin && x.end === y.end);
+  pair((x, y) => x.day === y.day && x.startMin === y.startMin);
+  const full = x => `${cap(x.day)} ${secKind(x).toLowerCase()} ${shortRange(x.startMin, x.end)}`;
+  // A class named by its day and kind, with its time only when that day has two of the kind.
+  const short = (P, x) => `${cap(x.day)} ${secKind(x).toLowerCase()}${(P.days[x.day] || []).filter(z => z.type === x.type).length > 1 ? ` ${shortRange(x.startMin, x.end)}` : ''}`;
+  const out = [];
+  for (const x of A){
+    const y = to.get(x);
+    if (!y) out.push(`Class removed: ${full(x)}`);
+    else if (x.day !== y.day || x.type !== y.type || x.startMin !== y.startMin || x.end !== y.end)
+      out.push(`${full(x)} is now ${[x.day !== y.day ? `on ${cap(y.day)}` : '', x.type !== y.type ? `a${y.type === 'instruction' ? 'n instruction class' : ' support hour'}` : '',
+        x.startMin !== y.startMin || x.end !== y.end ? shortRange(y.startMin, y.end) : ''].filter(Boolean).join(', ')}`);
+  }
+  for (const y of B) if (!used.has(y)) out.push(`New class: ${full(y)}`);
+  // Each student: the classes they came to (as matched up) against the classes they come to now.
+  const oldOf = new Map(renames.map(([o, n]) => [normKey(n), normKey(o)])), renamed = new Set(oldOf.values());
+  const names = new Map([...a.roster.map(r => [r.key, r.name]), ...b.roster.map(r => [r.key, r.name])]);
+  for (const [o, n] of renames) out.push(`“${o}” is now spelled “${n}”`);
+  const keys = [...new Set([...b.roster.map(r => r.key), ...a.roster.map(r => r.key).filter(k => !renamed.has(k))])].sort((x, y) => names.get(x).localeCompare(names.get(y)));
+  for (const k of keys){
+    const ok = oldOf.get(k) || k, nm = names.get(k);
+    const had = A.filter(x => x.keys.has(ok)), has = B.filter(y => y.keys.has(k)), hadNow = new Set(had.map(x => to.get(x)).filter(Boolean));
+    const gone = had.filter(x => !has.includes(to.get(x))), added = has.filter(y => !hadNow.has(y));
+    if (!gone.length && !added.length) continue;
+    const was = gone.map(x => short(a, x)).join(', '), now = added.map(y => short(b, y)).join(', ');
+    out.push(!had.length ? `${nm} joins: ${now}` : !has.length ? `${nm} comes off the schedule (was ${was})`
+      : gone.length && added.length ? `${nm}: ${now} instead of ${was}` : added.length ? `${nm} also comes to ${now}` : `${nm} no longer comes to ${was}`);
+  }
+  return out;
 }
 
 /* ---------------- Zoom participant export ---------------- */
@@ -3426,7 +3542,7 @@ function startScreen(){
   const steps = `<ol><li>Make a folder on this computer and put this file in it.</li>
       <li>Save Zoom participant reports (CSV files) into the same folder.</li>
       <li>Click <b>${h ? 'Choose a different folder' : 'Open attendance folder'}</b> and choose that folder.</li>
-      <li>Paste your weekly schedule on the <b>Schedule</b> tab. It’s saved in the folder for next time.</li></ol>`;
+      <li>Set up your weekly schedule on the <b>Schedule</b> tab: paste it from your spreadsheet, or add your classes and students there. It’s saved in the folder for next time.</li></ol>`;
   if (h) return `<div class="start"><h2>Open ${esc(h.name)}</h2><p class="muted lead">Your folder from last time.</p>
     <div class="actions"><button class="btn" data-reopen>Open ${esc(h.name)}</button>${demo}<button class="linkish" data-pick>Choose a different folder</button></div>
     <details class="small startsetup"><summary><b>Setting up a new folder</b></summary>${steps}${zoomHelp()}</details>
@@ -3446,7 +3562,7 @@ function setupCard(A){
   const folder = `<b>${esc(state.folderName || 'your folder')}</b>`, hasSched = A.roster.length > 0;
   const steps = [
     { done: true, title: 'Open your attendance folder', doneText: `${folder} is open.` },
-    { done: hasSched, title: 'Paste your class schedule', text: 'Copy it from your spreadsheet, then paste it on the Schedule tab.', act: '<button class="btn small" data-goto="schedule">Go to Schedule</button>' },
+    { done: hasSched, title: 'Set up your class schedule', text: 'Paste it from your spreadsheet on the Schedule tab, or add your classes and students there.', act: '<button class="btn small" data-goto="schedule">Go to Schedule</button>' },
     { done: A.days.length > 0, title: 'Add your Zoom reports', text: `Save a Zoom participant report (CSV) in ${folder}, then click Refresh.`, act: '<button class="btn small" data-refresh>Refresh</button>', more: zoomHelp() }];
   const next = steps.findIndex(x => !x.done), done = steps.filter(x => x.done).length;
   return `<div class="start setup"><h2>Get set up</h2><p class="muted" style="margin:4px 0 0">${done} of ${steps.length} done</p><ol class="steps">${steps.map((x, i) => {
@@ -3535,7 +3651,7 @@ function helpHTML(){
   return `<div class="dlg-head"><h2 id="helpTitle">Help</h2><button class="btn small ghost" data-dlgclose>Close</button></div><div class="dlg-body">
     <h3>Getting started</h3>
     <ol><li>Make a folder on this computer and put this file in it.</li><li>After each class, save the Zoom participant report (CSV) in that folder.</li>
-      <li>Click <b>Open attendance folder</b> and choose the folder.</li><li>Paste your weekly schedule on the <b>Schedule</b> tab, once.</li></ol>
+      <li>Click <b>Open attendance folder</b> and choose the folder.</li><li>Paste your weekly schedule on the <b>Schedule</b> tab, once. After that, change it right there.</li></ol>
     ${zoomHelp()}
     <div class="actions">${state.loaded ? '<button class="btn small" data-tour>Take the tour</button>' : '<button class="btn small" data-demo>Try a sample class</button>'}</div>
     <h3>What each tab is for</h3>
@@ -3543,7 +3659,7 @@ function helpHTML(){
       <li><b>Days</b>: who came on each class day, who was late or left early, and when each student was in Zoom.</li>
       <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share. <b>Copy message</b> writes a weekly note for a family.</li>
       ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
-      <li><b>Schedule</b>: your weekly class schedule, pasted from your spreadsheet.</li>
+      <li><b>Schedule</b>: your classes (day, time, instruction or support hour) and who comes to each. Paste it from your spreadsheet once, then change it there. Each change starts on the day you pick, and earlier days keep the schedule they had.</li>
       <li><b>Settings</b>: how many minutes count as late, your name for notes to families, your data, and the Google Sheet.</li></ul>
     <h3>What the colors and letters mean</h3>
     <p>On the Overview:</p>
@@ -3601,7 +3717,7 @@ const TOUR = [
   { tab: 'reports', at: () => $('#tab-reports details.day > summary'), title: 'Each class day', text: 'Who came, who was late and who left early, with a line showing when each student was in Zoom. Open a day to mark an absence as excused.' },
   { tab: 'students', at: () => $('#tab-students table.sum tbody tr'), title: 'Each student’s totals', text: 'Days attended and minutes received, for the dates you pick. Copy message writes a weekly note for a family. Click a name for a full report you can print.' },
   { tab: 'support', at: () => $('#tab-support .sup'), title: 'During the support hour', text: 'See who was let go early this week after finishing their work, and mark it as it happens.' },
-  { tab: 'schedule', at: () => $('#schedText'), title: 'Your class schedule', text: 'Paste it from your spreadsheet once. The preview shows how it was read. When students join or leave, paste the new one and pick the day it starts.' },
+  { tab: 'schedule', at: () => $('#tab-schedule .schboard') || $('#tab-schedule .schmain'), title: 'Your class schedule', text: 'Paste it from your spreadsheet once, then change it here: add or take students off a class, click a name to move a student, or click Edit to change a class’s day and time. Saving asks the day the change starts, so earlier days keep the schedule they had.' },
   { tab: 'settings', at: () => $('#tab-settings .panel'), title: 'Settings', text: 'How many minutes count as late or leaving early, and your name for notes to families.' },
   { at: () => $('#helpBtn'), title: 'Help is always here', text: 'What every color and letter means, how minutes are counted, and fixes for common problems. If you click something by mistake, Undo at the top right takes it back.' }];
 let tourAt = -1;
@@ -3773,8 +3889,10 @@ function versionLabel(i){
 const schedStartOk = sc => sc.mode === 'fix' || (sc.mode === 'start' && isDk(sc.date) && sc.date >= state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from);
 function schedStepHint(sc){
   const latestFrom = state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from;
-  return sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom
-    ? `Your newest schedule starts ${monDay(latestFrom)}. Pick that date or later, or choose “Fixing a mistake”.` : '';
+  if (sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom) return `Your newest schedule starts ${monDay(latestFrom)}. Pick that date or later, or choose “It was a mistake”.`;
+  if (sc.mode === 'start' && isDk(sc.date)) return `Days before ${monDay(sc.date)} keep the schedule they had.`;
+  if (sc.mode === 'fix') return 'For a wrong class or a misspelled name. Recorded days are counted with this schedule.';
+  return 'Pick one to save.';
 }
 function updateSchedStep(){
   const sc = state.schedChange; if (!sc) return;
@@ -3782,25 +3900,6 @@ function updateSchedStep(){
   if (r) r.checked = true;
   if (b) b.disabled = !schedStartOk(sc);
   if (h) h.textContent = schedStepHint(sc);
-}
-function schedulePreview(P){
-  const order = DAYS.filter(d => P.days[d]), S = state.data.settings;
-  if (!order.length) return `<p class="muted">Paste your schedule on the left to see a preview here.</p>`;
-  const supportOnly = new Set();
-  for (const d of order){ const ins = new Set(P.days[d].filter(s => s.type === 'instruction').flatMap(s => s.students.map(normKey)));
-    P.days[d].filter(s => s.type === 'support').forEach(s => s.students.forEach(n => { if (!ins.has(normKey(n))) supportOnly.add(`${d}|${normKey(n)}`); })); }
-  let prev = `<p class="small muted">${plural(P.roster.length, 'student')} · ${plural(supportOnly.size, 'support-hour-only spot')} (no instruction that day)</p><div class="days">`;
-  for (const d of order){
-    prev += `<div class="dcol"><h3>${cap(d)}</h3>`;
-    if (!P.days[d].length) prev += `<p class="small muted">No sections found under ${cap(d)}.</p>`;
-    for (const s of P.days[d]){
-      const end = s.endMin ?? s.startMin + S.sectionLen;
-      prev += `<div class="sec ${s.type}"><b>${s.type === 'instruction' ? 'Instruction' : 'Support hour'} ${shortRange(s.startMin, end)}</b>
-        <details><summary>${s.students.length} student${s.students.length === 1 ? '' : 's'}</summary><ul>${s.students.map(n => `<li>${esc(n)}</li>`).join('')}</ul></details></div>`;
-    }
-    prev += `</div>`;
-  }
-  return prev + `</div>`;
 }
 function scheduleDiff(oldText, newText){
   const a = parseSchedule(oldText), b = parseSchedule(newText);
@@ -3819,73 +3918,195 @@ function scheduleExample(open){
     <ul style="margin:0;padding-left:18px"><li>Day names across the top.</li><li>Under each day, a heading with “Instruction” or “Support” and the times.</li>
       <li>Each student under every hour they come to. Chloe is only under Monday’s support hour, so she’s expected for that hour only.</li></ul></details>`;
 }
+// The board changes a copy of the schedule (the unsaved one, or the newest saved one). Each change can be taken back with Undo
+// until it's saved.
+const schedDirty = () => state.draft !== null && (!!state.schRenames.length || canonSched(state.draft) !== canonSched(state.data.scheduleText));
+function editSchedule(fn){
+  const P = parseSchedule(state.draft ?? state.data.scheduleText);
+  state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] });
+  fn(P);
+  state.draft = scheduleText(P); state.viewVersion = null;
+  if (!schedDirty()){ state.draft = null; state.schedChange = null; }
+  renderSchedule();
+}
+// A class's card: its kind and time, a box to add a student, and who comes to it (click a name to change that student).
+function schedCard(d, i, x, edit){
+  const id = `${d}|${i}`, what = `${cap(d)} ${secKind(x).toLowerCase()}`, names = [...x.students].sort((a, b) => a.localeCompare(b));
+  return `<div class="scard ${x.type}"><div class="scard-h"><b>${secKind(x)}</b><span>${esc(shortRange(x.startMin, secEnd(x)))}</span>
+      ${edit ? `<button class="btn small ghost" data-schclass="${id}" aria-label="Change ${esc(what)}: its day and time">Edit</button>` : ''}</div>
+    ${edit ? `<div class="scard-add"><input data-schadd="${id}" list="schNames" autocomplete="off" spellcheck="false" placeholder="Add a student" aria-label="Add a student to ${esc(what)}">
+      <button class="btn small" data-schaddgo="${id}">Add</button></div>` : ''}
+    <p class="scard-n">${plural(names.length, 'student')}</p>
+    <ul>${names.map(n => `<li>${edit ? `<button class="name-btn" data-schstu="${esc(normKey(n))}">${esc(n)}</button><button class="schx" data-schrm="${id}" data-schkey="${esc(normKey(n))}"
+      aria-label="Take ${esc(n)} off ${esc(what)}" title="Take off this class">×</button>` : `<span>${esc(n)}</span>`}</li>`).join('')}</ul></div>`;
+}
+const hhmm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const minOf = v => { const m = /^(\d{1,2}):(\d{2})$/.exec(v || ''); return m ? +m[1] * 60 + +m[2] : null; };
+// The box for one class (its day, kind and times) or one student (their classes, and their name's spelling).
+function schedDialog(P){
+  const p = state.schPop; if (!p) return '';
+  const byDay = SCHED_ORDER.filter(d => (P.days[d] || []).length).map(d => [d, P.days[d].map((x, i) => [x, i]).sort(([a], [b]) => a.startMin - b.startMin)]);
+  const foot = (save, extra = '') => `<p class="small schmsg" id="sch-msg" role="alert"></p>
+    <div class="actions"><button class="btn" ${save}>Done</button>${extra}<button class="btn ghost" data-dlgclose>Cancel</button></div>`;
+  if (p.kind === 'class'){
+    const x = p.id ? P.days[p.id.split('|')[0]][+p.id.split('|')[1]] : null, last = byDay.length ? byDay[byDay.length - 1][1].slice(-1)[0][0] : null;
+    const day = x ? p.id.split('|')[0] : byDay.length ? byDay[0][0] : 'monday', type = x ? x.type : 'instruction';
+    const st = x ? x.startMin : last ? last.startMin : 14 * 60, en = x ? secEnd(x) : last ? secEnd(last) : 15 * 60;
+    return `<dialog class="dlg schdlg" id="schDlg" aria-labelledby="schDlgT"><div class="dlg-head"><h2 id="schDlgT">${x ? `${cap(day)} ${secKind(x).toLowerCase()}` : 'Add a class'}</h2></div>
+      <div class="dlg-body"><div class="schform">
+        <label>Day <select id="sc-day">${SCHED_ORDER.map(d => `<option value="${d}"${d === day ? ' selected' : ''}>${cap(d)}</option>`).join('')}</select></label>
+        <label>Kind <select id="sc-type"><option value="instruction"${type === 'instruction' ? ' selected' : ''}>Instruction</option><option value="support"${type === 'support' ? ' selected' : ''}>Support hour</option></select></label>
+        <label>Starts <input type="time" id="sc-start" value="${hhmm(st)}" step="300"></label>
+        <label>Ends <input type="time" id="sc-end" value="${hhmm(en)}" step="300"></label></div>
+        <p>${x ? `${plural(x.students.length, 'student')} ${x.students.length === 1 ? 'comes' : 'come'} to it, and they stay with it.` : 'Add its students on the board after this.'}</p>
+        ${foot('data-scsave', x ? '<button class="btn ghost" data-scdel>Delete this class</button>' : '')}</div></dialog>`;
+  }
+  const name = p.key ? (P.nameOf[p.key] || p.key) : '', first = p.key ? firstName(name) : 'them';
+  return `<dialog class="dlg schdlg" id="schDlg" aria-labelledby="schDlgT"><div class="dlg-head"><h2 id="schDlgT">${p.key ? esc(name) : 'Add a student'}</h2></div>
+    <div class="dlg-body"><label class="ssname">Name <input id="ss-name" value="${esc(name)}" autocomplete="off" spellcheck="false"${p.key ? '' : ' list="schNames"'}></label>
+      ${p.key ? '<p class="small muted">To fix the spelling, change it here. Their notes, marks and follow-ups go with them.</p>' : ''}
+      <p style="margin-bottom:4px"><b>Comes to</b></p>
+      ${byDay.length ? `<div class="ssdays">${byDay.map(([d, xs]) => `<fieldset><legend>${cap(d)}</legend>${xs.map(([x, i]) =>
+        `<label><input type="checkbox" data-ssclass="${d}|${i}"${p.key && x.students.some(n => normKey(n) === p.key) ? ' checked' : ''}> ${secKind(x)} ${esc(shortRange(x.startMin, secEnd(x)))}</label>`).join('')}</fieldset>`).join('')}</div>`
+        : '<p class="muted">There are no classes yet. Add a class first.</p>'}
+      ${p.key ? `<p class="small muted">To take ${esc(first)} off the schedule, uncheck every class.</p>` : ''}
+      ${foot('data-sssave')}</div></dialog>`;
+}
 function renderSchedule(){
-  const el = $('#tab-schedule'), vs = state.data.scheduleVersions;
+  const el = $('#tab-schedule'), vs = state.data.scheduleVersions, A = analyze();   // fresh: a save changes who is on the schedule
+  state.lastAnalysis = A;
   const viewing = state.viewVersion !== null && vs[state.viewVersion] && state.viewVersion !== vs.length - 1 ? state.viewVersion : null;
-  const text = state.draft ?? state.data.scheduleText;
+  const text = state.draft ?? state.data.scheduleText, edit = viewing === null;
   const P = parseSchedule(viewing !== null ? vs[viewing].text : text);
   const warn = viewing !== null ? [] : [...P.warnings];
   const delIn = viewing !== null ? [] : P.roster.filter(r => state.data.deleted[r.key]).map(r => r.name);
   if (delIn.length) warn.push(`Still in this schedule but deleted, so not counted: ${listJoin(delIn, 6)}. To count ${delIn.length === 1 ? 'them' : 'one'} again, use “Bring back” under Deleted students.`);
-  if (viewing === null && P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, make the spelling match in your sheet: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
-  const changed = state.draft !== null && state.draft !== state.data.scheduleText;
-  let step = '';
-  if (changed && state.schedChange){
-    const sc = state.schedChange, d = scheduleDiff(state.data.scheduleText, state.draft), latestFrom = vs[vs.length - 1].from;
-    const names = xs => xs.length ? esc(listJoin(xs.map(r => r.name), 6)) : 'none';
-    step = `<div class="sched-step" role="group" aria-label="When does this change start?"><b>Does this change start on a certain date?</b>
-      <label><input type="radio" name="schedmode" data-schedmode="start"${sc.mode === 'start' ? ' checked' : ''}> <b>Starting on</b>
-        <input type="date" data-schedfrom value="${esc(sc.date)}"${latestFrom ? ` min="${esc(latestFrom)}"` : ''} aria-label="Start date">. Days before this keep the old schedule. Use this when students join, leave or move.</label>
-      <label><input type="radio" name="schedmode" data-schedmode="fix"${sc.mode === 'fix' ? ' checked' : ''}> <b>Fixing a mistake.</b>
-        Every day ${latestFrom ? `since ${esc(monDay(latestFrom))}` : 'in your reports'} is checked again with this schedule. Use this for spelling fixes: a corrected name is also fixed in earlier schedules, and its notes and follow-ups move with it.</label>
-      <p class="small" data-schedhint style="margin:4px 0 0;color:var(--late)">${esc(schedStepHint(sc))}</p>
-      <p class="small" style="margin:6px 0 0">What changed: Added: ${names(d.added)}. Removed: ${names(d.removed)}.</p>
-      ${d.respelled.map(([a, b]) => `<p class="small" style="margin:4px 0 0">“${esc(a)}” and “${esc(b)}” look like the same student. If you fixed a spelling, choose “Fixing a mistake”.</p>`).join('')}
-      <div class="actions"><button class="btn" data-schedconfirm${schedStartOk(sc) ? '' : ' disabled'}>Save schedule</button>
-        <button class="btn ghost" data-schedcancel>Cancel</button></div></div>`;
+  if (viewing === null && P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, click one and fix its spelling: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
+  const dirty = schedDirty(), days = SCHED_ORDER.filter(d => (P.days[d] || []).length);
+  // The bar along the bottom: what the change does, and when it starts. It covers the page instead of pushing anything.
+  let bar = '';
+  if (dirty){
+    if (!state.schedChange) state.schedChange = { mode: null, date: todayDk() };
+    const sc = state.schedChange, latestFrom = vs[vs.length - 1].from, list = schedChanges(state.data.scheduleText, state.draft, state.schRenames);
+    // A pasted sheet that spells a name a little differently: saying it was a mistake carries the student's notes over.
+    for (const [x, y] of scheduleDiff(state.data.scheduleText, state.draft).respelled) if (!state.schRenames.some(r => normKey(r[1]) === normKey(y)))
+      list.push(`“${x}” and “${y}” look like the same student. If you fixed a spelling, pick “It was a mistake”.`);
+    const needDate = !!state.data.scheduleText.trim() && !!state.files.length && A.days.length > 0;
+    bar = `<div class="schbar" role="region" aria-label="Schedule changes not saved yet"><div class="schbar-in">
+      <div class="schbar-l"><b>Not saved yet</b>${list.length ? `<ul>${list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="small muted">It reads the same as the saved schedule.</p>'}</div>
+      <div class="schbar-r">${needDate ? `<div class="schwhen" role="radiogroup" aria-label="When does this change start?">
+          <label><input type="radio" name="schedmode" data-schedmode="start"${sc.mode === 'start' ? ' checked' : ''}> Starting on
+            <input type="date" data-schedfrom value="${esc(sc.date)}"${latestFrom ? ` min="${esc(latestFrom)}"` : ''} aria-label="Start date"></label>
+          <label><input type="radio" name="schedmode" data-schedmode="fix"${sc.mode === 'fix' ? ' checked' : ''}> It was a mistake: check every day${latestFrom ? ` since ${esc(monDay(latestFrom))}` : ''} again</label></div>
+        <p class="small schhint" data-schedhint>${esc(schedStepHint(sc))}</p>` : '<p class="small schhint">There are no Zoom reports yet, so this is the schedule from the start.</p>'}
+        <div class="actions">${needDate ? `<button class="btn" data-schedconfirm${schedStartOk(sc) ? '' : ' disabled'}>Save</button>` : '<button class="btn" id="saveSched">Save</button>'}
+          <button class="btn ghost" id="revertSched">Discard changes</button></div></div></div></div>`;
   }
-  const history = vs.length > 1 ? `<div class="small" style="margin-top:14px"><b>Schedule history</b><ul class="hist-list">${vs.map((v, i) => i).reverse().map(i =>
-    `<li><span>${esc(versionLabel(i))}</span>${i === vs.length - 1 ? '' : `<button class="btn small ghost" data-viewversion="${i}">View</button>`}
-      <button class="btn small ghost" data-delversion="${i}">Delete</button></li>`).join('')}</ul></div>` : '';
-  el.innerHTML = `<div class="two">
-    <div class="panel"><h2>Paste your schedule</h2>
-      <p class="small muted">In your sheet, select from “Monday” down to the last student in the bottom support list, across all days. Copy, then paste here.</p>
-      ${scheduleExample(!text.trim())}
-      <textarea id="schedText" spellcheck="false" placeholder="Paste from your spreadsheet">${esc(text)}</textarea>
-      ${step || `<div class="actions"><button class="btn" id="saveSched"${changed ? '' : ' disabled'}>Save schedule</button>
-        ${changed ? '<button class="btn ghost" id="revertSched">Discard changes</button>' : ''}
-        <span class="small muted">${changed ? 'Not saved yet' : (state.data.scheduleText ? 'Saved' : '')}</span></div>`}
-      ${history}
-      ${(() => { const ds = Object.entries(state.data.drops).sort((a, b) => b[1].date.localeCompare(a[1].date)); if (!ds.length) return '';
-        const nameOf = (state.lastAnalysis || analyze()).nameOf, nm = k => nameOf[k] || k;
-        return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
-          `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })()}
-      ${(() => { const ds = Object.entries(state.data.deleted).sort((a, b) => a[1].name.localeCompare(b[1].name)); if (!ds.length) return '';
-        return `<div class="small" style="margin-top:14px"><b>Deleted students</b> <span class="muted">(not on any tab or report)</span><ul class="hist-list">${ds.map(([k, v]) =>
-          `<li><span>${esc(v.name)}${v.date ? `, deleted ${esc(monDay(v.date))}` : ''}</span><button class="btn small ghost" data-undelete="${esc(k)}">Bring back</button></li>`).join('')}</ul></div>`; })()}
-      ${(() => { const ds = Object.keys(state.data.deletedDays).sort().reverse(); if (!ds.length) return '';
-        return `<div class="small" style="margin-top:14px"><b>Deleted days</b> <span class="muted">(not on any tab; their files are set aside)</span><ul class="hist-list">${ds.map(dk =>
-          `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}</span><button class="btn small ghost" data-undelday="${dk}">Bring back</button></li>`).join('')}</ul></div>`; })()}
-      ${(() => { const l = addedDaysList(analyze()); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
-        <span class="muted">(add one on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()}
-    </div>
-    <div class="panel"><h2>${viewing !== null ? 'An earlier schedule' : 'Preview'}</h2>
+  const board = days.length ? `<div class="schboard">${days.map(d => `<div class="schday"><h3>${cap(d)}</h3>${
+      P.days[d].map((x, i) => [x, i]).sort(([a], [b]) => a.startMin - b.startMin).map(([x, i]) => schedCard(d, i, x, edit)).join('')}</div>`).join('')}</div>`
+    : `<p class="muted schempty">No classes yet. Paste your schedule from your spreadsheet below, or click <b>Add a class</b>.</p>`;
+  const sub = viewing !== null ? '' : vs.length > 1 ? versionLabel(vs.length - 1) : '';
+  const history = vs.length > 1 ? `<div class="small" style="margin-top:4px"><b>Schedule history</b><ul class="hist-list">${vs.map((v, i) => i).reverse().map(i => {
+      const ch = i ? schedChanges(vs[i - 1].text, vs[i].text) : [];
+      const what = !i ? 'First schedule' : !ch.length ? 'No changes' : `${ch.slice(0, 2).join('; ')}${ch.length > 2 ? `; and ${ch.length - 2} more` : ''}`;
+      return `<li><span><b>${esc(versionLabel(i))}</b> <span class="muted"${ch.length > 2 ? ` title="${esc(ch.join('\n'))}"` : ''}>· ${esc(what)}</span></span>${i === vs.length - 1 ? '' : `<button class="btn small ghost" data-viewversion="${i}">View</button>`}
+        <button class="btn small ghost" data-delversion="${i}">Delete</button></li>`; }).join('')}</ul></div>` : '';
+  const lists = [history,
+    (() => { const ds = Object.entries(state.data.drops).sort((a, b) => b[1].date.localeCompare(a[1].date)); if (!ds.length) return '';
+      const nm = k => A.nameOf[k] || k;
+      return `<div class="small" style="margin-top:14px"><b>Dropped from the class</b><ul class="hist-list">${ds.map(([k, v]) =>
+        `<li><span>${esc(nm(k))}, starting ${esc(monDay(v.date))}</span><button class="btn small ghost" data-undrop="${esc(k)}">Undo</button></li>`).join('')}</ul></div>`; })(),
+    (() => { const ds = Object.entries(state.data.deleted).sort((a, b) => a[1].name.localeCompare(b[1].name)); if (!ds.length) return '';
+      return `<div class="small" style="margin-top:14px"><b>Deleted students</b> <span class="muted">(not on any tab or report)</span><ul class="hist-list">${ds.map(([k, v]) =>
+        `<li><span>${esc(v.name)}${v.date ? `, deleted ${esc(monDay(v.date))}` : ''}</span><button class="btn small ghost" data-undelete="${esc(k)}">Bring back</button></li>`).join('')}</ul></div>`; })(),
+    (() => { const ds = Object.keys(state.data.deletedDays).sort().reverse(); if (!ds.length) return '';
+      return `<div class="small" style="margin-top:14px"><b>Deleted days</b> <span class="muted">(not on any tab; their files are set aside)</span><ul class="hist-list">${ds.map(dk =>
+        `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}</span><button class="btn small ghost" data-undelday="${dk}">Bring back</button></li>`).join('')}</ul></div>`; })(),
+    (() => { const l = addedDaysList(A); return l ? `<div class="small" style="margin-top:14px"><b>Class days you added</b>
+      <span class="muted">(add one on the <button class="linkish" data-goto="overview">Overview</button>)</span>${l}</div>` : ''; })()].filter(Boolean).join('');
+  const known = [...new Set([...A.roster.map(r => r.name), ...P.roster.map(r => r.name)])].sort((a, b) => a.localeCompare(b));
+  el.classList.toggle('has-bar', !!bar);
+  el.innerHTML = `<div class="panel schmain">
+      <div class="schtop"><h2>${viewing !== null ? 'An earlier schedule' : 'Your schedule'}</h2>${sub ? `<span class="small muted">${esc(sub)}</span>` : ''}
+        ${edit ? `<span class="schtop-b"><button class="btn small" data-schnewclass>+ Add a class</button><button class="btn small" data-schnewstu${days.length ? '' : ' disabled'}>+ Add a student</button></span>` : ''}</div>
       ${viewing !== null ? `<div class="notice info">Viewing the schedule used ${esc(versionLabel(viewing))}. <button class="linkish" data-viewversion="">Back to current</button></div>` : ''}
       ${warn.length ? `<div class="notice"><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
-      ${schedulePreview(P)}
-      <p class="small muted" style="margin-top:12px">Listed under both hours: expected for both. Only under a support hour: expected for that hour.</p>
-    </div></div>`;
+      ${edit && days.length ? '<p class="small muted schhow">Click a name to change that student’s classes or fix its spelling. Edit changes a class’s day and time. Nothing is saved until you click Save.</p>' : ''}
+      ${board}</div>
+    <div class="two schlower">
+      <details class="panel schpaste" data-schpaste${!text.trim() || state.pasteOpen ? ' open' : ''}><summary><h2>Paste from a spreadsheet</h2></summary>
+        <p class="small muted">In your sheet, select from “Monday” down to the last student in the bottom support list, across all days. Copy, then paste here${text.trim() ? ' over everything in the box (Ctrl+A selects it)' : ''}. The board above shows how it was read.</p>
+        ${scheduleExample(!text.trim())}
+        <textarea id="schedText" spellcheck="false" placeholder="Paste from your spreadsheet">${esc(text)}</textarea></details>
+      <div class="panel">${lists || '<p class="small muted">The schedule’s history, and students you drop or delete, are listed here.</p>'}</div></div>
+    <datalist id="schNames">${known.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
+    ${bar}${edit ? schedDialog(P) : ''}`;
+  const dl = $('#schDlg');
+  if (dl && !dl.open){ dl.showModal(); const f = dl.querySelector(state.schPop.kind === 'class' ? '#sc-day' : state.schPop.key ? '[data-ssclass]' : '#ss-name'); if (f) f.focus(); }
+}
+// Add the name typed on a class's card to that class. A name already on the schedule (or an earlier one) keeps its spelling.
+function schedAdd(id){
+  const box = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (!box) return;
+  const raw = box.value.replace(/\s+/g, ' ').trim(), k = normKey(raw), [d, i] = id.split('|');
+  const P = parseSchedule(state.draft ?? state.data.scheduleText), x = (P.days[d] || [])[+i]; if (!x) return;
+  const name = P.nameOf[k] || (state.lastAnalysis || analyze()).nameOf[k] || raw, bad = schedNameProblem(name);
+  if (bad){ setStatus(bad); box.focus(); return; }
+  if (x.students.some(n => normKey(n) === k)){ setStatus(`${name} is already in this class.`); box.select(); return; }
+  editSchedule(Q => { Q.days[d][+i].students.push(name); });
+  const nb = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (nb) nb.focus();
+}
+function schedMsg(m, focus){ const p = $('#sch-msg'); if (p) p.textContent = m; if (focus) focus.focus(); }
+// Done in the class box: the class moves to its new day and times, with its students.
+function schedClassDone(){
+  const p = state.schPop, day = $('#sc-day').value, type = $('#sc-type').value, st = minOf($('#sc-start').value), en = minOf($('#sc-end').value);
+  if (st === null || en === null) return schedMsg('Fill in both times.', $(st === null ? '#sc-start' : '#sc-end'));
+  if (en <= st) return schedMsg('The class has to end after it starts.', $('#sc-end'));
+  const P = parseSchedule(state.draft ?? state.data.scheduleText);
+  const clash = (P.days[day] || []).some((x, i) => `${day}|${i}` !== p.id && x.type === type && x.startMin === st);
+  if (clash) return schedMsg(`There’s already a ${cap(day)} ${type === 'instruction' ? 'instruction class' : 'support hour'} at ${fmtMin(st)}.`, $('#sc-start'));
+  state.schPop = null;
+  editSchedule(Q => {
+    let x = { type, startMin: st, endMin: en, students: [] };
+    if (p.id){ const [d0, i0] = p.id.split('|'); x = Q.days[d0].splice(+i0, 1)[0]; Object.assign(x, { type, startMin: st, endMin: en }); }
+    x.label = secLabel(x); (Q.days[day] = Q.days[day] || []).push(x);
+  });
+}
+// Done in the student box: the student comes to the classes checked, with the name as typed.
+function schedStudentDone(){
+  const p = state.schPop, P = parseSchedule(state.draft ?? state.data.scheduleText);
+  const name = $('#ss-name').value.replace(/\s+/g, ' ').trim(), k = normKey(name), A = state.lastAnalysis || analyze();
+  const bad = schedNameProblem(name); if (bad) return schedMsg(bad, $('#ss-name'));
+  const on = new Set([...document.querySelectorAll('#schDlg [data-ssclass]')].filter(c => c.checked).map(c => c.dataset.ssclass));
+  if (!p.key){
+    if (P.nameOf[k]) return schedMsg(`${P.nameOf[k]} is already on the schedule. Click their name on the board to change their classes.`, $('#ss-name'));
+    if (!on.size) return schedMsg('Check the classes they come to.');
+  } else if (k !== p.key && P.nameOf[k]) return schedMsg(`${P.nameOf[k]} is already on the schedule.`, $('#ss-name'));
+  const was = p.key ? P.nameOf[p.key] : null, spell = p.key ? name : A.nameOf[k] && normKey(A.nameOf[k]) === k ? A.nameOf[k] : name;
+  state.schPop = null;
+  if (was && was !== spell){
+    const r = state.schRenames.find(z => normKey(z[1]) === p.key);   // renamed twice: one rename, from the first spelling
+    state.schRenames = [...state.schRenames.filter(z => z !== r), [r ? r[0] : was, spell]].filter(([a, b]) => a !== b);
+  }
+  editSchedule(Q => {
+    for (const d of SCHED_ORDER) (Q.days[d] || []).forEach((x, i) => {
+      const at = x.students.findIndex(n => normKey(n) === (p.key || k));
+      if (on.has(`${d}|${i}`)){ if (at < 0) x.students.push(spell); else x.students[at] = spell; }
+      else if (at >= 0) x.students.splice(at, 1);
+    });
+  });
+  const b = $(`#tab-schedule [data-schstu="${CSS.escape(k)}"]`); if (b) b.focus();
 }
 // A corrected spelling keeps the student's notes, marks and follow-ups.
 function renameStudentKey(oldK, newK){
   if (!oldK || !newK || oldK === newK) return;
   const D = state.data;
-  for (const bag of [D.notes, D.excused, D.excusedAbsent]) for (const k of Object.keys(bag)){
+  for (const bag of [D.notes, D.excused, D.excusedAbsent, D.dayStatus]) for (const k of Object.keys(bag)){
     const i = k.indexOf('|');
     if (k.slice(i + 1) === oldK){ const nk = k.slice(0, i + 1) + newK; if (!(nk in bag)) bag[nk] = bag[k]; delete bag[k]; }
   }
   if (D.followUps[oldK]){ D.followUps[newK] = [...(D.followUps[newK] || []), ...D.followUps[oldK]]; delete D.followUps[oldK]; }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
+  for (const bag of [D.drops, D.deleted]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
 }
 const respellText = (text, a, b) => text.split('\n').map(r => r.split('\t').map(c => normKey(c) === normKey(a) ? b : c).join('\t')).join('\n');
 function applySchedule(mode, from){
@@ -3901,10 +4122,13 @@ function applySchedule(mode, from){
     }
     vs[vs.length - 1].text = text;
   }
+  // A spelling fixed on the board is fixed in every schedule, and the student's notes and marks go with them.
+  for (const [a, b] of state.schRenames){ for (const v of vs) v.text = respellText(v.text, a, b); renameStudentKey(normKey(a), normKey(b)); }
   vs[0].from = '';
   state.data.scheduleText = vs[vs.length - 1].text;
-  state.draft = null; state.schedChange = null; state.viewVersion = null;
+  state.draft = null; state.schedChange = null; state.viewVersion = null; state.schRenames = []; state.draftUndo = [];
   changed(); renderSchedule();
+  setStatus(mode === 'start' ? `Saved. The change starts ${monDay(from)}; days before it keep the schedule they had.` : 'Saved.', 'info', { label: 'Undo', act: 'undo' });
 }
 
 /* ---------------- Settings ---------------- */
@@ -4109,7 +4333,7 @@ function ingest(files, dataText, folderName, demo = false){
   if (!same){ state.undo = []; state.redo = []; }
   state.snap = JSON.stringify(state.data); state.saveFailed = false;
   state.folderName = folderName; state.loaded = true; state.dirty = keep; state.draft = null; state.noteEdit = null;
-  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null;
+  state.fuEdit = null; state.fuEditDraft = null; state.schedChange = null; state.viewVersion = null; state.schPop = null; state.schRenames = []; state.draftUndo = [];
   if (!same){
     state.openDays.clear(); state.autoOpened = false; state.student = null; state.studentFrom = null; state.returnTo = null;
     state.highlight = null; state.fuPrefill = null; state.familyDraft = {}; state.familyCopied = null;
@@ -4132,10 +4356,14 @@ function changed(){
 }
 // Undo (or Redo) puts the data back as it was, saves it, and redraws. Boxes open on something that may be gone close.
 function undo(redo){
+  if (!redo && state.tab === 'schedule' && state.draftUndo.length){
+    const p = state.draftUndo.pop(); state.draft = p.draft; state.schRenames = p.renames; if (!schedDirty()){ state.draft = null; state.schedChange = null; }
+    renderSchedule(); setStatus('Took back your last change to the schedule. It isn’t saved yet.', 'info'); return;
+  }
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
   if (!state.loaded || !from.length) return;
   to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
-  Object.assign(state, { ovSel: null, ovDay: null, noteEdit: null, fuEdit: null, fuEditDraft: null, dropEdit: null, schedChange: null, viewVersion: null });
+  Object.assign(state, { ovSel: null, ovDay: null, noteEdit: null, fuEdit: null, fuEditDraft: null, dropEdit: null, schedChange: null, viewVersion: null, schPop: null });
   state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
   render();
   setStatus(redo ? 'Put the change back.' : 'Undid your last change.', 'info', redo ? (state.undo.length ? { label: 'Undo', act: 'undo' } : null) : { label: 'Redo', act: 'redo' });
@@ -4261,6 +4489,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('click', async e => {
   if (tourAt >= 0) requestAnimationFrame(placeTour);   // a day opened or closed under the tour moves what it points at
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
+  if (e.target.id === 'schDlg'){ e.target.close(); return; }   // a click outside the box (on its backdrop)
   const t = e.target.closest('button'); if (!t) return;
   // A double-click acts once (and a second click can't land on whatever moved under the pointer).
   if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday', 'ovdh', 'ovdelday'].some(k => t.dataset[k] !== undefined)) return;
@@ -4506,15 +4735,18 @@ async function onClick(t){
   if (has('data-ignore')){ const rk = t.closest('[data-rk]').dataset.rk; if (!state.data.ignored.includes(rk)) state.data.ignored.push(rk); changed(); renderCurrent(); return; }
   if (d.unlink){ delete state.data.aliases[d.unlink]; changed(); renderSettings(); return; }
   if (d.unignore){ state.data.ignored = state.data.ignored.filter(z => z !== d.unignore); changed(); renderSettings(); return; }
-  if (t.id === 'saveSched'){
-    if (state.draft === null) return;
-    const hasReports = state.files.length && analyze().days.length;
-    if (hasReports){ state.schedChange = { mode: null, date: todayDk() }; renderSchedule(); return; }
-    return applySchedule('fix');
-  }
+  if (t.id === 'saveSched'){ if (state.draft !== null) applySchedule('fix'); return; }   // the first schedule, or no reports yet: nothing earlier to keep
+  // The schedule board: a box for a class or a student, adding and taking students off a class.
+  if (has('data-schnewclass') || d.schclass){ state.schPop = { kind: 'class', id: d.schclass || null }; state.schFrom = focusSelector(t); renderSchedule(); return; }
+  if (has('data-schnewstu') || d.schstu){ state.schPop = { kind: 'student', key: d.schstu || null }; state.schFrom = focusSelector(t); renderSchedule(); return; }
+  if (d.schaddgo) return schedAdd(d.schaddgo);
+  if (d.schrm){ const [dd, i] = d.schrm.split('|'), k = d.schkey; editSchedule(Q => { const x = Q.days[dd][+i]; x.students = x.students.filter(n => normKey(n) !== k); }); return; }
+  if (has('data-scsave')) return schedClassDone();
+  if (has('data-sssave')) return schedStudentDone();
+  if (has('data-scdel')){ const [dd, i] = state.schPop.id.split('|'); state.schPop = null; editSchedule(Q => { Q.days[dd].splice(+i, 1); }); return; }
   if (has('data-schedconfirm')){ const sc = state.schedChange; if (sc && sc.mode) applySchedule(sc.mode, sc.date); return; }
   if (has('data-schedcancel')){ state.schedChange = null; renderSchedule(); return; }
-  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; renderSchedule(); return; }
+  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; state.schRenames = []; state.draftUndo = []; renderSchedule(); return; }
   if (has('data-viewversion')){ state.viewVersion = d.viewversion === '' ? null : +d.viewversion; renderSchedule(); return; }
   if (has('data-delversion')){
     const i = +d.delversion, vs = state.data.scheduleVersions;
@@ -4633,6 +4865,8 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
+  if (e.key === 'Enter' && d.schadd !== undefined){ e.preventDefault(); schedAdd(d.schadd); return; }
+  if (e.key === 'Enter' && state.schPop && t.closest && t.closest('#schDlg') && t.tagName === 'INPUT' && t.type !== 'checkbox'){ e.preventDefault(); (state.schPop.kind === 'class' ? schedClassDone : schedStudentDone)(); return; }
   if (e.key === 'Enter' && (t.id === 'gs-url' || t.id === 'gs-key')){ e.preventDefault(); connectSheet(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
@@ -4702,6 +4936,10 @@ function calendarKey(e, t){
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
   to.focus();
 }
+document.addEventListener('close', e => {
+  if (e.target.id !== 'schDlg') return;
+  state.schPop = null; const b = state.schFrom && visible(state.schFrom); if (b) b.focus();
+}, true);
 document.addEventListener('toggle', e => {
   const el = e.target;
   if (el.classList && el.classList.contains('day')){
@@ -4709,6 +4947,7 @@ document.addEventListener('toggle', e => {
   }
   if (el.dataset && 'familybox' in el.dataset) state.familyOpen = el.open;
   if (el.dataset && 'supunm' in el.dataset) state.supUnmOpen = el.open;
+  if (el.dataset && 'schpaste' in el.dataset) state.pasteOpen = el.open;
   if (el.dataset && 'daytable' in el.dataset) state.dayTableOpen = el.open;
   if (el.dataset && 'addday' in el.dataset){ state.addDay.open = el.open; if (!el.open) el.querySelector('.addmsg').textContent = ''; }
   if (el.dataset && 'rangemenu' in el.dataset) state.rangeMenu = el.open;
