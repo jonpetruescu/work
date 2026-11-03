@@ -233,10 +233,10 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .schtop-b{display:flex;gap:8px;margin-left:auto}
 .schhow{margin:6px 0 0}
 .schmain .notice{margin:10px 0 0}
-.schboard{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(210px,1fr);gap:14px;margin-top:12px;overflow-x:auto;align-items:start;padding-bottom:4px}
+.schboard{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;margin-top:12px;align-items:start}
 .schday h3{font-size:var(--fs-md);border-bottom:2px solid var(--ink);padding-bottom:3px;margin:0 0 8px}
 .scard{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:var(--surface);overflow:hidden}
-.scard-h{display:flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 10px;font-size:var(--fs-sm);color:var(--ink)}
+.scard-h{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-height:36px;padding:4px 6px 4px 10px;box-sizing:border-box;font-size:var(--fs-sm);color:var(--ink)}
 .scard.instruction .scard-h{background:var(--instr)} .scard.support .scard-h{background:var(--support)}
 .scard-h b{font-weight:600}
 .scard-h .btn{margin-left:auto}
@@ -246,7 +246,9 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .scard ul{list-style:none;margin:0;padding:0 0 6px}
 .scard li{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:28px;padding:0 4px 0 10px;font-size:var(--fs-sm)}
 .scard li:hover{background:var(--paper)}
-.scard li .name-btn{font-weight:500;text-decoration-color:transparent;min-width:0;overflow-wrap:anywhere}
+.schnm{min-width:0}
+.scard li .name-btn{font-weight:500;text-decoration-color:transparent;overflow-wrap:anywhere}
+.schtag{font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
 .scard li .name-btn:hover{text-decoration-color:var(--ink)}
 .schx{flex:none;width:26px;height:26px;border:0;border-radius:5px;background:none;color:var(--muted);font-size:1rem;line-height:1;cursor:pointer}
 .schx:hover{background:var(--grid);color:var(--ink)}
@@ -258,16 +260,18 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .schpaste > summary::after{content:' ▾';color:var(--muted)}
 .schpaste[open] > summary{margin-bottom:6px}
 /* Changes not saved yet: a bar over the bottom of the window, so nothing on the page moves when it appears */
-#tab-schedule.has-bar{padding-bottom:150px}
+#tab-schedule{padding-bottom:150px}   /* room for the bar, kept even without it, so nothing jumps when it comes or goes */
+html:has(#tab-schedule.has-bar:not([hidden])){scroll-padding-bottom:170px}   /* a focused box is scrolled clear of the bar */
+body:has(#tab-schedule.has-bar:not([hidden])) #status{bottom:162px;z-index:16}
 .schbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.14)}
-.schbar-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px;height:138px;box-sizing:border-box}
-.schbar-l{min-width:0;display:flex;flex-direction:column}
+.schbar-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr);gap:20px;height:138px;box-sizing:border-box}
+.schbar-l{min-width:0;min-height:0;display:flex;flex-direction:column}
 .schbar-l ul{margin:4px 0 0;padding-left:18px;overflow:auto;font-size:var(--fs-sm);line-height:1.45}
 .schbar-r .actions{margin-top:6px}
 .schwhen{display:grid;gap:4px;font-size:var(--fs-sm)}
 .schwhen input[type=date]{margin-left:4px}
 .schhint{margin:4px 0 0;height:1.4em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
-dialog.schdlg{width:min(560px,calc(100vw - 32px))}
+dialog.dlg.schdlg{width:min(560px,calc(100vw - 32px))}
 .schform{display:grid;grid-template-columns:repeat(4,max-content);gap:12px;align-items:end;margin:10px 0}
 .schform label,.ssname{display:grid;gap:4px;font-size:var(--fs-sm);font-weight:600}
 .schform select,.schform input,.ssname input{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 8px;font-size:var(--fs-md);font-weight:400}
@@ -277,7 +281,12 @@ dialog.schdlg{width:min(560px,calc(100vw - 32px))}
 .ssdays fieldset{border:1px solid var(--line);border-radius:6px;margin:0;padding:4px 10px 8px}
 .ssdays legend{font-size:var(--fs-sm);font-weight:600;padding:0 4px}
 .ssdays label{display:flex;gap:6px;align-items:center;font-size:var(--fs-sm);min-height:26px}
-.schmsg{height:1.4em;margin:8px 0 0;color:var(--bad)}
+.schmsg{height:2.8em;margin:8px 0 0;color:var(--bad)}
+@media print{
+  .schbar,.scard-add,.schx,.scard-h .btn,.schtop-b,.schhow,.schpaste,.schlower .btn{display:none !important}
+  #tab-schedule{padding-bottom:0}
+  .scard{break-inside:avoid}
+}
 
 /* Settings */
 .set{display:grid;grid-template-columns:max-content 64px max-content;gap:10px;align-items:center;max-width:none}   /* label, number, unit: the numbers line up */
@@ -1222,7 +1231,7 @@ const state = {
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
   include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
-  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, lastAnalysis: null,
+  selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, schAddDraft: {}, lastAnalysis: null,
   demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
   sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
 };
@@ -3889,9 +3898,9 @@ function versionLabel(i){
 const schedStartOk = sc => sc.mode === 'fix' || (sc.mode === 'start' && isDk(sc.date) && sc.date >= state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from);
 function schedStepHint(sc){
   const latestFrom = state.data.scheduleVersions[state.data.scheduleVersions.length - 1].from;
-  if (sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom) return `Your newest schedule starts ${monDay(latestFrom)}. Pick that date or later, or choose “It was a mistake”.`;
+  if (sc.mode === 'start' && latestFrom && isDk(sc.date) && sc.date < latestFrom) return `Pick ${monDay(latestFrom)} or later, or “It was a mistake”.`;
   if (sc.mode === 'start' && isDk(sc.date)) return `Days before ${monDay(sc.date)} keep the schedule they had.`;
-  if (sc.mode === 'fix') return 'For a wrong class or a misspelled name. Recorded days are counted with this schedule.';
+  if (sc.mode === 'fix') return 'Recorded days are checked again with this schedule.';
   return 'Pick one to save.';
 }
 function updateSchedStep(){
@@ -3921,8 +3930,11 @@ function scheduleExample(open){
 // The board changes a copy of the schedule (the unsaved one, or the newest saved one). Each change can be taken back with Undo
 // until it's saved.
 const schedDirty = () => state.draft !== null && (!!state.schRenames.length || canonSched(state.draft) !== canonSched(state.data.scheduleText));
+// The schedule the board shows and changes, written out in time order (as every change saves it), so a class keeps its
+// place and its id ("monday|0") after the first change.
+const boardSched = () => parseSchedule(canonSched(state.draft ?? state.data.scheduleText));
 function editSchedule(fn){
-  const P = parseSchedule(state.draft ?? state.data.scheduleText);
+  const P = boardSched();
   state.draftUndo.push({ draft: state.draft, renames: [...state.schRenames] });
   fn(P);
   state.draft = scheduleText(P); state.viewVersion = null;
@@ -3932,13 +3944,14 @@ function editSchedule(fn){
 // A class's card: its kind and time, a box to add a student, and who comes to it (click a name to change that student).
 function schedCard(d, i, x, edit){
   const id = `${d}|${i}`, what = `${cap(d)} ${secKind(x).toLowerCase()}`, names = [...x.students].sort((a, b) => a.localeCompare(b));
+  const tag = n => { const k = normKey(n), dr = dropOf(k); return state.data.deleted[k] ? ' <span class="schtag">deleted</span>' : dr ? ` <span class="schtag">${dr <= todayDk() ? 'dropped' : 'drops'} ${esc(monDay(dr))}</span>` : ''; };
   return `<div class="scard ${x.type}"><div class="scard-h"><b>${secKind(x)}</b><span>${esc(shortRange(x.startMin, secEnd(x)))}</span>
       ${edit ? `<button class="btn small ghost" data-schclass="${id}" aria-label="Change ${esc(what)}: its day and time">Edit</button>` : ''}</div>
-    ${edit ? `<div class="scard-add"><input data-schadd="${id}" list="schNames" autocomplete="off" spellcheck="false" placeholder="Add a student" aria-label="Add a student to ${esc(what)}">
+    ${edit ? `<div class="scard-add"><input data-schadd="${id}" list="schNames" autocomplete="off" spellcheck="false" placeholder="Add a student" aria-label="Add a student to ${esc(what)}" value="${esc(state.schAddDraft[id] || '')}">
       <button class="btn small" data-schaddgo="${id}">Add</button></div>` : ''}
     <p class="scard-n">${plural(names.length, 'student')}</p>
-    <ul>${names.map(n => `<li>${edit ? `<button class="name-btn" data-schstu="${esc(normKey(n))}">${esc(n)}</button><button class="schx" data-schrm="${id}" data-schkey="${esc(normKey(n))}"
-      aria-label="Take ${esc(n)} off ${esc(what)}" title="Take off this class">×</button>` : `<span>${esc(n)}</span>`}</li>`).join('')}</ul></div>`;
+    <ul>${names.map(n => `<li>${edit ? `<span class="schnm"><button class="name-btn" data-schstu="${esc(normKey(n))}" data-schcard="${id}">${esc(n)}</button>${tag(n)}</span><button class="schx" data-schrm="${id}" data-schkey="${esc(normKey(n))}"
+      aria-label="Take ${esc(n)} off ${esc(what)}" title="Take off this class">×</button>` : `<span>${esc(n)}${tag(n)}</span>`}</li>`).join('')}</ul></div>`;
 }
 const hhmm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const minOf = v => { const m = /^(\d{1,2}):(\d{2})$/.exec(v || ''); return m ? +m[1] * 60 + +m[2] : null; };
@@ -3977,8 +3990,8 @@ function renderSchedule(){
   state.lastAnalysis = A;
   const viewing = state.viewVersion !== null && vs[state.viewVersion] && state.viewVersion !== vs.length - 1 ? state.viewVersion : null;
   const text = state.draft ?? state.data.scheduleText, edit = viewing === null;
-  const P = parseSchedule(viewing !== null ? vs[viewing].text : text);
-  const warn = viewing !== null ? [] : [...P.warnings];
+  const P = viewing !== null ? parseSchedule(vs[viewing].text) : boardSched(), raw = viewing !== null ? P : parseSchedule(text);
+  const warn = viewing !== null ? [] : [...raw.warnings];
   const delIn = viewing !== null ? [] : P.roster.filter(r => state.data.deleted[r.key]).map(r => r.name);
   if (delIn.length) warn.push(`Still in this schedule but deleted, so not counted: ${listJoin(delIn, 6)}. To count ${delIn.length === 1 ? 'them' : 'one'} again, use “Bring back” under Deleted students.`);
   if (viewing === null && P.lookalikes.length) warn.push(`These names look almost the same. If they’re one student, click one and fix its spelling: ${P.lookalikes.map(([a, b]) => `${a} / ${b}`).join('; ')}.`);
@@ -3998,7 +4011,7 @@ function renderSchedule(){
           <label><input type="radio" name="schedmode" data-schedmode="start"${sc.mode === 'start' ? ' checked' : ''}> Starting on
             <input type="date" data-schedfrom value="${esc(sc.date)}"${latestFrom ? ` min="${esc(latestFrom)}"` : ''} aria-label="Start date"></label>
           <label><input type="radio" name="schedmode" data-schedmode="fix"${sc.mode === 'fix' ? ' checked' : ''}> It was a mistake: check every day${latestFrom ? ` since ${esc(monDay(latestFrom))}` : ''} again</label></div>
-        <p class="small schhint" data-schedhint>${esc(schedStepHint(sc))}</p>` : '<p class="small schhint">There are no Zoom reports yet, so this is the schedule from the start.</p>'}
+        <p class="small schhint" data-schedhint>${esc(schedStepHint(sc))}</p>` : `<p class="small schhint">${state.data.scheduleText.trim() ? 'There are no Zoom reports yet, so this is the schedule from the start.' : 'Your first schedule: every day is checked with it.'}</p>`}
         <div class="actions">${needDate ? `<button class="btn" data-schedconfirm${schedStartOk(sc) ? '' : ' disabled'}>Save</button>` : '<button class="btn" id="saveSched">Save</button>'}
           <button class="btn ghost" id="revertSched">Discard changes</button></div></div></div></div>`;
   }
@@ -4048,10 +4061,11 @@ function renderSchedule(){
 function schedAdd(id){
   const box = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (!box) return;
   const raw = box.value.replace(/\s+/g, ' ').trim(), k = normKey(raw), [d, i] = id.split('|');
-  const P = parseSchedule(state.draft ?? state.data.scheduleText), x = (P.days[d] || [])[+i]; if (!x) return;
+  const P = boardSched(), x = (P.days[d] || [])[+i]; if (!x) return;
   const name = P.nameOf[k] || (state.lastAnalysis || analyze()).nameOf[k] || raw, bad = schedNameProblem(name);
   if (bad){ setStatus(bad); box.focus(); return; }
   if (x.students.some(n => normKey(n) === k)){ setStatus(`${name} is already in this class.`); box.select(); return; }
+  delete state.schAddDraft[id];
   editSchedule(Q => { Q.days[d][+i].students.push(name); });
   const nb = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (nb) nb.focus();
 }
@@ -4061,7 +4075,7 @@ function schedClassDone(){
   const p = state.schPop, day = $('#sc-day').value, type = $('#sc-type').value, st = minOf($('#sc-start').value), en = minOf($('#sc-end').value);
   if (st === null || en === null) return schedMsg('Fill in both times.', $(st === null ? '#sc-start' : '#sc-end'));
   if (en <= st) return schedMsg('The class has to end after it starts.', $('#sc-end'));
-  const P = parseSchedule(state.draft ?? state.data.scheduleText);
+  const P = boardSched();
   const clash = (P.days[day] || []).some((x, i) => `${day}|${i}` !== p.id && x.type === type && x.startMin === st);
   if (clash) return schedMsg(`There’s already a ${cap(day)} ${type === 'instruction' ? 'instruction class' : 'support hour'} at ${fmtMin(st)}.`, $('#sc-start'));
   state.schPop = null;
@@ -4070,10 +4084,13 @@ function schedClassDone(){
     if (p.id){ const [d0, i0] = p.id.split('|'); x = Q.days[d0].splice(+i0, 1)[0]; Object.assign(x, { type, startMin: st, endMin: en }); }
     x.label = secLabel(x); (Q.days[day] = Q.days[day] || []).push(x);
   });
+  schedFocus(`[data-schclass="${day}|${(boardSched().days[day] || []).findIndex(x => x.type === type && x.startMin === st)}"]`);
 }
+// After a change, focus goes to the thing changed, or to "Add a class" when it's gone.
+function schedFocus(sel){ const b = (sel && $(`#tab-schedule ${sel}`)) || $('#tab-schedule [data-schnewclass]'); if (b) b.focus(); }
 // Done in the student box: the student comes to the classes checked, with the name as typed.
 function schedStudentDone(){
-  const p = state.schPop, P = parseSchedule(state.draft ?? state.data.scheduleText);
+  const p = state.schPop, P = boardSched();
   const name = $('#ss-name').value.replace(/\s+/g, ' ').trim(), k = normKey(name), A = state.lastAnalysis || analyze();
   const bad = schedNameProblem(name); if (bad) return schedMsg(bad, $('#ss-name'));
   const on = new Set([...document.querySelectorAll('#schDlg [data-ssclass]')].filter(c => c.checked).map(c => c.dataset.ssclass));
@@ -4094,7 +4111,8 @@ function schedStudentDone(){
       else if (at >= 0) x.students.splice(at, 1);
     });
   });
-  const b = $(`#tab-schedule [data-schstu="${CSS.escape(k)}"]`); if (b) b.focus();
+  const card = p.card && $(`#tab-schedule [data-schstu="${CSS.escape(k)}"][data-schcard="${CSS.escape(p.card)}"]`);
+  schedFocus(card ? null : `[data-schstu="${CSS.escape(k)}"]`); if (card) card.focus();
 }
 // A corrected spelling keeps the student's notes, marks and follow-ups.
 function renameStudentKey(oldK, newK){
@@ -4127,7 +4145,7 @@ function applySchedule(mode, from){
   vs[0].from = '';
   state.data.scheduleText = vs[vs.length - 1].text;
   state.draft = null; state.schedChange = null; state.viewVersion = null; state.schRenames = []; state.draftUndo = [];
-  changed(); renderSchedule();
+  changed(); renderSchedule(); schedFocus();
   setStatus(mode === 'start' ? `Saved. The change starts ${monDay(from)}; days before it keep the schedule they had.` : 'Saved.', 'info', { label: 'Undo', act: 'undo' });
 }
 
@@ -4233,6 +4251,7 @@ function render(){
   // Tabs work like tabs everywhere else: one Tab stop, and the arrow keys move between them.
   document.querySelectorAll('nav.tabs button').forEach(b => { const on = b.dataset.tab === state.tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; b.hidden = tabHidden(b.dataset.tab); });
   for (const t of Object.keys(RENDER)) $('#tab-' + t).hidden = state.tab !== t;
+  if (state.tab !== 'schedule' && state.schPop){ state.schPop = null; const dl = $('#schDlg'); if (dl && dl.open) dl.close(); }
   RENDER[state.tab]();
   placeTour();
 }
@@ -4358,7 +4377,7 @@ function changed(){
 function undo(redo){
   if (!redo && state.tab === 'schedule' && state.draftUndo.length){
     const p = state.draftUndo.pop(); state.draft = p.draft; state.schRenames = p.renames; if (!schedDirty()){ state.draft = null; state.schedChange = null; }
-    renderSchedule(); setStatus('Took back your last change to the schedule. It isn’t saved yet.', 'info'); return;
+    renderSchedule(); schedFocus(); setStatus('Took back your last change to the schedule. It isn’t saved yet.', 'info'); return;
   }
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
   if (!state.loaded || !from.length) return;
@@ -4489,7 +4508,10 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('click', async e => {
   if (tourAt >= 0) requestAnimationFrame(placeTour);   // a day opened or closed under the tour moves what it points at
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
-  if (e.target.id === 'schDlg'){ e.target.close(); return; }   // a click outside the box (on its backdrop)
+  if (e.target.id === 'schDlg' && schDown === e.target){   // a click on the dimmed page around the box
+    const r = e.target.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){ e.target.close(); return; }
+  }
   const t = e.target.closest('button'); if (!t) return;
   // A double-click acts once (and a second click can't land on whatever moved under the pointer).
   if (e.detail > 1 && ['supmark', 'ovcell', 'adddaygo', 'deladdday', 'ovdh', 'ovdelday'].some(k => t.dataset[k] !== undefined)) return;
@@ -4738,15 +4760,21 @@ async function onClick(t){
   if (t.id === 'saveSched'){ if (state.draft !== null) applySchedule('fix'); return; }   // the first schedule, or no reports yet: nothing earlier to keep
   // The schedule board: a box for a class or a student, adding and taking students off a class.
   if (has('data-schnewclass') || d.schclass){ state.schPop = { kind: 'class', id: d.schclass || null }; state.schFrom = focusSelector(t); renderSchedule(); return; }
-  if (has('data-schnewstu') || d.schstu){ state.schPop = { kind: 'student', key: d.schstu || null }; state.schFrom = focusSelector(t); renderSchedule(); return; }
+  if (has('data-schnewstu') || d.schstu){ state.schPop = { kind: 'student', key: d.schstu || null, card: d.schcard || null };
+    state.schFrom = d.schcard ? `button[data-schstu="${CSS.escape(d.schstu)}"][data-schcard="${CSS.escape(d.schcard)}"]` : focusSelector(t); renderSchedule(); return; }
   if (d.schaddgo) return schedAdd(d.schaddgo);
-  if (d.schrm){ const [dd, i] = d.schrm.split('|'), k = d.schkey; editSchedule(Q => { const x = Q.days[dd][+i]; x.students = x.students.filter(n => normKey(n) !== k); }); return; }
+  if (d.schrm){   // focus goes to the student now in that row (or the one above), or to the card's add box once it's empty
+    const id = d.schrm, [dd, i] = id.split('|'), k = d.schkey, row = [...document.querySelectorAll(`#tab-schedule [data-schrm="${CSS.escape(id)}"]`)].indexOf(t);
+    editSchedule(Q => { const x = Q.days[dd][+i]; x.students = x.students.filter(n => normKey(n) !== k); });
+    const xs = [...document.querySelectorAll(`#tab-schedule [data-schrm="${CSS.escape(id)}"]`)], b = xs[Math.min(row, xs.length - 1)] || $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`);
+    if (b) b.focus(); return;
+  }
   if (has('data-scsave')) return schedClassDone();
   if (has('data-sssave')) return schedStudentDone();
-  if (has('data-scdel')){ const [dd, i] = state.schPop.id.split('|'); state.schPop = null; editSchedule(Q => { Q.days[dd].splice(+i, 1); }); return; }
+  if (has('data-scdel')){ const [dd, i] = state.schPop.id.split('|'); state.schPop = null; editSchedule(Q => { Q.days[dd].splice(+i, 1); }); schedFocus(); return; }
   if (has('data-schedconfirm')){ const sc = state.schedChange; if (sc && sc.mode) applySchedule(sc.mode, sc.date); return; }
   if (has('data-schedcancel')){ state.schedChange = null; renderSchedule(); return; }
-  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; state.schRenames = []; state.draftUndo = []; renderSchedule(); return; }
+  if (t.id === 'revertSched'){ state.draft = null; state.schedChange = null; state.schRenames = []; state.draftUndo = []; renderSchedule(); schedFocus(); return; }
   if (has('data-viewversion')){ state.viewVersion = d.viewversion === '' ? null : +d.viewversion; renderSchedule(); return; }
   if (has('data-delversion')){
     const i = +d.delversion, vs = state.data.scheduleVersions;
@@ -4766,11 +4794,14 @@ document.addEventListener('input', e => {
   if ('addlike' in d){ state.addDay.like = t.value; return; }
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
+  if (d.schadd !== undefined){ if (t.value) state.schAddDraft[d.schadd] = t.value; else delete state.schAddDraft[d.schadd]; }
   if (t.id === 'schedText'){ state.draft = t.value; state.schedChange = null; state.viewVersion = null; clearTimeout(state.schedTimer);
     state.schedTimer = setTimeout(() => {
       const ta = $('#schedText'), pos = ta.selectionStart, top = ta.scrollTop, h = ta.style.height, open = [...document.querySelectorAll('#tab-schedule details')].map(x => x.open);
+      const y0 = ta.getBoundingClientRect().top;
       renderSchedule();
-      const n = $('#schedText'); n.style.height = h; n.focus(); n.setSelectionRange(pos, pos); n.scrollTop = top;
+      const n = $('#schedText'); n.style.height = h; n.focus({ preventScroll: true }); n.setSelectionRange(pos, pos); n.scrollTop = top;
+      window.scrollBy(0, n.getBoundingClientRect().top - y0);
       const ds = document.querySelectorAll('#tab-schedule details'); if (ds.length === open.length) ds.forEach((x, i) => { x.open = open[i]; });
     }, 250); }
   // Drafts are kept in memory as they're typed (never re-rendering), so a redraw doesn't wipe them.
@@ -4845,6 +4876,9 @@ document.addEventListener('keydown', e => {
   // Shortcuts that work anywhere except while typing (where Ctrl+Z undoes the typing): Undo and Redo, ? for Help, / to find a student.
   const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable]'), dlg = document.querySelector('dialog[open]');
   if (!typing && !dlg && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zy]$/i.test(e.key)){ e.preventDefault(); undo(e.key.toLowerCase() === 'y' || e.shiftKey); return; }
+  if (d.schadd !== undefined && !t.value && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'z' && state.draftUndo.length){
+    e.preventDefault(); const id = d.schadd; undo(false); const nb = $(`#tab-schedule [data-schadd="${CSS.escape(id)}"]`); if (nb) nb.focus(); return;
+  }
   if (!typing && !dlg && !e.ctrlKey && !e.metaKey && !e.altKey){
     if (e.key === '?'){ e.preventDefault(); openHelp(); return; }
     if (e.key === '/'){ const s0 = visible(`#tab-${state.tab} [data-search], #tab-${state.tab} [data-supsearch]`); if (s0){ e.preventDefault(); s0.focus(); s0.select(); } return; }
@@ -4866,7 +4900,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); t.blur(); focusOvCell(state.ovSel); return; }
   if (e.key === 'Enter' && d.adddate !== undefined){ e.preventDefault(); state.addDay.date = t.value; addDay(); return; }
   if (e.key === 'Enter' && d.schadd !== undefined){ e.preventDefault(); schedAdd(d.schadd); return; }
-  if (e.key === 'Enter' && state.schPop && t.closest && t.closest('#schDlg') && t.tagName === 'INPUT' && t.type !== 'checkbox'){ e.preventDefault(); (state.schPop.kind === 'class' ? schedClassDone : schedStudentDone)(); return; }
+  if (e.key === 'Enter' && state.schPop && t.closest && t.closest('#schDlg') && t.tagName === 'INPUT'){ e.preventDefault(); (state.schPop.kind === 'class' ? schedClassDone : schedStudentDone)(); return; }
   if (e.key === 'Enter' && (t.id === 'gs-url' || t.id === 'gs-key')){ e.preventDefault(); connectSheet(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
@@ -4936,6 +4970,8 @@ function calendarKey(e, t){
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
   to.focus();
 }
+let schDown = null;
+document.addEventListener('pointerdown', e => { schDown = e.target; }, true);
 document.addEventListener('close', e => {
   if (e.target.id !== 'schDlg') return;
   state.schPop = null; const b = state.schFrom && visible(state.schFrom); if (b) b.focus();
