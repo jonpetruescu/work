@@ -2401,13 +2401,12 @@ function cellState(A, key, dk, recs){
       if (f && f.share > 0) fact = f.total ? `${cap(fAnswered(f))} on Formative` : 'Has a Formative score';
     } else {
       const eng = state.data.settings.engagedPct / 100;
-      // Formative counts for a student who had instruction that day or answered something. A student who only had
-      // the support hour may not have been given it, so their day is colored from Zoom alone.
-      const useF = !!f && ((plan ? plan.secs : rec.sections || []).some(s => s.type === 'instruction') || f.share > 0);
-      base = !useF ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
+      // On a day with a Formative export, it counts for every student who was in Zoom, whatever their hours: answering none,
+      // or not being in the export at all, means they likely weren't actually there.
+      base = !f ? 'engaged' : f.share === 0 ? 'away' : f.share < eng ? 'idle' : 'engaged';
       // Late is an L even on a day they finished work; leaving that day isn't, since they were let go.
       auto.L = hasFlag(rec, 'late') || (!hasFlag(rec, 'fin') && ['early', 'soft'].some(k => hasFlag(rec, k)));
-      fact = !f ? 'No Formative that day' : useF ? '' : f.inFile ? 'Answered none on Formative' : 'Not in the Formative export';
+      fact = !f ? 'No Formative that day' : '';
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
   const cat = ov.cat in OV_CAT ? ov.cat : base;
@@ -4232,9 +4231,9 @@ function renderSettings(){
         Two Formatives on the same day (like a lesson and a self-paced mini lesson) count together, each in its own file.</p>
       <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they answered at least', '% of the questions', 1, 100)}</div>
       <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered:</p>
-      <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none']].map(([k, w]) =>
+      <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none, or isn’t in the export at all']].map(([k, w]) =>
         `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}</li>`).join('')}</ul>
-      <p class="small muted" style="margin:8px 0 0">Days without an export, and support-hour-only students who answered nothing, are colored from Zoom alone.</p></div>
+      <p class="small muted" style="margin:8px 0 0">Days without an export are colored from Zoom alone.</p></div>
     <div class="panel"><h2>Printed reports and messages to families</h2>
       <div class="settext">
         <label for="s-teacher">Your name (for “Prepared by” and the sign-off)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Ms. Lopez">
