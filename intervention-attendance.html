@@ -3277,8 +3277,10 @@ function rptOutput(A){
   const withDays = D.rows.filter(r => r.n), fa = r => Math.round(r.attended / r.n * 100), fe = r => Math.round(r.eng / r.n * 100);
   const bands = BANDS.map(([l, test]) => { const v = [withDays.filter(r => test(fa(r))).length, withDays.filter(r => test(fe(r))).length];
     return { label: l, values: v, tips: v.map(n => plural(n, 'student')) }; });
-  cards += card('Students by share of days', `How many of the ${plural(withDays.length, 'student')} attended, and were engaged on, each share of their class days.`, legend
-    + vizColumns(bands, [{ name: 'Days attended', color: '--viz-1' }, { name: 'Engaged days', color: '--viz-2' }], Math.max(...bands.flatMap(x => x.values)), '', 'Students by share of days')
+  // An example from the tallest "Days attended" bar, so the chart reads at a glance.
+  const big = bands.reduce((a, x) => x.values[0] > a.values[0] ? x : a, bands[0]), bigShare = big.label === '100%' ? 'all' : big.label.toLowerCase();
+  cards += card('Students by share of their class days', `Students counted by the share of their own class days they attended, or were engaged on. For example, ${big.values[0]} of ${plural(withDays.length, 'student')} attended ${bigShare} of theirs.`, legend
+    + vizColumns(bands, [{ name: 'Days attended', color: '--viz-1' }, { name: 'Engaged days', color: '--viz-2' }], Math.max(...bands.flatMap(x => x.values)), '', 'Students by share of their class days')
     + vizTable(['Share of class days', 'Students by days attended', 'Students by engaged days'], bands.map(x => [x.label, x.values[0], x.values[1]])));
   // By weekday (Monday first): the same two percents, side by side.
   const wd = [1, 2, 3, 4, 5, 6, 0].filter(d => T.wdays.has(d)).map(d => { const o = wkRow(T.wdays.get(d));
