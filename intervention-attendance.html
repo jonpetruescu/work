@@ -44,7 +44,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);font-variant-numeric:tabular-nums}
-.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.wrap{max-width:2400px;margin:0 auto;padding:0 32px}   /* the whole window, with room at the sides */
 h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
@@ -308,7 +308,7 @@ table.sum.rpt th{white-space:normal}
 html:has(#tab-schedule.has-bar:not([hidden])){scroll-padding-bottom:170px}   /* a focused box is scrolled clear of the bar */
 body:has(#tab-schedule.has-bar:not([hidden])) #status{bottom:162px;z-index:16}
 .schbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.14)}
-.schbar-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr);gap:20px;height:138px;box-sizing:border-box}
+.schbar-in{max-width:2400px;margin:0 auto;padding:12px 32px;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr);gap:20px;height:138px;box-sizing:border-box}
 .schbar-l{min-width:0;min-height:0;display:flex;flex-direction:column}
 .schbar-l ul{margin:4px 0 0;padding-left:18px;overflow:auto;font-size:var(--fs-sm);line-height:1.45}
 .schbar-r .actions{margin-top:6px}
@@ -539,7 +539,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 }
 
 /* Support hour tab */
-.sup{max-width:560px}
+.sup{max-width:960px}
 .sup-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:4px 0 12px}
 .sup-head h2{font-size:var(--fs-lg)}
 .sup-head h2:focus{outline:none}
@@ -580,6 +580,18 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 
 /* Student report */
 .sreport{max-width:920px}
+.setstack{max-width:760px}
+/* A wide window: the student's page in two columns (the calendar on the right, beside the numbers and the follow-up log),
+   and Settings in two columns. */
+@media screen and (min-width: 1400px){
+  .sreport{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:18px;align-items:start}
+  .sreport > *{grid-column:1}
+  .sreport > .rcal{grid-column:2;grid-row:1 / span 3}
+  .sreport > .rfoot{grid-column:1 / -1}
+  .setstack{max-width:none;columns:2;column-gap:16px}   /* each card right under the one above, in two columns */
+  .setstack > *{break-inside:avoid;margin:0 0 16px}
+  .setstack > * + *{margin-top:0}
+}
 /* The report's toolbar (a .toolbar above the report). Back, the other students and their place in the list keep fixed
    widths, so stepping from student to student never moves the date control or the button under the pointer. */
 .rbar [data-studentback]{min-width:13.6em}   /* fits "← Back to Wed, May 12" as well as "← All students" */
@@ -3179,7 +3191,7 @@ function studentReportHTML(ctx, o){
   }
   // The calendar is the report: every class as a small bar on its own clock, each week's minutes at the end
   // of its row, and any day opens under its week with the full picture.
-  h += `<section class="rsec"><h3>Calendar</h3>${stripCalendar(ctx, o)}</section>`;
+  h += `<section class="rsec rcal"><h3>Calendar</h3>${stripCalendar(ctx, o)}</section>`;
   if (o.print && o.include.table) h += printDayTable(ctx, o);
   if (!o.print || o.include.log) h += followUpSection(ctx, o);
   if (!o.print) h += familySection(ctx);
@@ -3606,7 +3618,7 @@ function followUpSection(ctx, o){
     return `<section class="rsec"><h3>Follow-up</h3>${items.length ? `<ul class="fu">${items.join('')}</ul>` : '<p class="small">No follow-ups logged.</p>'}</section>`;
   }
   const pre = state.fuPrefill && state.fuPrefill.key === ctx.key ? state.fuPrefill : { date: todayDk(), how: 'call', text: '' };
-  return `<section class="rsec" data-fusection><h3>Follow-up log</h3>
+  return `<section class="rsec rfu" data-fusection><h3>Follow-up log</h3>
     ${all.length ? `<ul class="fu">${all.map(f => state.fuEdit === f.id
       ? `<li class="fuform" data-fuform data-fuid="${esc(f.id)}">${fuInputs(state.fuEditDraft && state.fuEditDraft.id === f.id ? state.fuEditDraft : f)}<button class="btn small" data-fusave="${esc(f.id)}">Save</button><button class="btn small ghost" data-fucancel>Cancel</button></li>`
       : `<li><span class="when">${esc(monDay(f.date))}</span><b>${esc(fuHow(f))}</b><span class="txt">${esc(f.text)}</span>
@@ -3654,7 +3666,7 @@ function familyText(ctx){
   return d ? d.text : familyNote(ctx);
 }
 function familySection(ctx){
-  return `<section class="rsec noprint"><details data-familybox${state.familyOpen ? ' open' : ''}><summary><h3 style="display:inline">Write a note to the family</h3></summary>
+  return `<section class="rsec rfam noprint"><details data-familybox${state.familyOpen ? ' open' : ''}><summary><h3 style="display:inline">Write a note to the family</h3></summary>
     ${(() => { const d = state.familyDraft[draftKey(ctx)];
       return d && (d.from !== ctx.period.from || d.to !== ctx.period.to) && isDk(d.from) && isDk(d.to)
         ? `<p class="small" style="color:var(--late)">You edited this note for ${esc(fmtPeriod(d))}. Click Start over to write it for these dates.</p>` : ''; })()}
@@ -3682,7 +3694,7 @@ function footerSection(ctx, o){
   const S = state.data.settings, held = ctx.dates.filter(d => d.status === 'held').map(d => d.dk);
   const src = held.length ? `Source: Zoom participant reports for ${plural(held.length, 'class day')}, ${monDay(held[0])} – ${monDay(held[held.length - 1])}. ` : '';
   const def = `Minutes are time connected to Zoom during this student’s scheduled hours. They don’t show how much the student took part. Late = joined more than ${S.lateGrace} minutes after the start. Left early = left more than ${S.leaveGrace} minutes before the end. Out mid-class = more than ${S.gapMin} minutes out of Zoom in the middle of class. Excused absences and finished-work time don’t count against the student. Days without a Zoom report aren’t counted.`;
-  return `<footer class="rsec small muted"><p style="margin:0">${esc(src + def)} <b>Confidential student information.</b></p>
+  return `<footer class="rsec rfoot small muted"><p style="margin:0">${esc(src + def)} <b>Confidential student information.</b></p>
     <h3 style="margin-top:14px">Team notes</h3><div class="ruled"></div><div class="ruled"></div><div class="ruled"></div></footer>`;
 }
 
@@ -4467,7 +4479,7 @@ function renderSettings(){
   const A = analyze();
   const aliasList = Object.entries(state.data.aliases);
   const noClass = Object.keys(state.data.noClass).sort().reverse();
-  $('#tab-settings').innerHTML = `<div class="stack" style="max-width:760px">
+  $('#tab-settings').innerHTML = `<div class="stack setstack">
     <div class="panel"><h2>Timing</h2>
       <div class="set">
         ${setRow('s-late', 'lateGrace', 'Late if they join more than', 'min after the start', 0, 60)}
