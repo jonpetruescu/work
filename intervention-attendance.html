@@ -231,6 +231,16 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
 .ovnm{display:flex;align-items:center;gap:6px;min-width:0}
 .plantag.mltag{color:var(--fin)}
+button.plantag{background:none;font-family:inherit;cursor:pointer;margin:0}
+button.plantag:hover,button.plantag[aria-expanded="true"]{background:color-mix(in srgb, currentColor 14%, transparent)}
+.tagpop{position:absolute;z-index:30;width:320px;max-height:60vh;overflow:auto;box-sizing:border-box;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 14px 12px;font-size:var(--fs-sm)}
+.tagpop[hidden]{display:none}
+.tagpop-h{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.tagpop-h .linkish{margin-left:auto}
+.tagpop-s{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.tagpop-s .plantag{margin-top:1px}
+.tagpop ul{margin:2px 0 0;padding-left:18px}
+.tagpop p{margin:2px 0 0}
 .ovpct{margin-left:auto;padding-left:4px;font-size:var(--fs-xs);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .planbox{display:grid;gap:6px}
 .planrow{display:flex;gap:10px;align-items:flex-start}
@@ -989,6 +999,7 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
 </main>
 <section id="printArea" aria-hidden="true"></section>
 <dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
+<div id="tagPop" class="tagpop noprint" role="dialog" hidden></div>
 <dialog class="dlg" id="copyDlg" aria-labelledby="copyTitle"></dialog>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
 <!-- The script for a Google Sheet, copied from Settings into the spreadsheet's Apps Script. Text only: it never runs here. -->
@@ -2430,17 +2441,41 @@ const PLAN_NAME = { iep: 'IEP', '504': '504 plan' };
 const planOf = key => state.data.plans[key] || null;
 const planAcc = p => String((p && p.acc) || '').split('\n').map(x => x.trim()).filter(Boolean);
 const planShort = key => { const p = planOf(key); return p ? (p.type === 'iep' ? 'IEP' : '504') : ''; };
-const planTag = (key, cls = '') => { const p = planOf(key); if (!p) return ''; const a = planAcc(p);
-  return `<span class="plantag${cls ? ` ${cls}` : ''}" title="${esc(`${PLAN_NAME[p.type]}${a.length ? `: ${a.join('; ')}` : ''}`)}">${planShort(key)}</span>`; };
+const tagBtn = (key, cls, tab, title, text) => `<button type="button" class="plantag${cls}" data-tagpop="${esc(key)}" aria-haspopup="dialog" aria-expanded="false"${tab === false ? ' tabindex="-1"' : ''} title="${esc(title)}">${esc(text)}</button>`;
+const planTag = (key, cls = '', tab) => { const p = planOf(key); if (!p) return ''; const a = planAcc(p);
+  return tagBtn(key, cls ? ` ${cls}` : '', tab, `${PLAN_NAME[p.type]}${a.length ? `: ${a.join('; ')}` : ''}`, planShort(key)); };
 // Multilingual learners (ML): an ELD level as the teacher writes it (a number like 3, or a name like Expanding), and supports.
 // Kept and shown like IEP and 504 plans.
 const mlOf = key => state.data.ml[key] || null;
 const isRfep = m => !!m && m.status === 'rfep';
 const mlShort = key => { const m = mlOf(key); return !m ? '' : isRfep(m) ? 'RFEP' : `ML${m.level && m.level.length <= 3 ? ` ${m.level}` : ''}`; };
 const mlWords = m => isRfep(m) ? 'Reclassified fluent English proficient (RFEP)' : `Multilingual learner${m.level ? `, ELD level ${m.level}` : ''}`;
-const mlTag = (key, cls = '') => { const m = mlOf(key); if (!m) return ''; const a = planAcc({ acc: m.sup });
-  return `<span class="plantag mltag${cls ? ` ${cls}` : ''}" title="${esc(`${mlWords(m)}${a.length ? `: ${a.join('; ')}` : ''}`)}">${esc(mlShort(key))}</span>`; };
-const supTags = (key, cls) => planTag(key, cls) + mlTag(key, cls);
+const mlTag = (key, cls = '', tab) => { const m = mlOf(key); if (!m) return ''; const a = planAcc({ acc: m.sup });
+  return tagBtn(key, ` mltag${cls ? ` ${cls}` : ''}`, tab, `${mlWords(m)}${a.length ? `: ${a.join('; ')}` : ''}`, mlShort(key)); };
+const supTags = (key, cls, tab) => planTag(key, cls, tab) + mlTag(key, cls, tab);
+// Clicking a tag opens a small box beside it: the student's accommodations, and their ML or RFEP status and supports.
+// It closes with a click anywhere else, Esc, or the tag again, and it's never printed.
+let tagPopFrom = null;
+function openTagPop(btn){
+  const key = btn.dataset.tagpop, box = $('#tagPop'), A = state.lastAnalysis || analyze(), name = A.nameOf[key] || key, p = planOf(key), m = mlOf(key);
+  const list = xs => xs.length ? `<ul>${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<p class="muted">None entered.</p>';
+  closeTagPop();
+  box.innerHTML = `<div class="tagpop-h"><b>${esc(name)}</b><button class="linkish" data-tagpopclose>Close</button></div>
+    ${p ? `<div class="tagpop-s"><span class="plantag">${planShort(key)}</span><div><b>${PLAN_NAME[p.type]}: accommodations</b>${list(planAcc(p))}</div></div>` : ''}
+    ${m ? `<div class="tagpop-s"><span class="plantag mltag">${esc(mlShort(key))}</span><div><b>${esc(mlWords(m))}</b>${planAcc({ acc: m.sup }).length ? list(planAcc({ acc: m.sup })) : ''}</div></div>` : ''}
+    ${state.tab === 'students' && state.student === key ? '' : `<button class="linkish" data-openstudent="${esc(key)}">Open ${esc(firstName(name))}’s page to change these</button>`}`;
+  box.hidden = false; tagPopFrom = btn; btn.setAttribute('aria-expanded', 'true');
+  box.setAttribute('aria-label', `Accommodations and supports for ${name}`);
+  // Under the tag, or above it when there isn't room below; kept inside the window.
+  const r = btn.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - 8 - w)), top = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8 ? r.top - 6 - h : r.bottom + 6;
+  box.style.left = `${left + scrollX}px`; box.style.top = `${top + scrollY}px`;
+}
+function closeTagPop(focus){
+  const box = $('#tagPop'); if (!box || box.hidden) return;
+  box.hidden = true; const b = tagPopFrom; tagPopFrom = null;
+  if (b){ b.setAttribute('aria-expanded', 'false'); if (focus && document.body.contains(b)) b.focus(); }
+}
 const hasSupports = key => !!(planOf(key) || mlOf(key));
 // Groups of students: everyone, IEP, 504, IEP or 504, ML, or none of these. A student can be in more than one.
 const WHO = [['all', 'All students', 'All students'], ['iep', 'IEP', 'Students with an IEP'], ['504', '504', 'Students with a 504 plan'], ['plan', 'IEP or 504', 'Students with an IEP or 504 plan'],
@@ -2622,7 +2657,7 @@ function renderOverview(){
       const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span><span class="ovmn">${parseDk(dk).getMonth() + 1}/</span>${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${supTags(r.key, 'noprint')}${ovPct(r)}</span>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${supTags(r.key, 'noprint', false)}${ovPct(r)}</span>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}${c.unsched ? ' unsched' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
@@ -4562,6 +4597,7 @@ const RENDER = { overview: () => renderOverview(), reports: () => renderReports(
 const hasSupport = () => state.data.scheduleVersions.some(v => Object.values(parsedSchedule(v.text).days).some(secs => secs.some(x => x.type === 'support' && x.students.length)));
 const tabHidden = t => t === 'support' && state.loaded && !hasSupport();
 function render(){
+  closeTagPop();
   if (tabHidden(state.tab)) state.tab = 'overview';
   renderFolderBar(); renderSaveState(); renderStatus(); renderBanner();
   $('#privacyLine').textContent = state.sheet ? 'Runs on this computer. Sends nothing until you click Update Google Sheet.' : 'Runs only on this computer. Nothing is uploaded.';
@@ -4572,7 +4608,7 @@ function render(){
   RENDER[state.tab]();
   placeTour();
 }
-function renderCurrent(){ RENDER[state.tab](); }
+function renderCurrent(){ closeTagPop(); RENDER[state.tab](); }
 // The sample class says so on every tab, with the tour and the way out.
 function renderBanner(){
   const h = state.demo ? `<div class="notice info demo-bar"><span><b>Sample class.</b> The students are made up, and nothing you change is saved.</span>
@@ -4829,6 +4865,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('click', async e => {
   if (tourAt >= 0) requestAnimationFrame(placeTour);   // a day opened or closed under the tour moves what it points at
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
+  if (tagPopFrom && !e.target.closest('#tagPop') && e.target.closest('[data-tagpop]') !== tagPopFrom) closeTagPop();
   if (e.target.id === 'schDlg' && schDown === e.target){   // a click on the dimmed page around the box
     const r = e.target.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){ e.target.close(); return; }
@@ -4976,6 +5013,8 @@ async function onClick(t){
   if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovScroll = null; state.ovScrollTo = d.ovday || null; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
+  if (d.tagpop !== undefined){ if (tagPopFrom === t) closeTagPop(); else openTagPop(t); return; }
+  if (has('data-tagpopclose')) return closeTagPop(true);
   if (has('data-printlist') || has('data-rptprint')) return window.print();
   if (has('data-ovshowreset')){ state.ovShow = { ...state.ovShow, who: 'all', under: false, order: 'name' }; renderOverview(); const x = $('#tab-overview [data-showmenu] > summary'); if (x) x.focus(); return; }
   if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
@@ -5247,6 +5286,7 @@ document.addEventListener('focusin', e => { const t = e.target; if (t.dataset &&
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) commitNote(e.target, !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('button'))); });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
+  if (e.key === 'Escape' && tagPopFrom){ e.preventDefault(); closeTagPop(true); return; }
   const hadMenu = !!document.querySelector('details.menu[open]');
   // Shortcuts that work anywhere except while typing (where Ctrl+Z undoes the typing): Undo and Redo, ? for Help, / to find a student.
   const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable], .planform'), dlg = document.querySelector('dialog[open]');
