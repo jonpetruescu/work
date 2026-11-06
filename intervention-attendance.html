@@ -855,6 +855,7 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
   table.sum td.num{display:none}
   table.sum td[data-label]::before{content:attr(data-label);display:block;font-size:.74rem;color:var(--muted);font-weight:600;margin-bottom:2px}
   table.sum .meter{min-width:0}
+  table.sum.rpt .ofp{white-space:normal}
   .cardcounts{display:block;font-size:.8rem;color:var(--muted);margin-top:4px}
   .rbar .pn{margin-left:0;width:100%}
   .rhead,.rsec{padding:14px}
@@ -3060,7 +3061,7 @@ function rptData(A){
   const days = daysInRange(A.days), period = periodOf(A), who = state.rpt.who;
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))]));
   const rows = studentSummary(days).filter(p => rptWhoOk(p.key, who)).map(p => {
-    const col = { engaged: 0, idle: 0, away: 0, excused: 0, absent: 0 }; let withF = 0;
+    const col = { engaged: 0, idle: 0, away: 0, excused: 0, absent: 0, nosched: 0 }; let withF = 0;
     for (const { day, s: x } of p.rec){ const c = cellState(A, p.key, day.dk, recs); if (c.cat in col) col[c.cat]++; if (A.formByDk.has(day.dk) && !x.isAbsent) withF++; }
     const on = f => p.rec.filter(({ s: x }) => !isExcused(x) && f(x)).map(({ day }) => day.dk);
     const fus = fuSorted(p.key), last = fus[0] || null;
@@ -3095,9 +3096,10 @@ function rptSpec(A, D){
     ['Late', r => r.lateDates.length, r => r.lateDates.length, 'num'], ['Late on', r => esc(rptDates(r.lateDates)), r => rptDates(r.lateDates)],
     ['Left early', r => r.earlyDates.length, r => r.earlyDates.length, 'num'], ['Left early on', r => esc(rptDates(r.earlyDates)), r => rptDates(r.earlyDates)]] };
   if (R.kind === 'color') return { rows: [...rows].sort((a, b) => b.col.away - a.col.away || a.name.localeCompare(b.name)), cols: [csvName, plan0, mlCol,
-    ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n]], ['<i class="ovsw c-engaged"></i>Engaged', r => r.col.engaged, r => r.col.engaged, 'num'],
+    ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['<i class="ovsw c-engaged"></i>Engaged', r => r.col.engaged, r => r.col.engaged, 'num'],
     ['<i class="ovsw c-idle"></i>Not engaging', r => r.col.idle, r => r.col.idle, 'num'], ['<i class="ovsw c-away"></i>Likely not present', r => r.col.away, r => r.col.away, 'num'],
     ['<i class="ovsw c-absent"></i>Did not attend', r => r.col.absent, r => r.col.absent, 'num'], ['<i class="ovsw c-excused"></i>Excusable absence', r => r.col.excused, r => r.col.excused, 'num'],
+    ['<i class="ovsw c-nosched"></i>Not scheduled', r => r.col.nosched, r => r.col.nosched, 'num'],
     ['Days with a Formative', r => r.withF, r => r.withF, 'num']] };
   if (R.kind === 'contact'){
     const since = r => r.absentDates.filter(dk => !r.last || dk > r.last.date).length;
@@ -3192,7 +3194,7 @@ function reportBar(ctx, o){
   const order = o.order || [], i = order.findIndex(x => x.key === ctx.key);
   const prev = i > 0 ? order[i - 1] : null, next = i >= 0 && i < order.length - 1 ? order[i + 1] : null;
   const via = navCanGoBack() && history.state && history.state.student === ctx.key ? state.studentTab : null;   // Back goes to the tab it came from
-  const back = state.studentFrom ? `← Back to ${shortDate(state.studentFrom)}` : ({ rpt: '← Reports', overview: '← Overview' })[via] || '← All students';
+  const back = state.studentFrom ? `← Back to ${shortDate(state.studentFrom)}` : ({ rpt: '← Reports', overview: '← Overview', reports: '← Days' })[via] || '← All students';
   const none = '<span class="pnx"></span>';
   return `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
     ${i >= 0 && order.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
@@ -4728,11 +4730,12 @@ function downloadData(){
    Each screen is a browser history entry (the address never changes), so the browser's Back button
    goes back a screen instead of leaving the page. */
 let navSeq = 0;
-const navSnap = () => ({ seq: navSeq, tab: state.tab, student: state.student, from: state.studentFrom, via: state.studentTab || null, range: { ...state.range },
+const NAV_LOAD = String(Date.now() + Math.random());
+const navSnap = () => ({ load: NAV_LOAD, seq: navSeq, tab: state.tab, student: state.student, from: state.studentFrom, via: state.studentTab || null, range: { ...state.range },
   returnTo: state.returnTo, highlight: state.highlight, selDay: state.selDay });
 function navReplace(){ try { history.replaceState(navSnap(), ''); } catch (e){} }
 function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e){} }
-const navCanGoBack = () => !!(history.state && history.state.seq > 0);
+const navCanGoBack = () => !!(history.state && history.state.seq > 0 && history.state.load === NAV_LOAD);
 function openStudent(key, from){
   navReplace();
   state.studentTab = state.tab; state.tab = 'students'; state.student = key; state.studentFrom = from || null; state.ovFrom = null;
@@ -5212,7 +5215,9 @@ document.addEventListener('change', e => {
   if ('ovpct' in d){ const v = Math.round(+t.value); if (!(v >= 1 && v <= 100)) t.value = state.ovShow.pct; return; }
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
   // A report's number, once typed: kept in range, and the box shows the number the report uses.
-  if (d.rptnum){ const v = Math.round(+t.value); if (v) state.rpt[d.rptnum] = Math.min(+t.max, Math.max(+t.min, v)); t.value = state.rpt[d.rptnum]; $('#rptOut').innerHTML = rptOutput(state.lastAnalysis || analyze()); }
+  if (d.rptnum){ const v = Math.round(+t.value), was = state.rpt[d.rptnum]; if (v) state.rpt[d.rptnum] = Math.min(+t.max, Math.max(+t.min, v));
+    if (t.value !== String(state.rpt[d.rptnum])) t.value = state.rpt[d.rptnum];
+    if (state.rpt[d.rptnum] !== was) $('#rptOut').innerHTML = rptOutput(state.lastAnalysis || analyze()); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
   // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
   if (d.schedmode && state.schedChange){ state.schedChange.mode = d.schedmode; updateSchedStep(); }
