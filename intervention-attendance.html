@@ -1230,7 +1230,8 @@ function defaultData(){
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
     plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
-    ml: {},          // { studentKey: { level, sup } } a multilingual learner: their ELD level, and supports one per line
+    ml: {},          // { studentKey: { status: 'ml' | 'rfep', level, sup } } a multilingual learner (with their ELD level) or a
+                     // student reclassified fluent English proficient (RFEP), and supports one per line
     deletedDays: {}, // { 'YYYY-MM-DD': { date } } days taken off every tab: not a class day, its Zoom and Formative files set aside
     extraDays: {},   // { 'YYYY-MM-DD': { like } } class days added by hand: like is a weekday (that day's students and times),
                      // 'all' (every class combined) or 'none' (no schedule: every student starts "Not scheduled")
@@ -1254,7 +1255,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.deletedDays))) if (isDk(k)) out.deletedDays[k] = { date: isDk(obj(v).date) ? v.date : '' };
   for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
   for (const [k, v] of Object.entries(obj(d.plans))){ const t = obj(v).type; if (k && (t === 'iep' || t === '504')) out.plans[k] = { type: t, acc: String(obj(v).acc || '').slice(0, 4000) }; }
-  for (const [k, v] of Object.entries(obj(d.ml))) if (k) out.ml[k] = { level: String(obj(v).level || '').trim().slice(0, 40), sup: String(obj(v).sup || '').slice(0, 4000) };
+  for (const [k, v] of Object.entries(obj(d.ml))) if (k) out.ml[k] = { status: obj(v).status === 'rfep' ? 'rfep' : 'ml', level: String(obj(v).level || '').trim().slice(0, 40), sup: String(obj(v).sup || '').slice(0, 4000) };
   for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && [...DAYS, 'all', 'none'].includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
@@ -2434,16 +2435,18 @@ const planTag = (key, cls = '') => { const p = planOf(key); if (!p) return ''; c
 // Multilingual learners (ML): an ELD level as the teacher writes it (a number like 3, or a name like Expanding), and supports.
 // Kept and shown like IEP and 504 plans.
 const mlOf = key => state.data.ml[key] || null;
-const mlShort = key => { const m = mlOf(key); return m ? `ML${m.level && m.level.length <= 3 ? ` ${m.level}` : ''}` : ''; };
-const mlWords = m => `Multilingual learner${m.level ? `, ELD level ${m.level}` : ''}`;
+const isRfep = m => !!m && m.status === 'rfep';
+const mlShort = key => { const m = mlOf(key); return !m ? '' : isRfep(m) ? 'RFEP' : `ML${m.level && m.level.length <= 3 ? ` ${m.level}` : ''}`; };
+const mlWords = m => isRfep(m) ? 'Reclassified fluent English proficient (RFEP)' : `Multilingual learner${m.level ? `, ELD level ${m.level}` : ''}`;
 const mlTag = (key, cls = '') => { const m = mlOf(key); if (!m) return ''; const a = planAcc({ acc: m.sup });
   return `<span class="plantag mltag${cls ? ` ${cls}` : ''}" title="${esc(`${mlWords(m)}${a.length ? `: ${a.join('; ')}` : ''}`)}">${esc(mlShort(key))}</span>`; };
 const supTags = (key, cls) => planTag(key, cls) + mlTag(key, cls);
 const hasSupports = key => !!(planOf(key) || mlOf(key));
 // Groups of students: everyone, IEP, 504, IEP or 504, ML, or none of these. A student can be in more than one.
 const WHO = [['all', 'All students', 'All students'], ['iep', 'IEP', 'Students with an IEP'], ['504', '504', 'Students with a 504 plan'], ['plan', 'IEP or 504', 'Students with an IEP or 504 plan'],
-  ['ml', 'ML', 'Multilingual learners (ML)'], ['none', 'None of these', 'Students without an IEP, 504 or ML']];
-const whoOk = (key, who) => { const p = planOf(key); return who === 'all' || (who === 'none' ? !p && !mlOf(key) : who === 'ml' ? !!mlOf(key) : who === 'plan' ? !!p : !!p && p.type === who); };
+  ['ml', 'ML', 'Multilingual learners (ML)'], ['rfep', 'RFEP', 'Reclassified fluent English proficient (RFEP)'], ['none', 'None of these', 'Students without an IEP, 504, ML or RFEP']];
+const whoOk = (key, who) => { const p = planOf(key), m = mlOf(key);
+  return who === 'all' || (who === 'none' ? !p && !m : who === 'ml' ? !!m && !isRfep(m) : who === 'rfep' ? isRfep(m) : who === 'plan' ? !!p : !!p && p.type === who); };
 const ELD_LEVELS = ['1', '2', '3', '4', '5', '6', 'Emerging', 'Expanding', 'Bridging', 'Entering', 'Developing', 'Reaching'];
 function planMenu(ctx){
   const p = planOf(ctx.key) || { type: '', acc: '' }, m = mlOf(ctx.key);
@@ -2454,10 +2457,11 @@ function planMenu(ctx){
         `<label><input type="radio" name="plantype" data-plantype value="${v}"${p.type === v ? ' checked' : ''}> ${l}</label>`).join('')}</div>
       <label class="planacclabel">Accommodations, one per line<textarea data-planacc rows="4" maxlength="4000" spellcheck="true" placeholder="Extended time&#10;Breaks as needed&#10;Questions read aloud">${esc(p.acc)}</textarea></label></fieldset>
       <fieldset class="planset"><legend>Multilingual learner</legend>
-        <div class="mlrow"><label><input type="checkbox" data-mlon${m ? ' checked' : ''}> Multilingual learner (ML)</label>
-          <label>ELD level <input type="text" data-mllevel maxlength="40" list="eldLevels" autocomplete="off" value="${esc(m ? m.level : '')}" placeholder="e.g. 3 or Expanding"></label></div>
+        <div class="mlrow"><span class="planradios" role="radiogroup" aria-label="Multilingual learner">${[['', 'None'], ['ml', 'ML'], ['rfep', 'RFEP (reclassified)']].map(([v, l]) =>
+          `<label><input type="radio" name="mlstatus" data-mlstatus value="${v}"${(m ? m.status : '') === v ? ' checked' : ''}> ${l}</label>`).join('')}</span>
+          <label>ELD level <input type="text" data-mllevel maxlength="40" list="eldLevels" autocomplete="off" value="${esc(m && !isRfep(m) ? m.level : '')}" placeholder="e.g. 3 or Expanding"${isRfep(m) ? ' disabled' : ''}></label></div>
         <datalist id="eldLevels">${ELD_LEVELS.map(x => `<option value="${x}"></option>`).join('')}</datalist>
-        <label class="planacclabel">ML supports, one per line<textarea data-mlsup rows="3" maxlength="4000" spellcheck="true" placeholder="Sentence frames&#10;Bilingual glossary">${esc(m ? m.sup : '')}</textarea></label></fieldset>
+        <label class="planacclabel">Language supports, one per line<textarea data-mlsup rows="3" maxlength="4000" spellcheck="true" placeholder="Sentence frames&#10;Bilingual glossary">${esc(m ? m.sup : '')}</textarea></label></fieldset>
       <p class="small muted" style="margin:0">Kept in your folder’s data file only. Not sent to the Google Sheet or put in messages to families. It shows on the Reports tab, and on a printed student report only when you check “IEP/504, ML and supports”.</p>
       <p class="small planmsg" data-planmsg role="alert"></p>
       <div class="actions" style="margin:0"><button class="btn small" data-plansave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-plancancel>Cancel</button></div></div></details>`;
@@ -2665,7 +2669,8 @@ function ovKey(A, rows){
       rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}${
       rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}${
       rows.some(r => planOf(r.key)) ? '<span class="noprint"><span class="plantag">IEP</span> <span class="plantag">504</span> IEP or 504 plan</span>' : ''}${
-      rows.some(r => mlOf(r.key)) ? '<span class="noprint"><span class="plantag mltag">ML</span> Multilingual learner, with ELD level</span>' : ''}</div>
+      rows.some(r => mlOf(r.key) && !isRfep(mlOf(r.key))) ? '<span class="noprint"><span class="plantag mltag">ML</span> Multilingual learner, with ELD level</span>' : ''}${
+      rows.some(r => isRfep(mlOf(r.key))) ? '<span class="noprint"><span class="plantag mltag">RFEP</span> Reclassified fluent English proficient</span>' : ''}</div>
     ${form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
       rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
     : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
@@ -3080,7 +3085,8 @@ const rptName = r => `<button class="name-btn" data-openstudent="${esc(r.key)}">
 // Each report: its rows (after its own filter and order) and columns: [heading, cell on the page, value(s) in the CSV, class].
 function rptSpec(A, D){
   const R = state.rpt, rows = D.rows, plan0 = ['Plan', r => planShort(r.key) || '—', r => planShort(r.key)];
-  const mlCol = ['ML (ELD level)', r => { const m = mlOf(r.key); return m ? esc(m.level || 'ML') : '—'; }, r => { const m = mlOf(r.key); return m ? (m.level || 'ML') : ''; }];
+  const mlVal = key => { const m = mlOf(key); return !m ? '' : isRfep(m) ? 'RFEP' : m.level || 'ML'; };
+  const mlCol = ['ML (ELD level)', r => esc(mlVal(r.key) || '—'), r => mlVal(r.key)];
   const csvName = ['Student', rptName, r => r.name + (dropOf(r.key) ? ` (dropped ${dropOf(r.key)})` : '')];
   const lastFu = r => r.last ? `${monDay(r.last.date)}, ${fuHow(r.last).toLowerCase()}` : 'None logged';
   const ul = xs => xs.length ? `<ul class="rptacc">${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<span class="muted">None entered</span>';
@@ -3118,7 +3124,7 @@ function rptOutput(A){
   const R = state.rpt, kind = RPT_KINDS.find(k => k[0] === R.kind) || RPT_KINDS[0], D = rptData(A), spec = rptSpec(A, D);
   const dated = R.kind !== 'plans', any = A.roster.some(r => R.who === 'all' || R.who === 'none' ? hasSupports(r.key) : whoOk(r.key, R.who));
   let h = `<div class="printonly rpttitle"><h2>${esc(kind[1])}</h2><p>${esc(rptWhoName(R.who))}${dated ? ` · ${esc(fmtPeriod(D.period))}` : ''}${R.kind === 'below' ? ` · below ${R.below}%` : R.kind === 'late' ? ` · ${R.times} or more times` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}${state.data.settings.teacherName ? ` · ${esc(state.data.settings.teacherName)}` : ''}</p></div>`;
-  if (!any && (R.kind === 'plans' || (R.who !== 'all' && R.who !== 'none'))) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : R.kind === 'plans' && R.who !== 'plan' ? 'with an IEP, 504 or ML' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
+  if (!any && (R.kind === 'plans' || (R.who !== 'all' && R.who !== 'none'))) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'rfep' ? 'RFEP' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : R.kind === 'plans' && R.who !== 'plan' ? 'with an IEP, 504 or ML' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
   if (dated && !D.days.length) return h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
   h += `<p class="listinfo">${plural(spec.rows.length, 'student')}${dated ? ` · ${plural(D.days.length, 'class day')} with Zoom reports` : ''}</p>`;
   if (!spec.rows.length) return h + `<p class="muted">No students in this report${dated ? ' for these dates and students' : ''}.</p>`;
@@ -3126,7 +3132,7 @@ function rptOutput(A){
     spec.rows.map(r => `<tr>${spec.cols.map(c => `<td${c[3] ? ` class="${c[3]}"` : ''}>${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   // Totals for each group (on the summary): all IEP students together, all 504 students, everyone else.
   if (R.kind === 'summary'){
-    const groups = (R.who === 'all' ? [['IEP', 'iep'], ['504', '504'], ['ML', 'ml'], ['None of these', 'none']] : []).map(([l, w]) => [l, D.rows.filter(r => rptWhoOk(r.key, w))]).filter(([, rs]) => rs.length);
+    const groups = (R.who === 'all' ? [['IEP', 'iep'], ['504', '504'], ['ML', 'ml'], ['RFEP', 'rfep'], ['None of these', 'none']] : []).map(([l, w]) => [l, D.rows.filter(r => rptWhoOk(r.key, w))]).filter(([, rs]) => rs.length);
     const tot = [...groups, [R.who === 'all' ? 'All students' : 'These students', D.rows]].map(([l, rs]) => [l, rptTotals(rs)]);
     h += `<h3 class="subhead">Totals</h3><div class="tablewrap"><table class="sum rpt rpttot"><thead><tr><th>Group</th><th class="num">Students</th><th>Days attended</th><th>Minutes received</th><th class="num">Absent</th><th class="num">Late</th><th class="num">Left early</th><th class="num">Likely not present</th></tr></thead><tbody>${
       tot.map(([l, t]) => `<tr><td>${esc(l)}</td><td class="num">${t.students}</td><td>${ofPct(t.att, t.n)}</td><td>${ofPct(t.pres, t.req)}</td><td class="num">${t.abs}</td><td class="num">${t.late}</td><td class="num">${t.early}</td><td class="num">${t.away}</td></tr>`).join('')}</tbody></table></div>
@@ -3866,7 +3872,7 @@ function sampleFolder(){
     ignored: ['ms rivera'], noClass: { [holiday]: { reason: 'holiday' } }, excused: {}, excusedAbsent: { [`${islaOut}|isla martin`]: true },
     notes: {}, dayStatus: {}, followUps: {},
     plans: { 'diego ramirez': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nQuestions read aloud' }, 'kira sato': { type: '504', acc: 'Preferential seating\nCopy of class notes' } },
-    ml: { 'hassan ali': { level: '3', sup: 'Sentence frames\nBilingual glossary' }, 'elena petrova': { level: '2', sup: 'Visuals with new words' } } };
+    ml: { 'hassan ali': { status: 'ml', level: '3', sup: 'Sentence frames\nBilingual glossary' }, 'elena petrova': { status: 'ml', level: '2', sup: 'Visuals with new words' }, 'grace kim': { status: 'rfep', level: '', sup: '' } } };
   const files = [], present = {};
   for (const dk of days){
     const [ins, sup] = planOf(dk), rows = [['Ms. Rivera', 12 * 60 + 52, 15 * 60 + 3]];
@@ -3929,9 +3935,9 @@ function helpHTML(){
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every class day on one grid, like a paper attendance sheet. Click a day to see it or change it.</li>
       <li><b>Days</b>: who came on each class day, who was late or left early, and when each student was in Zoom.</li>
-      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share, or to mark an IEP or 504 plan and its accommodations, or a multilingual learner (ML) and their ELD level. <b>Copy message</b> writes a weekly note for a family.</li>
+      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share, or to mark an IEP or 504 plan and its accommodations, or a multilingual learner (ML) and their ELD level, or a student reclassified fluent English proficient (RFEP). <b>Copy message</b> writes a weekly note for a family.</li>
       <li><b>Reports</b>: attendance reports for a group of students, like only IEP and 504 students or multilingual learners, students below a percent of days attended, or students often late. Print one or download it as a CSV.</li>
-      <li><b>Show</b> on the Overview: only a group of students (like IEP or 504, or ML), only those engaged on less than a percent of their class days, and least engaged first.</li>
+      <li><b>Show</b> on the Overview: only a group of students (like IEP or 504, ML or RFEP), only those engaged on less than a percent of their class days, and least engaged first.</li>
       ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
       <li><b>Schedule</b>: your classes (day, time, instruction or support hour) and who comes to each. Paste it from your spreadsheet once, then change it there. Each change starts on the day you pick, and earlier days keep the schedule they had.</li>
       <li><b>Settings</b>: how many minutes count as late, your name for notes to families, your data, and the Google Sheet.</li></ul>
@@ -4979,12 +4985,13 @@ async function onClick(t){
     const acc = m.querySelector('[data-planacc]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000);
     const was = planOf(d.plansave), name = (state.lastAnalysis || analyze()).nameOf[d.plansave] || d.plansave;
     if (!type && acc && !was){ m.querySelector('[data-planmsg]').textContent = 'Pick IEP or 504 plan to keep these accommodations.'; return; }
-    const mlOn = m.querySelector('[data-mlon]').checked, level = m.querySelector('[data-mllevel]').value.replace(/\s+/g, ' ').trim().slice(0, 40);
+    const mlSt = (m.querySelector('[data-mlstatus]:checked') || {}).value || '', mlOn = !!mlSt;
+    const level = mlSt === 'ml' ? m.querySelector('[data-mllevel]').value.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
     const sup = m.querySelector('[data-mlsup]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000), wasMl = mlOf(d.plansave);
     if (type) state.data.plans[d.plansave] = { type, acc }; else delete state.data.plans[d.plansave];
-    if (mlOn) state.data.ml[d.plansave] = { level, sup }; else delete state.data.ml[d.plansave];
+    if (mlOn) state.data.ml[d.plansave] = { status: mlSt, level, sup }; else delete state.data.ml[d.plansave];
     state.planEdit = null; changed(); renderCurrent(); planFocus();
-    const said = [type ? `${PLAN_NAME[type]} saved` : was ? `${PLAN_NAME[was.type]} taken off` : '', mlOn ? `ML saved${level ? ` (ELD level ${level})` : ''}` : wasMl ? 'ML taken off' : ''].filter(Boolean);
+    const said = [type ? `${PLAN_NAME[type]} saved` : was ? `${PLAN_NAME[was.type]} taken off` : '', mlOn ? `${mlSt === 'rfep' ? 'RFEP' : 'ML'} saved${level ? ` (ELD level ${level})` : ''}` : wasMl ? `${isRfep(wasMl) ? 'RFEP' : 'ML'} taken off` : ''].filter(Boolean);
     if (said.length) setStatus(`${name}: ${said.join(', ')}.`, 'info', { label: 'Undo', act: 'undo' });
     return;
   }
@@ -5128,7 +5135,10 @@ document.addEventListener('input', e => {
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (d.schadd !== undefined){ if (t.value) state.schAddDraft[d.schadd] = t.value; else delete state.schAddDraft[d.schadd]; }
-  if ((d.mllevel !== undefined || d.mlsup !== undefined) && t.value.trim()){ const c = t.closest('[data-planmenu]').querySelector('[data-mlon]'); if (c) c.checked = true; }
+  if ((d.mllevel !== undefined || d.mlsup !== undefined) && t.value.trim()){
+    const g = t.closest('[data-planmenu]'), c = g.querySelector('[data-mlstatus][value="ml"]');
+    if (c && (d.mllevel !== undefined || !g.querySelector('[data-mlstatus]:checked:not([value=""])'))) c.checked = true;
+  }
   // The Overview's percent is used as it's typed (a number from 1 to 100), and focus stays in the box.
   if ('ovpct' in d){ const S = state.ovShow, v = Math.round(+t.value);
     if (v >= 1 && v <= 100 && (v !== S.pct || !S.under)){ S.pct = v; S.under = true; renderOverview(); const n = $('#tab-overview [data-ovpct]'); if (n) n.focus(); }
@@ -5213,6 +5223,7 @@ document.addEventListener('change', e => {
   }
   // The percent, once typed: the box shows the number used (it's used as it's typed, below).
   if ('ovpct' in d){ const v = Math.round(+t.value); if (!(v >= 1 && v <= 100)) t.value = state.ovShow.pct; return; }
+  if ('mlstatus' in d){ const g = t.closest('[data-planmenu]'), lv = g && g.querySelector('[data-mllevel]'); if (lv) lv.disabled = t.value === 'rfep'; }
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
   // A report's number, once typed: kept in range, and the box shows the number the report uses.
   if (d.rptnum){ const v = Math.round(+t.value), was = state.rpt[d.rptnum]; if (v) state.rpt[d.rptnum] = Math.min(+t.max, Math.max(+t.min, v));
