@@ -230,10 +230,26 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 /* IEP and 504 plans: a small tag by the name, and the plan's box on the student's page */
 .plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
 .ovnm{display:flex;align-items:center;gap:6px;min-width:0}
+.plantag.mltag{color:var(--fin)}
+.ovpct{margin-left:auto;padding-left:4px;font-size:var(--fs-xs);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.planbox{display:grid;gap:6px}
+.planrow{display:flex;gap:10px;align-items:flex-start}
+.planset{border:1px solid var(--line);border-radius:6px;margin:0;padding:6px 10px 10px;display:grid;gap:8px}
+.planset legend{font-weight:600;padding:0 4px}
+.mlrow{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.mlrow label{display:inline-flex;gap:6px;align-items:center}
+.mlrow input[type=text]{width:9em;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 7px}
+.showmenu > summary{display:block;width:10.5em;height:30px;line-height:30px;padding:0 12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-sm);border:1px solid var(--line);border-radius:6px;background:var(--surface);box-sizing:border-box}
+.showmenu > summary.on{background:var(--bar);border-color:var(--bar);color:var(--btn-ink)}
+.showmenu .pop{width:430px;padding:12px 14px;display:grid;gap:10px;font-size:var(--fs-sm)}
+.shrow{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.shrow b{width:100%}
+.shrow label,.shunder{display:inline-flex;gap:6px;align-items:center}
+.shunder input[type=number]{width:56px;height:26px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 6px}
 .ovt th.ovname .ovnm .name-btn{min-width:0}
 .nmtag{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .ovpop-h .plantag{align-self:center}
-.planbox{display:flex;gap:10px;align-items:flex-start;margin:8px 0 2px;font-size:var(--fs-sm)}
+.planbox{margin:8px 0 2px;font-size:var(--fs-sm)}
 .planbox .plantag{margin-top:2px}
 .planacc{margin:2px 0 0;padding-left:18px;columns:2;column-gap:32px}
 .planacc li{break-inside:avoid}
@@ -1213,6 +1229,7 @@ function defaultData(){
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
     plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
+    ml: {},          // { studentKey: { level, sup } } a multilingual learner: their ELD level, and supports one per line
     deletedDays: {}, // { 'YYYY-MM-DD': { date } } days taken off every tab: not a class day, its Zoom and Formative files set aside
     extraDays: {},   // { 'YYYY-MM-DD': { like } } class days added by hand: like is a weekday (that day's students and times),
                      // 'all' (every class combined) or 'none' (no schedule: every student starts "Not scheduled")
@@ -1226,7 +1243,7 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, deletedDays: {}, extraDays: {}, followUps: {}, plans: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, deletedDays: {}, extraDays: {}, followUps: {}, plans: {}, ml: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
@@ -1236,6 +1253,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.deletedDays))) if (isDk(k)) out.deletedDays[k] = { date: isDk(obj(v).date) ? v.date : '' };
   for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
   for (const [k, v] of Object.entries(obj(d.plans))){ const t = obj(v).type; if (k && (t === 'iep' || t === '504')) out.plans[k] = { type: t, acc: String(obj(v).acc || '').slice(0, 4000) }; }
+  for (const [k, v] of Object.entries(obj(d.ml))) if (k) out.ml[k] = { level: String(obj(v).level || '').trim().slice(0, 40), sup: String(obj(v).sup || '').slice(0, 4000) };
   for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && [...DAYS, 'all', 'none'].includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
@@ -1264,7 +1282,7 @@ const state = {
   tab: 'overview', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
-  include: { table: true, log: true, notes: false, plan: false }, rpt: { kind: 'summary', who: 'all', below: 90, times: 3 }, planEdit: null, familyDraft: {}, fuEdit: null, fuPrefill: null,
+  include: { table: true, log: true, notes: false, plan: false }, ovShow: { who: 'all', under: false, pct: 70, order: 'name' }, showMenu: false, rpt: { kind: 'summary', who: 'all', below: 90, times: 3 }, planEdit: null, familyDraft: {}, fuEdit: null, fuPrefill: null,
   selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, schAddDraft: {}, pasteWarn: null, lastAnalysis: null,
   demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
   sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
@@ -2412,14 +2430,34 @@ const planAcc = p => String((p && p.acc) || '').split('\n').map(x => x.trim()).f
 const planShort = key => { const p = planOf(key); return p ? (p.type === 'iep' ? 'IEP' : '504') : ''; };
 const planTag = (key, cls = '') => { const p = planOf(key); if (!p) return ''; const a = planAcc(p);
   return `<span class="plantag${cls ? ` ${cls}` : ''}" title="${esc(`${PLAN_NAME[p.type]}${a.length ? `: ${a.join('; ')}` : ''}`)}">${planShort(key)}</span>`; };
+// Multilingual learners (ML): an ELD level as the teacher writes it (a number like 3, or a name like Expanding), and supports.
+// Kept and shown like IEP and 504 plans.
+const mlOf = key => state.data.ml[key] || null;
+const mlShort = key => { const m = mlOf(key); return m ? `ML${m.level && m.level.length <= 3 ? ` ${m.level}` : ''}` : ''; };
+const mlWords = m => `Multilingual learner${m.level ? `, ELD level ${m.level}` : ''}`;
+const mlTag = (key, cls = '') => { const m = mlOf(key); if (!m) return ''; const a = planAcc({ acc: m.sup });
+  return `<span class="plantag mltag${cls ? ` ${cls}` : ''}" title="${esc(`${mlWords(m)}${a.length ? `: ${a.join('; ')}` : ''}`)}">${esc(mlShort(key))}</span>`; };
+const supTags = (key, cls) => planTag(key, cls) + mlTag(key, cls);
+const hasSupports = key => !!(planOf(key) || mlOf(key));
+// Groups of students: everyone, IEP, 504, IEP or 504, ML, or none of these. A student can be in more than one.
+const WHO = [['all', 'All students', 'All students'], ['iep', 'IEP', 'Students with an IEP'], ['504', '504', 'Students with a 504 plan'], ['plan', 'IEP or 504', 'Students with an IEP or 504 plan'],
+  ['ml', 'ML', 'Multilingual learners (ML)'], ['none', 'None of these', 'Students without an IEP, 504 or ML']];
+const whoOk = (key, who) => { const p = planOf(key); return who === 'all' || (who === 'none' ? !p && !mlOf(key) : who === 'ml' ? !!mlOf(key) : who === 'plan' ? !!p : !!p && p.type === who); };
+const ELD_LEVELS = ['1', '2', '3', '4', '5', '6', 'Emerging', 'Expanding', 'Bridging', 'Entering', 'Developing', 'Reaching'];
 function planMenu(ctx){
-  const p = planOf(ctx.key) || { type: '', acc: '' };
-  return `<details class="menu planmenu" data-planmenu="${esc(ctx.key)}"${state.planEdit === ctx.key ? ' open' : ''}><summary class="linkish">${p.type ? 'Edit IEP or 504' : 'Add IEP or 504'}</summary>
-    <div class="pop planform" role="group" aria-label="IEP or 504 plan for ${esc(ctx.name)}">
+  const p = planOf(ctx.key) || { type: '', acc: '' }, m = mlOf(ctx.key);
+  return `<details class="menu planmenu" data-planmenu="${esc(ctx.key)}"${state.planEdit === ctx.key ? ' open' : ''}><summary class="linkish">${hasSupports(ctx.key) ? 'Edit IEP, 504 or ML' : 'Add IEP, 504 or ML'}</summary>
+    <div class="pop planform" role="group" aria-label="IEP, 504 and ML for ${esc(ctx.name)}">
+      <fieldset class="planset"><legend>IEP or 504</legend>
       <div class="planradios" role="radiogroup" aria-label="Plan">${[['', 'None'], ['iep', 'IEP'], ['504', '504 plan']].map(([v, l]) =>
         `<label><input type="radio" name="plantype" data-plantype value="${v}"${p.type === v ? ' checked' : ''}> ${l}</label>`).join('')}</div>
-      <label class="planacclabel">Accommodations, one per line<textarea data-planacc rows="6" maxlength="4000" spellcheck="true" placeholder="Extended time&#10;Breaks as needed&#10;Questions read aloud">${esc(p.acc)}</textarea></label>
-      <p class="small muted" style="margin:0">Kept in your folder’s data file only. It isn’t sent to the Google Sheet or put in messages to families. It shows on the Reports tab, and on a printed student report only when you check “IEP/504 and accommodations”.</p>
+      <label class="planacclabel">Accommodations, one per line<textarea data-planacc rows="4" maxlength="4000" spellcheck="true" placeholder="Extended time&#10;Breaks as needed&#10;Questions read aloud">${esc(p.acc)}</textarea></label></fieldset>
+      <fieldset class="planset"><legend>Multilingual learner</legend>
+        <div class="mlrow"><label><input type="checkbox" data-mlon${m ? ' checked' : ''}> Multilingual learner (ML)</label>
+          <label>ELD level <input type="text" data-mllevel maxlength="40" list="eldLevels" autocomplete="off" value="${esc(m ? m.level : '')}" placeholder="e.g. 3 or Expanding"></label></div>
+        <datalist id="eldLevels">${ELD_LEVELS.map(x => `<option value="${x}"></option>`).join('')}</datalist>
+        <label class="planacclabel">ML supports, one per line<textarea data-mlsup rows="3" maxlength="4000" spellcheck="true" placeholder="Sentence frames&#10;Bilingual glossary">${esc(m ? m.sup : '')}</textarea></label></fieldset>
+      <p class="small muted" style="margin:0">Kept in your folder’s data file only. Not sent to the Google Sheet or put in messages to families. It shows on the Reports tab, and on a printed student report only when you check “IEP/504, ML and supports”.</p>
       <p class="small planmsg" data-planmsg role="alert"></p>
       <div class="actions" style="margin:0"><button class="btn small" data-plansave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-plancancel>Cancel</button></div></div></details>`;
 }
@@ -2479,6 +2517,32 @@ function overviewDates(A, period){
   }
   return out;
 }
+// Show: which students (a group), only those engaged on less than a percent of their class days, and the order. "Engaged" is
+// a day colored Present and engaged, out of the student's class days in the dates shown (excused absences aren't counted).
+const OV_ORDER = [['name', 'A to Z'], ['engaged', 'Least engaged first'], ['attended', 'Fewest days attended first']];
+function ovStats(cells){
+  let n = 0, att = 0, eng = 0;
+  for (const c of cells){ if (!c.rec || isExcused(c.rec) || c.cat === 'excused') continue; n++; if (!c.rec.isAbsent) att++; if (c.cat === 'engaged') eng++; }
+  return { n, att, eng, engPct: pct(eng, n), attPct: pct(att, n) };
+}
+const ovShowOn = () => { const S = state.ovShow; return S.who !== 'all' || S.under || S.order !== 'name'; };
+// The number beside a name when it's what the list is filtered or ordered by.
+function ovPct(r){
+  const S = state.ovShow; if (!r.st || (!S.under && S.order === 'name')) return '';
+  const a = S.order === 'attended', v = a ? r.st.attPct : r.st.engPct;
+  return `<span class="ovpct" title="${esc(r.st.n ? `${a ? 'Attended' : 'Engaged on'} ${a ? r.st.att : r.st.eng} of ${plural(r.st.n, 'class day')}` : 'No class days in these dates')}">${v === null ? '–' : `${v}%`}</span>`;
+}
+function ovShowMenu(){
+  const S = state.ovShow, who = WHO.find(w => w[0] === S.who) || WHO[0], ord = OV_ORDER.find(o => o[0] === S.order) || OV_ORDER[0];
+  const label = `Show: ${who[1]}${S.under ? `, engaged under ${S.pct}%` : ''}${S.order !== 'name' ? `, ${ord[1].toLowerCase()}` : ''}`;
+  return `<details class="menu showmenu" data-showmenu${state.showMenu ? ' open' : ''}><summary class="${ovShowOn() ? 'on' : ''}" title="${esc(label)}">${esc(label)}</summary>
+    <div class="pop" role="group" aria-label="Show">
+      <div class="shrow" role="radiogroup" aria-label="Students"><b>Students</b>${WHO.map(([k, l]) => `<label><input type="radio" name="ovwho" data-ovwho value="${k}"${S.who === k ? ' checked' : ''}> ${esc(l)}</label>`).join('')}</div>
+      <label class="shunder"><input type="checkbox" data-ovunder${S.under ? ' checked' : ''}> Only students engaged on less than <input type="number" data-ovpct min="1" max="100" value="${S.pct}" aria-label="Percent of class days"> % of their class days</label>
+      <div class="shrow" role="radiogroup" aria-label="Order"><b>Order</b>${OV_ORDER.map(([k, l]) => `<label><input type="radio" name="ovorder" data-ovorder value="${k}"${S.order === k ? ' checked' : ''}> ${esc(l)}</label>`).join('')}</div>
+      <p class="small muted" style="margin:0">Engaged: days colored “Present and engaged”, out of each student’s class days in these dates. Excused absences aren’t counted.</p>
+      <div><button class="linkish" data-ovshowreset>Show everyone, A to Z</button></div></div></details>`;
+}
 function renderOverview(){
   const el = $('#tab-overview'), A = analyze();
   state.lastAnalysis = A;
@@ -2486,14 +2550,18 @@ function renderOverview(){
   if (!A.roster.length){ el.innerHTML = setupCard(A); return; }
   const period = periodOf(A), dates = overviewDates(A, period), q = normKey(state.query);
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(s => [s.key, s]))]));
-  const rows = A.roster.filter(r => state.showDropped || !isDropped(r.key)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
-    .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)));
+  const S = state.ovShow, byPct = (a, b) => (a ?? 101) - (b ?? 101);
+  const rows = A.roster.filter(r => (state.showDropped || !isDropped(r.key)) && whoOk(r.key, S.who)).map(r => ({ ...r, cells: dates.map(dk => cellState(A, r.key, dk, recs)) }))
+    .filter(r => r.cells.some(c => c.cat !== 'nosched' || c.ov.cat) && (!q || normKey(r.name).includes(q)))
+    .map(r => ({ ...r, st: ovStats(r.cells) })).filter(r => !S.under || (r.st.engPct !== null && r.st.engPct < S.pct));
+  if (S.order === 'engaged') rows.sort((a, b) => byPct(a.st.engPct, b.st.engPct) || a.name.localeCompare(b.name));
+  if (S.order === 'attended') rows.sort((a, b) => byPct(a.st.attPct, b.st.attPct) || a.name.localeCompare(b.name));
   const today = todayDk(), sel = state.ovSel, selCell = sel ? rows.flatMap(r => r.cells).find(c => c.xk === sel) : null;
   if (sel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor, so it can't come back later
   if (state.ovDay && !dates.includes(state.ovDay)) state.ovDay = null;
   // What to show on the left, things to do on the right
   let h = `<div class="toolbar">${rangeBar()}
-    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${ovShowMenu()}${droppedToggle(A)}<span class="grow"></span>
     <button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button>
     ${addDayMenu(A)}
     <button class="btn small ghost" data-printlist>Print</button>${sheetButton()}</div>`;
@@ -2514,9 +2582,10 @@ function renderOverview(){
   if (unm.size) h += `<div class="notice"><b>Unmatched Formative names.</b> Link each to a student once.
       ${linkRows([...unm.values()].map(u => ({ ...u, facts: u.email })))}</div>`;
   if (dates.length && rows.length) h += `<p class="printonly ovprint">Attendance, ${esc(fmtPeriod({ from: dates[0], to: dates[dates.length - 1] }))} · ${plural(rows.length, 'student')}${
-    state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
+    state.query ? ` · Search: “${esc(state.query)}”` : ''}${ovShowOn() ? ` · ${esc((WHO.find(w => w[0] === S.who) || WHO[0])[1])}${S.under ? `, engaged under ${S.pct}%` : ''}${S.order !== 'name' ? `, ${(OV_ORDER.find(o => o[0] === S.order) || OV_ORDER[0])[1].toLowerCase()}` : ''}` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</p>`;
   h += ovKey(A, rows);
-  if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'}</p>`; return; }
+  if (!dates.length || !rows.length){ el.innerHTML = h + `<p class="muted">${!dates.length ? 'No class days in these dates.' : state.query ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'
+    : 'No students match what’s chosen under Show. <button class="linkish" data-ovshowreset>Show everyone</button>'}</p>`; return; }
   // One grid, as tall as the class list, that scrolls sideways like a spreadsheet (the names stay put on the left).
   // It opens on the newest days and keeps its place when it's redrawn. Printing draws every week, in blocks that
   // wrap to fit the paper (newest weeks on top).
@@ -2548,7 +2617,7 @@ function renderOverview(){
       const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span><span class="ovmn">${parseDk(dk).getMonth() + 1}/</span>${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${planTag(r.key, 'noprint')}</span>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${supTags(r.key, 'noprint')}${ovPct(r)}</span>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}${c.unsched ? ' unsched' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
@@ -2594,7 +2663,8 @@ function ovKey(A, rows){
       <span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span>${
       rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}${
       rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}${
-      rows.some(r => planOf(r.key)) ? '<span class="noprint"><span class="plantag">IEP</span> <span class="plantag">504</span> IEP or 504 plan</span>' : ''}</div>
+      rows.some(r => planOf(r.key)) ? '<span class="noprint"><span class="plantag">IEP</span> <span class="plantag">504</span> IEP or 504 plan</span>' : ''}${
+      rows.some(r => mlOf(r.key)) ? '<span class="noprint"><span class="plantag mltag">ML</span> Multilingual learner, with ELD level</span>' : ''}</div>
     ${form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
       rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
     : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
@@ -2647,7 +2717,7 @@ function ovEditor(A, c, name){
   const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   // "Finished work" is always there, hidden on days it doesn't apply, so the editor is the same size on every day.
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b>${planTag(c.key)}<span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
+    <div class="ovpop-h"><b>${esc(name)}</b>${supTags(c.key)}<span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
     <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${f ? fEach(f).map(x => `<br>· ${esc(x)}`).join('') : ''}${clash ? `<br>${esc(clash)}` : ''}</p>
     <div class="ovcols"><div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
       <div class="ovgrp"><span class="small muted">Letters</span>${lets}
@@ -2917,7 +2987,7 @@ function includeBoxes(){
   return `<label><input type="checkbox" data-include="table"${I.table ? ' checked' : ''}> Day-by-day table</label>
     <label><input type="checkbox" data-include="log"${I.log ? ' checked' : ''}> Follow-up log</label>
     <label><input type="checkbox" data-include="notes"${I.notes ? ' checked' : ''}> My day notes</label>
-    <label><input type="checkbox" data-include="plan"${I.plan ? ' checked' : ''}> IEP/504 and accommodations</label>`;
+    <label><input type="checkbox" data-include="plan"${I.plan ? ' checked' : ''}> IEP/504, ML and supports</label>`;
 }
 
 function renderStudents(){
@@ -2958,7 +3028,7 @@ function renderStudents(){
     else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on current schedule</span>`);
     const leftEarly = s.early + s.soft;
     h += `<tr>
-      <td class="c-name"><div class="nmrow"><span class="nmtag"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>${planTag(s.key, 'noprint')}</span>
+      <td class="c-name"><div class="nmrow"><span class="nmtag"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>${supTags(s.key, 'noprint')}</span>
         <button class="btn small ghost noprint" data-weeklymsg="${esc(s.key)}" title="Copy a message about ${esc(s.name)}’s attendance this week">Copy message</button></div>
         ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}
         <span class="cardcounts">Absent ${s.absent} · Late ${s.late} · Left early ${leftEarly}</span></td>
@@ -2976,16 +3046,14 @@ function renderStudents(){
    Pick a report and which students; the dates are the same as on the other tabs. Each report is facts (counts, dates,
    percents) and can be printed or downloaded as a CSV. */
 const RPT_KINDS = [
-  ['summary', 'Attendance summary', 'Days attended, minutes received, absences, late and left early, and Overview colors for each student, with totals for each group.'],
+  ['summary', 'Attendance summary', 'Days attended, engaged days, minutes received, absences, late and left early for each student, with totals for each group.'],
   ['below', 'Days attended below a percent', 'Students who attended less than the percent you pick of their scheduled class days. Excused absences aren’t counted.'],
   ['late', 'Late or left early', 'Students who were late, or left early, at least the number of times you pick, with the dates.'],
   ['color', 'Overview colors', 'How many class days each student had each Overview color. On days with a Formative export, the colors come from it.'],
   ['contact', 'Follow-ups and absences', 'Each student’s absences next to the follow-ups logged with their family in these dates.'],
-  ['plans', 'IEP and 504 accommodations', 'Students with an IEP or 504 plan, and their accommodations.'],
+  ['plans', 'IEP, 504 and ML supports', 'Students with an IEP, a 504 plan or ML, with their accommodations, ELD level and supports.'],
 ];
-const RPT_WHO = [['all', 'All students'], ['iep', 'IEP'], ['504', '504'], ['plan', 'IEP or 504'], ['none', 'No plan']];
-const rptWhoOk = (key, who) => { const p = planOf(key); return who === 'all' || (who === 'none' ? !p : who === 'plan' ? !!p : !!p && p.type === who); };
-const rptWhoName = who => ({ all: 'All students', iep: 'Students with an IEP', '504': 'Students with a 504 plan', plan: 'Students with an IEP or 504 plan', none: 'Students without an IEP or 504 plan' })[who];
+const rptWhoOk = whoOk, rptWhoName = who => (WHO.find(w => w[0] === who) || WHO[0])[2];
 // One row per student for the dates shown, counted as on the Students tab (a class they came to without being scheduled is
 // in their days too, and also counted as an extra class), with the Overview color of each of those days.
 function rptData(A){
@@ -3010,40 +3078,45 @@ const rptDates = ds => ds.length ? ds.map(monDay).join(', ') : '';
 const rptName = r => `<button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${dropOf(r.key) ? ` <span class="small muted">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}`;
 // Each report: its rows (after its own filter and order) and columns: [heading, cell on the page, value(s) in the CSV, class].
 function rptSpec(A, D){
-  const R = state.rpt, rows = D.rows, plan = ['Plan', r => planShort(r.key) || '—', r => planShort(r.key)];
+  const R = state.rpt, rows = D.rows, plan0 = ['Plan', r => planShort(r.key) || '—', r => planShort(r.key)];
+  const mlCol = ['ML (ELD level)', r => { const m = mlOf(r.key); return m ? esc(m.level || 'ML') : '—'; }, r => { const m = mlOf(r.key); return m ? (m.level || 'ML') : ''; }];
   const csvName = ['Student', rptName, r => r.name + (dropOf(r.key) ? ` (dropped ${dropOf(r.key)})` : '')];
   const lastFu = r => r.last ? `${monDay(r.last.date)}, ${fuHow(r.last).toLowerCase()}` : 'None logged';
+  const ul = xs => xs.length ? `<ul class="rptacc">${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<span class="muted">None entered</span>';
   if (R.kind === 'plans'){
-    const list = A.roster.filter(r => planOf(r.key) && rptWhoOk(r.key, R.who)).map(r => ({ ...r, plan: planOf(r.key) }));
-    return { rows: list, cols: [csvName, plan, ['Accommodations', r => planAcc(r.plan).length ? `<ul class="rptacc">${planAcc(r.plan).map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<span class="muted">None entered</span>', r => planAcc(r.plan).join('; ')]] };
+    const list = A.roster.filter(r => hasSupports(r.key) && rptWhoOk(r.key, R.who));
+    return { rows: list, cols: [csvName, plan0, ['Accommodations', r => planOf(r.key) ? ul(planAcc(planOf(r.key))) : '—', r => planAcc(planOf(r.key)).join('; ')], mlCol,
+      ['ML supports', r => mlOf(r.key) ? ul(planAcc({ acc: mlOf(r.key).sup })) : '—', r => planAcc({ acc: mlOf(r.key) && mlOf(r.key).sup }).join('; ')]] };
   }
-  if (R.kind === 'below') return { rows: rows.filter(r => r.rate !== null && r.rate < R.below).sort((a, b) => a.rate - b.rate || a.name.localeCompare(b.name)), cols: [csvName, plan,
+  if (R.kind === 'below') return { rows: rows.filter(r => r.rate !== null && r.rate < R.below).sort((a, b) => a.rate - b.rate || a.name.localeCompare(b.name)), cols: [csvName, plan0, mlCol,
     ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['Absent', r => r.absent, r => r.absent, 'num'], ['Excused', r => r.excused, r => r.excused, 'num'],
     [D.period.open ? 'Absent in a row now' : 'Absent in a row at the end of these dates', r => r.streak ? `${r.streak} <span class="small muted">(${esc(rptDates(r.streakDates))})</span>` : '0', r => r.streak], ['Last follow-up', r => esc(lastFu(r)), r => lastFu(r)]] };
-  if (R.kind === 'late') return { rows: rows.filter(r => r.lateDates.length >= R.times || r.earlyDates.length >= R.times).sort((a, b) => b.lateDates.length + b.earlyDates.length - a.lateDates.length - a.earlyDates.length || a.name.localeCompare(b.name)), cols: [csvName, plan,
+  if (R.kind === 'late') return { rows: rows.filter(r => r.lateDates.length >= R.times || r.earlyDates.length >= R.times).sort((a, b) => b.lateDates.length + b.earlyDates.length - a.lateDates.length - a.earlyDates.length || a.name.localeCompare(b.name)), cols: [csvName, plan0, mlCol,
     ['Late', r => r.lateDates.length, r => r.lateDates.length, 'num'], ['Late on', r => esc(rptDates(r.lateDates)), r => rptDates(r.lateDates)],
     ['Left early', r => r.earlyDates.length, r => r.earlyDates.length, 'num'], ['Left early on', r => esc(rptDates(r.earlyDates)), r => rptDates(r.earlyDates)]] };
-  if (R.kind === 'color') return { rows: [...rows].sort((a, b) => b.col.away - a.col.away || a.name.localeCompare(b.name)), cols: [csvName, plan,
+  if (R.kind === 'color') return { rows: [...rows].sort((a, b) => b.col.away - a.col.away || a.name.localeCompare(b.name)), cols: [csvName, plan0, mlCol,
     ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n]], ['<i class="ovsw c-engaged"></i>Engaged', r => r.col.engaged, r => r.col.engaged, 'num'],
     ['<i class="ovsw c-idle"></i>Not engaging', r => r.col.idle, r => r.col.idle, 'num'], ['<i class="ovsw c-away"></i>Likely not present', r => r.col.away, r => r.col.away, 'num'],
     ['<i class="ovsw c-absent"></i>Did not attend', r => r.col.absent, r => r.col.absent, 'num'], ['<i class="ovsw c-excused"></i>Excusable absence', r => r.col.excused, r => r.col.excused, 'num'],
     ['Days with a Formative', r => r.withF, r => r.withF, 'num']] };
   if (R.kind === 'contact'){
     const since = r => r.absentDates.filter(dk => !r.last || dk > r.last.date).length;
-    return { rows: rows.filter(r => r.absent || r.fusIn.length).sort((a, b) => since(b) - since(a) || b.absent - a.absent || a.name.localeCompare(b.name)), cols: [csvName, plan,
+    return { rows: rows.filter(r => r.absent || r.fusIn.length).sort((a, b) => since(b) - since(a) || b.absent - a.absent || a.name.localeCompare(b.name)), cols: [csvName, plan0, mlCol,
       ['Absent', r => r.absent, r => r.absent, 'num'], ['Absences since the last follow-up', r => since(r), r => since(r), 'num'],
       ['Follow-ups in these dates', r => r.fusIn.length, r => r.fusIn.length, 'num'], ['Last follow-up', r => esc(lastFu(r)), r => lastFu(r)]] };
   }
-  return { rows, cols: [csvName, plan, ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['Minutes received', r => ofPct(r.pres, r.req), r => [r.pres, r.req, r.dose]],
+  return { rows, cols: [csvName, plan0, mlCol, ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['Engaged days', r => ofPct(r.col.engaged, r.n), r => [r.col.engaged, r.n, pct(r.col.engaged, r.n)]],
+    ['Minutes received', r => ofPct(r.pres, r.req), r => [r.pres, r.req, r.dose]],
     ['Absent', r => r.absent, r => r.absent, 'num'], ['Excused', r => r.excused, r => r.excused, 'num'], ['Late', r => r.late, r => r.late, 'num'], ['Left early', r => r.early + r.soft, r => r.early + r.soft, 'num'],
     ['<i class="ovsw c-away"></i>Likely not present', r => r.col.away, r => r.col.away, 'num'], ['Extra classes', r => r.extra, r => r.extra, 'num']] };
 }
-const RPT_CSV_HEAD = { 'Days attended': ['Days attended', 'Class days', 'Days attended %'], 'Minutes received': ['Minutes received', 'Minutes scheduled', 'Minutes received %'] };
+const RPT_CSV_HEAD = { 'Days attended': ['Days attended', 'Class days', 'Days attended %'], 'Engaged days': ['Engaged days', 'Of class days', 'Engaged days %'],
+  'Minutes received': ['Minutes received', 'Minutes scheduled', 'Minutes received %'] };
 function rptOutput(A){
   const R = state.rpt, kind = RPT_KINDS.find(k => k[0] === R.kind) || RPT_KINDS[0], D = rptData(A), spec = rptSpec(A, D);
-  const dated = R.kind !== 'plans', any = A.roster.some(r => planOf(r.key));
+  const dated = R.kind !== 'plans', any = A.roster.some(r => R.who === 'all' || R.who === 'none' ? hasSupports(r.key) : whoOk(r.key, R.who));
   let h = `<div class="printonly rpttitle"><h2>${esc(kind[1])}</h2><p>${esc(rptWhoName(R.who))}${dated ? ` · ${esc(fmtPeriod(D.period))}` : ''}${R.kind === 'below' ? ` · below ${R.below}%` : R.kind === 'late' ? ` · ${R.times} or more times` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}${state.data.settings.teacherName ? ` · ${esc(state.data.settings.teacherName)}` : ''}</p></div>`;
-  if (!any && (R.kind === 'plans' || (R.who !== 'all' && R.who !== 'none'))) return h + `<div class="notice info">No students are marked with an IEP or 504 plan yet. To mark one, click their name on the Students tab, then “Add IEP or 504” beside it.</div>`;
+  if (!any && (R.kind === 'plans' || (R.who !== 'all' && R.who !== 'none'))) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : R.kind === 'plans' && R.who !== 'plan' ? 'with an IEP, 504 or ML' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
   if (dated && !D.days.length) return h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
   h += `<p class="listinfo">${plural(spec.rows.length, 'student')}${dated ? ` · ${plural(D.days.length, 'class day')} with Zoom reports` : ''}</p>`;
   if (!spec.rows.length) return h + `<p class="muted">No students in this report${dated ? ' for these dates and students' : ''}.</p>`;
@@ -3051,11 +3124,11 @@ function rptOutput(A){
     spec.rows.map(r => `<tr>${spec.cols.map(c => `<td${c[3] ? ` class="${c[3]}"` : ''}>${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   // Totals for each group (on the summary): all IEP students together, all 504 students, everyone else.
   if (R.kind === 'summary'){
-    const groups = (R.who === 'all' ? [['IEP', 'iep'], ['504', '504'], ['No plan', 'none']] : []).map(([l, w]) => [l, D.rows.filter(r => rptWhoOk(r.key, w))]).filter(([, rs]) => rs.length);
+    const groups = (R.who === 'all' ? [['IEP', 'iep'], ['504', '504'], ['ML', 'ml'], ['None of these', 'none']] : []).map(([l, w]) => [l, D.rows.filter(r => rptWhoOk(r.key, w))]).filter(([, rs]) => rs.length);
     const tot = [...groups, [R.who === 'all' ? 'All students' : 'These students', D.rows]].map(([l, rs]) => [l, rptTotals(rs)]);
     h += `<h3 class="subhead">Totals</h3><div class="tablewrap"><table class="sum rpt rpttot"><thead><tr><th>Group</th><th class="num">Students</th><th>Days attended</th><th>Minutes received</th><th class="num">Absent</th><th class="num">Late</th><th class="num">Left early</th><th class="num">Likely not present</th></tr></thead><tbody>${
       tot.map(([l, t]) => `<tr><td>${esc(l)}</td><td class="num">${t.students}</td><td>${ofPct(t.att, t.n)}</td><td>${ofPct(t.pres, t.req)}</td><td class="num">${t.abs}</td><td class="num">${t.late}</td><td class="num">${t.early}</td><td class="num">${t.away}</td></tr>`).join('')}</tbody></table></div>
-      <p class="small muted" style="margin-top:8px">A group’s days attended is all its students’ days added together. Excused absences and finished-work time aren’t counted. Extra classes (a class a student came to without being scheduled) are counted, as on the Students tab.</p>`;
+      <p class="small muted" style="margin-top:8px">A group’s days attended is all its students’ days added together. A student can be in more than one group (an IEP and ML). Excused absences and finished-work time aren’t counted. Extra classes (a class a student came to without being scheduled) are counted, as on the Students tab.</p>`;
   }
   return h;
 }
@@ -3075,7 +3148,7 @@ function renderRpt(){
     : R.kind === 'late' ? `<label>At least <input type="number" min="1" max="99" data-rptnum="times" value="${R.times}" aria-label="Number of times"> times</label>` : '';
   el.innerHTML = `<div class="toolbar">${rangeBar()}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv>Download CSV</button><button class="btn small ghost" data-rptprint>Print</button></span></div>
     <div class="panel rptpick noprint"><div class="rptrow"><label class="rptkind">Report <select data-rptkind>${RPT_KINDS.map(([k, l]) => `<option value="${k}"${k === kind[0] ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
-      <div class="seg" role="group" aria-label="Students">${RPT_WHO.map(([k, l]) => `<button data-rptwho="${k}" aria-pressed="${R.who === k}">${esc(l)}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Students">${WHO.map(([k, l, t]) => `<button data-rptwho="${k}" aria-pressed="${R.who === k}" title="${esc(t)}">${esc(l)}</button>`).join('')}</div>
       <span class="rptopt">${opt}</span></div>
       <p class="small muted" style="margin:0">${esc(kind[2])}</p></div>
     <div id="rptOut">${rptOutput(A)}</div>`;
@@ -3149,9 +3222,11 @@ function reportHeader(ctx, o){
           <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button></div>
         <p>Later days aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</p></div></details>
       <button class="linkish" data-delstudent="${esc(ctx.key)}">Delete student</button>`}</span>`;
-  const plan = planOf(ctx.key), acc = planAcc(plan);
-  const planBox = plan && (!o.print || (o.include && o.include.plan)) ? `<div class="planbox"><span class="plantag" title="${esc(PLAN_NAME[plan.type])}">${planShort(ctx.key)}</span><div><b>Accommodations</b>${
-    acc.length ? `<ul class="planacc">${acc.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ' <span class="muted">No accommodations entered.</span>'}</div></div>` : '';
+  const plan = planOf(ctx.key), acc = planAcc(plan), ml = mlOf(ctx.key), sup = planAcc({ acc: ml && ml.sup });
+  const list = xs => `<ul class="planacc">${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>`;
+  const planBox = (plan || ml) && (!o.print || (o.include && o.include.plan)) ? `<div class="planbox">${
+    plan ? `<div class="planrow"><span class="plantag" title="${esc(PLAN_NAME[plan.type])}">${planShort(ctx.key)}</span><div><b>Accommodations</b>${acc.length ? list(acc) : ' <span class="muted">None entered.</span>'}</div></div>` : ''}${
+    ml ? `<div class="planrow"><span class="plantag mltag">${esc(mlShort(ctx.key))}</span><div><b>${esc(mlWords(ml))}</b>${sup.length ? list(sup) : ''}</div></div>` : ''}</div>` : '';
   const dropLine = drop ? `<p class="dropnote">Dropped from the class starting ${esc(shortDate(drop))}. Later days aren’t counted.
       <button class="linkish noprint" data-undrop="${esc(ctx.key)}">Undo</button></p>` : '';
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
@@ -3617,7 +3692,9 @@ function teamSummary(ctx, inc){
   const L = [`${ctx.name}: intervention attendance`,
     `${fmtPeriod(period)} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports`,
     `Scheduled: ${info.line ? `${info.line} · ${info.weekMin} minutes a week` : 'not on the schedule'}`];
-  const plan = planOf(ctx.key); if (inc.plan && plan) L.push(`${PLAN_NAME[plan.type]}${planAcc(plan).length ? `. Accommodations: ${planAcc(plan).join('; ')}` : ''}`);
+  const plan = planOf(ctx.key), ml = mlOf(ctx.key);
+  if (inc.plan && plan) L.push(`${PLAN_NAME[plan.type]}${planAcc(plan).length ? `. Accommodations: ${planAcc(plan).join('; ')}` : ''}`);
+  if (inc.plan && ml) L.push(`${mlWords(ml)}${planAcc({ acc: ml.sup }).length ? `. Supports: ${planAcc({ acc: ml.sup }).join('; ')}` : ''}`);
   if (p){
     L.push('', `Days attended: ${ofN(p.attended, p.n, 'day')}${p.rate === null ? '' : ` (${p.rate}%)`}${p.excused ? `, plus ${p.excused} excused` : ''}`,
       `Minutes received: ${p.pres} of ${p.req}${p.dose === null ? '' : ` (${p.dose}%)`}${p.iReq && p.sReq ? `; instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : ''}`,
@@ -3786,7 +3863,8 @@ function sampleFolder(){
     settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, engagedPct: 50, teacherName: 'Ms. Rivera', className: 'Math 1 Intervention', contactLine: 'Room 12 (sample)' },
     ignored: ['ms rivera'], noClass: { [holiday]: { reason: 'holiday' } }, excused: {}, excusedAbsent: { [`${islaOut}|isla martin`]: true },
     notes: {}, dayStatus: {}, followUps: {},
-    plans: { 'diego ramirez': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nQuestions read aloud' }, 'kira sato': { type: '504', acc: 'Preferential seating\nCopy of class notes' } } };
+    plans: { 'diego ramirez': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nQuestions read aloud' }, 'kira sato': { type: '504', acc: 'Preferential seating\nCopy of class notes' } },
+    ml: { 'hassan ali': { level: '3', sup: 'Sentence frames\nBilingual glossary' }, 'elena petrova': { level: '2', sup: 'Visuals with new words' } } };
   const files = [], present = {};
   for (const dk of days){
     const [ins, sup] = planOf(dk), rows = [['Ms. Rivera', 12 * 60 + 52, 15 * 60 + 3]];
@@ -3849,8 +3927,9 @@ function helpHTML(){
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every class day on one grid, like a paper attendance sheet. Click a day to see it or change it.</li>
       <li><b>Days</b>: who came on each class day, who was late or left early, and when each student was in Zoom.</li>
-      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share, or to mark an IEP or 504 plan and its accommodations. <b>Copy message</b> writes a weekly note for a family.</li>
-      <li><b>Reports</b>: attendance reports for a group of students, like only IEP and 504 students, students below a percent of days attended, or students often late. Print one or download it as a CSV.</li>
+      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share, or to mark an IEP or 504 plan and its accommodations, or a multilingual learner (ML) and their ELD level. <b>Copy message</b> writes a weekly note for a family.</li>
+      <li><b>Reports</b>: attendance reports for a group of students, like only IEP and 504 students or multilingual learners, students below a percent of days attended, or students often late. Print one or download it as a CSV.</li>
+      <li><b>Show</b> on the Overview: only a group of students (like IEP or 504, or ML), only those engaged on less than a percent of their class days, and least engaged first.</li>
       ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
       <li><b>Schedule</b>: your classes (day, time, instruction or support hour) and who comes to each. Paste it from your spreadsheet once, then change it there. Each change starts on the day you pick, and earlier days keep the schedule they had.</li>
       <li><b>Settings</b>: how many minutes count as late, your name for notes to families, your data, and the Google Sheet.</li></ul>
@@ -4344,7 +4423,7 @@ function renameStudentKey(oldK, newK){
   }
   if (D.followUps[oldK]){ D.followUps[newK] = [...(D.followUps[newK] || []), ...D.followUps[oldK]]; delete D.followUps[oldK]; }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
-  for (const bag of [D.drops, D.deleted, D.plans]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
+  for (const bag of [D.drops, D.deleted, D.plans, D.ml]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
 }
 function applySchedule(mode, from){
   const vs = state.data.scheduleVersions, text = state.draft;
@@ -4722,7 +4801,7 @@ function focusSelector(t){
 
 /* ---------------- Events ---------------- */
 // A menu closed here is marked closed in state right away (its toggle event comes later), so a redraw doesn't reopen it.
-const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; if ('planmenu' in m.dataset) state.planEdit = null; };
+const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; if ('planmenu' in m.dataset) state.planEdit = null; if ('showmenu' in m.dataset) state.showMenu = false; };
 // Pressing anywhere outside the day editor closes it in place, without a redraw, so the box, date or menu being
 // clicked keeps its focus. A press that starts in the editor (a drag to select note text) never closes it.
 // A click anywhere else closes the day box, in place.
@@ -4889,6 +4968,7 @@ async function onClick(t){
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
   if (has('data-printlist') || has('data-rptprint')) return window.print();
+  if (has('data-ovshowreset')){ state.ovShow = { ...state.ovShow, who: 'all', under: false, order: 'name' }; renderOverview(); const x = $('#tab-overview [data-showmenu] > summary'); if (x) x.focus(); return; }
   if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
   if (has('data-rptcsv')) return rptCSV();
   if (d.plansave){
@@ -4896,9 +4976,13 @@ async function onClick(t){
     const acc = m.querySelector('[data-planacc]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000);
     const was = planOf(d.plansave), name = (state.lastAnalysis || analyze()).nameOf[d.plansave] || d.plansave;
     if (!type && acc && !was){ m.querySelector('[data-planmsg]').textContent = 'Pick IEP or 504 plan to keep these accommodations.'; return; }
+    const mlOn = m.querySelector('[data-mlon]').checked, level = m.querySelector('[data-mllevel]').value.replace(/\s+/g, ' ').trim().slice(0, 40);
+    const sup = m.querySelector('[data-mlsup]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000), wasMl = mlOf(d.plansave);
     if (type) state.data.plans[d.plansave] = { type, acc }; else delete state.data.plans[d.plansave];
+    if (mlOn) state.data.ml[d.plansave] = { level, sup }; else delete state.data.ml[d.plansave];
     state.planEdit = null; changed(); renderCurrent(); planFocus();
-    if (type || was) setStatus(type ? `Saved ${name}’s ${PLAN_NAME[type]}.` : `Took off ${name}’s ${PLAN_NAME[was.type]}.`, 'info', { label: 'Undo', act: 'undo' });
+    const said = [type ? `${PLAN_NAME[type]} saved` : was ? `${PLAN_NAME[was.type]} taken off` : '', mlOn ? `ML saved${level ? ` (ELD level ${level})` : ''}` : wasMl ? 'ML taken off' : ''].filter(Boolean);
+    if (said.length) setStatus(`${name}: ${said.join(', ')}.`, 'info', { label: 'Undo', act: 'undo' });
     return;
   }
   if (has('data-plancancel')){ const m = t.closest('details'); if (m) closeMenu(m); renderCurrent(); planFocus(); return; }
@@ -5041,6 +5125,11 @@ document.addEventListener('input', e => {
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (d.schadd !== undefined){ if (t.value) state.schAddDraft[d.schadd] = t.value; else delete state.schAddDraft[d.schadd]; }
+  if ((d.mllevel !== undefined || d.mlsup !== undefined) && t.value.trim()){ const c = t.closest('[data-planmenu]').querySelector('[data-mlon]'); if (c) c.checked = true; }
+  // The Overview's percent is used as it's typed (a number from 1 to 100), and focus stays in the box.
+  if ('ovpct' in d){ const S = state.ovShow, v = Math.round(+t.value);
+    if (v >= 1 && v <= 100 && (v !== S.pct || !S.under)){ S.pct = v; S.under = true; renderOverview(); const n = $('#tab-overview [data-ovpct]'); if (n) n.focus(); }
+    return; }
   // A report's number redraws only the report, so typing it isn't interrupted.
   if (d.rptnum){ const v = Math.round(+t.value); if (v >= +t.min && v <= +t.max){ state.rpt[d.rptnum] = v; $('#rptOut').innerHTML = rptOutput(state.lastAnalysis || analyze()); } return; }
   if (d.schsame !== undefined){
@@ -5112,6 +5201,15 @@ document.addEventListener('change', e => {
   if ('showdropped' in d){ state.showDropped = t.checked; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
   if ('rptkind' in d){ state.rpt.kind = t.value; renderRpt(); const x = $('#tab-rpt [data-rptkind]'); if (x) x.focus(); }
+  // The Overview's Show menu redraws the grid and stays open, with focus where it was.
+  if ('ovwho' in d || 'ovorder' in d || 'ovunder' in d){
+    const S = state.ovShow;
+    if ('ovwho' in d) S.who = t.value; if ('ovorder' in d) S.order = t.value; if ('ovunder' in d) S.under = t.checked;
+    const sel = 'ovwho' in d ? `[data-ovwho][value="${t.value}"]` : 'ovorder' in d ? `[data-ovorder][value="${t.value}"]` : '[data-ovunder]';
+    renderOverview(); const n = $(`#tab-overview ${sel}`); if (n) n.focus(); return;
+  }
+  // The percent, once typed: the box shows the number used (it's used as it's typed, below).
+  if ('ovpct' in d){ const v = Math.round(+t.value); if (!(v >= 1 && v <= 100)) t.value = state.ovShow.pct; return; }
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
   // A report's number, once typed: kept in range, and the box shows the number the report uses.
   if (d.rptnum){ const v = Math.round(+t.value); if (v) state.rpt[d.rptnum] = Math.min(+t.max, Math.max(+t.min, v)); t.value = state.rpt[d.rptnum]; $('#rptOut').innerHTML = rptOutput(state.lastAnalysis || analyze()); }
@@ -5249,6 +5347,7 @@ document.addEventListener('toggle', e => {
   if (el.dataset && 'addday' in el.dataset){ state.addDay.open = el.open; if (!el.open) el.querySelector('.addmsg').textContent = ''; }
   if (el.dataset && 'rangemenu' in el.dataset) state.rangeMenu = el.open;
   if (el.dataset && 'dropmenu' in el.dataset){ state.dropEdit = el.open ? el.dataset.dropmenu : null; if (el.open) el.querySelector('[data-dropdate]').focus(); }
+  if (el.dataset && 'showmenu' in el.dataset) state.showMenu = el.open;
   if (el.dataset && 'planmenu' in el.dataset){ state.planEdit = el.open ? el.dataset.planmenu : null; if (el.open){ const r = el.querySelector('[data-plantype]:checked'); if (r) r.focus(); } }
   // A menu opens rightward unless that would run off the window. The drop menu always opens leftward, inside the report.
   if (el.classList && el.classList.contains('menu') && el.open && !('dropmenu' in el.dataset)){
