@@ -3209,9 +3209,10 @@ function vizLines(id, W, Wall){
     const pts = W.map((o, i) => o[k] === null ? null : `${x(i).toFixed(1)},${y(o[k]).toFixed(1)}`).filter(Boolean);
     if (pts.length > 1) s += `<polyline class="vln" points="${pts.join(' ')}" style="stroke:var(${c})"/>`;
     const li = W.findLastIndex(o => o[k] !== null);
-    if (li >= 0){ s += `<circle class="vdot" cx="${x(li)}" cy="${y(W[li][k])}" r="4" style="fill:var(${c})"/>`; ends.push({ x: x(li), y: y(W[li][k]), t: `${name} ${W[li][k]}%` }); }
+    if (li >= 0){ s += `<circle class="vdot" cx="${x(li)}" cy="${y(W[li][k])}" r="4" style="fill:var(${c})"/>`; ends.push({ x: x(li), y: y(W[li][k]), t: name }); }
   }
-  // Labels at the line ends, only when they don't crowd each other (the legend names the lines either way).
+  // The lines' names at their ends, only when they don't crowd each other (the legend names them either way). No number here:
+  // the last week's number beside a line read as the total for all dates. Pointing at a week shows its numbers.
   if (ends.length < 2 || Math.abs(ends[0].y - ends[1].y) >= 16) for (const e of ends) s += `<text class="vend" x="${e.x + 10}" y="${e.y + 4}">${esc(e.t)}</text>`;
   s += `<line class="vxh" x1="0" x2="0" y1="${T}" y2="${T + ph}" visibility="hidden"/>${S.map(([, , c], j) => `<circle class="vxd" data-s="${j}" r="4" style="fill:var(${c})" visibility="hidden"/>`).join('')}
     <rect class="vhit" x="${L - 10}" y="${T}" width="${pw + 20}" height="${ph}"/><line class="vaxis" x1="${L}" x2="${L + pw}" y1="${T + ph}" y2="${T + ph}"/></svg>`;
