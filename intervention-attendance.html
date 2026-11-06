@@ -227,6 +227,33 @@ textarea{width:100%;min-height:340px;border:1px solid var(--line);border-radius:
 .sec details summary{cursor:pointer;color:var(--muted);font-size:.8rem}
 .sec ul{margin:4px 0 0;padding-left:16px}
 .actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+/* IEP and 504 plans: a small tag by the name, and the plan's box on the student's page */
+.plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
+.ovnm{display:flex;align-items:center;gap:6px;min-width:0}
+.ovt th.ovname .ovnm .name-btn{min-width:0}
+.nmtag{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.ovpop-h .plantag{align-self:center}
+.planbox{display:flex;gap:10px;align-items:flex-start;margin:8px 0 2px;font-size:var(--fs-sm)}
+.planbox .plantag{margin-top:2px}
+.planacc{margin:2px 0 0;padding-left:18px;columns:2;column-gap:32px}
+.planacc li{break-inside:avoid}
+.menu.planmenu .pop{left:auto;right:0;width:440px;padding:12px 14px;display:grid;gap:8px;font-size:var(--fs-sm)}
+.planradios{display:flex;gap:18px}
+.planradios label{display:inline-flex;gap:6px;align-items:center}
+.planacclabel{display:grid;gap:4px;font-weight:600}
+.planform textarea{min-height:130px;font-weight:400}
+.planmsg{margin:0;min-height:1.4em;color:var(--bad)}
+/* Reports */
+.rptpick{display:grid;gap:8px;margin-bottom:14px;padding:14px 18px}
+.rptrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.rptkind{display:inline-flex;gap:8px;align-items:center;font-weight:600;font-size:var(--fs-sm)}
+.rptkind select{width:17em;height:30px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-size:var(--fs-sm)}
+.rptopt{display:inline-flex;align-items:center;min-width:12em;font-size:var(--fs-sm)}
+.rptopt input{width:60px;height:28px;margin:0 4px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 6px}
+table.rpt th .ovsw{margin-right:5px;vertical-align:-1px}
+.rptacc{margin:0;padding-left:18px}
+.rpttot td:first-child{font-weight:600}
+table.rpt td:first-child{white-space:nowrap}
 /* The schedule board: a column for each day, a card for each class with the students who come to it */
 .schtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
 .schtop h2{margin:0}
@@ -921,6 +948,7 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
         <button role="tab" id="t-overview" aria-controls="tab-overview" data-tab="overview" aria-selected="true" title="Every student and every class day on one grid">Overview</button>
         <button role="tab" id="t-reports" aria-controls="tab-reports" data-tab="reports" aria-selected="false" title="Each class day: who came, who was late, who left early">Days</button>
         <button role="tab" id="t-students" aria-controls="tab-students" data-tab="students" aria-selected="false" title="Each student’s totals, reports and messages to families">Students</button>
+        <button role="tab" id="t-rpt" aria-controls="tab-rpt" data-tab="rpt" aria-selected="false" tabindex="-1" title="Attendance reports for a group of students, like only IEP and 504 students">Reports</button>
         <button role="tab" id="t-support" aria-controls="tab-support" data-tab="support" aria-selected="false" title="Who was let go early from the support hour this week">Support<span class="tabx"> hour</span></button>
         <button role="tab" id="t-schedule" aria-controls="tab-schedule" data-tab="schedule" aria-selected="false" title="Your weekly class schedule">Schedule</button>
         <button role="tab" id="t-settings" aria-controls="tab-settings" data-tab="settings" aria-selected="false" title="Timing rules, your name for family notes, and your data">Settings</button>
@@ -936,6 +964,7 @@ dialog.dlg textarea{min-height:220px;font-size:var(--fs-md)}
   <section id="tab-overview" role="tabpanel" aria-labelledby="t-overview"></section>
   <section id="tab-reports" role="tabpanel" aria-labelledby="t-reports" hidden></section>
   <section id="tab-students" role="tabpanel" aria-labelledby="t-students" hidden></section>
+  <section id="tab-rpt" role="tabpanel" aria-labelledby="t-rpt" hidden></section>
   <section id="tab-support" role="tabpanel" aria-labelledby="t-support" hidden></section>
   <section id="tab-schedule" role="tabpanel" aria-labelledby="t-schedule" hidden></section>
   <section id="tab-settings" role="tabpanel" aria-labelledby="t-settings" hidden></section>
@@ -1182,6 +1211,7 @@ function defaultData(){
     dayStatus: {},   // { 'YYYY-MM-DD|studentKey': { cat, L, D, C } } choices made on the Overview grid (an excused absence goes in excusedAbsent)
     drops: {},       // { studentKey: { date } } dropped from the class starting that date
     deleted: {},     // { studentKey: { date, name } } taken off every date (kept, so they can be brought back)
+    plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
     deletedDays: {}, // { 'YYYY-MM-DD': { date } } days taken off every tab: not a class day, its Zoom and Formative files set aside
     extraDays: {},   // { 'YYYY-MM-DD': { like } } class days added by hand: like is a weekday (that day's students and times),
                      // 'all' (every class combined) or 'none' (no schedule: every student starts "Not scheduled")
@@ -1195,7 +1225,7 @@ function withDefaults(d){
   const base = defaultData(), set = obj(d.settings);
   const out = { ...base, ...d, version: 3, settings: { ...base.settings },
     aliases: {}, ignored: Array.isArray(d.ignored) ? d.ignored.filter(x => typeof x === 'string') : [],
-    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, deletedDays: {}, extraDays: {}, followUps: {} };
+    excused: { ...obj(d.excused) }, excusedAbsent: { ...obj(d.excusedAbsent) }, notes: {}, noClass: {}, dayStatus: {}, drops: {}, deleted: {}, deletedDays: {}, extraDays: {}, followUps: {}, plans: {} };
   for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && Number.isFinite(v)) out.settings[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
   for (const k of ['teacherName', 'className', 'contactLine']) if (typeof set[k] === 'string') out.settings[k] = set[k].slice(0, 120);
   for (const [k, v] of Object.entries(obj(d.aliases))) if (typeof v === 'string') out.aliases[k] = v;
@@ -1204,6 +1234,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.drops))) if (isDk(obj(v).date)) out.drops[k] = { date: v.date };
   for (const [k, v] of Object.entries(obj(d.deletedDays))) if (isDk(k)) out.deletedDays[k] = { date: isDk(obj(v).date) ? v.date : '' };
   for (const [k, v] of Object.entries(obj(d.deleted))) if (k) out.deleted[k] = { date: isDk(obj(v).date) ? v.date : '', name: String(obj(v).name || k).slice(0, 120) };
+  for (const [k, v] of Object.entries(obj(d.plans))){ const t = obj(v).type; if (k && (t === 'iep' || t === '504')) out.plans[k] = { type: t, acc: String(obj(v).acc || '').slice(0, 4000) }; }
   for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k) && [...DAYS, 'all', 'none'].includes(obj(v).like)) out.extraDays[k] = { like: v.like };
   for (const [k, v] of Object.entries(obj(d.dayStatus))){
     const o = {}, x = obj(v);
@@ -1232,7 +1263,7 @@ const state = {
   tab: 'overview', query: '', draft: null, openDays: new Set(), autoOpened: false, status: null,
   range: { preset: 'all', from: '', to: '' }, rangeMenu: false, noteEdit: null,
   sort: 'name', student: null, studentFrom: null, returnTo: null, highlight: null,
-  include: { table: true, log: true, notes: false }, familyDraft: {}, fuEdit: null, fuPrefill: null,
+  include: { table: true, log: true, notes: false, plan: false }, rpt: { kind: 'summary', who: 'all', below: 90, times: 3 }, planEdit: null, familyDraft: {}, fuEdit: null, fuPrefill: null,
   selDay: null, dayTableOpen: false, supQuery: '', supUnmOpen: false, ovSel: null, ovFrom: null, ovMark: null, ovMarkN: 0, ovDay: null, ovScroll: null, ovScrollTo: null, ovPrintAll: false, addDay: { open: false, date: '', like: '', msg: '' }, dropEdit: null, showDropped: false, schedChange: null, viewVersion: null, schPop: null, schRenames: [], draftUndo: [], pasteOpen: false, schAddDraft: {}, pasteWarn: null, lastAnalysis: null,
   demo: false, undo: [], redo: [], snap: null, saveFailed: false,   // demo: the sample class is open; undo/redo: the data before each change
   sheet: null, sheetBusy: false   // the Google Sheet connection, kept in this browser only (never in the folder)
@@ -2372,6 +2403,25 @@ function formOf(A, key, dk){
 const fAnswered = (f, unit) => f.some ? 'answered some (no points yet)' : `answered ${f.answered} of ${f.unit === 'point' ? plural(f.total, 'point') : unit ? plural(f.total, 'question') : f.total}`;
 // With two or more Formatives that day, each one on its own: "Week 11: answered 3 of 6 points, score 0%".
 const fEach = f => f.parts.length > 1 ? f.parts.map(p => `${p.title}: ${fAnswered(p, true)}${p.pct !== null ? `, score ${p.pct}%` : ''}`) : [];
+// IEP and 504 plans. Kept only in the folder's data file: never sent to the Google Sheet or put in a message to a family, and
+// printed only when "IEP/504 and accommodations" is checked.
+const PLAN_NAME = { iep: 'IEP', '504': '504 plan' };
+const planOf = key => state.data.plans[key] || null;
+const planAcc = p => String((p && p.acc) || '').split('\n').map(x => x.trim()).filter(Boolean);
+const planShort = key => { const p = planOf(key); return p ? (p.type === 'iep' ? 'IEP' : '504') : ''; };
+const planTag = (key, cls = '') => { const p = planOf(key); if (!p) return ''; const a = planAcc(p);
+  return `<span class="plantag${cls ? ` ${cls}` : ''}" title="${esc(`${PLAN_NAME[p.type]}${a.length ? `: ${a.join('; ')}` : ''}`)}">${planShort(key)}</span>`; };
+function planMenu(ctx){
+  const p = planOf(ctx.key) || { type: '', acc: '' };
+  return `<details class="menu planmenu" data-planmenu="${esc(ctx.key)}"${state.planEdit === ctx.key ? ' open' : ''}><summary class="linkish">${p.type ? 'Edit IEP or 504' : 'Add IEP or 504'}</summary>
+    <div class="pop planform" role="group" aria-label="IEP or 504 plan for ${esc(ctx.name)}">
+      <div class="planradios" role="radiogroup" aria-label="Plan">${[['', 'None'], ['iep', 'IEP'], ['504', '504 plan']].map(([v, l]) =>
+        `<label><input type="radio" name="plantype" data-plantype value="${v}"${p.type === v ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+      <label class="planacclabel">Accommodations, one per line<textarea data-planacc rows="6" spellcheck="true" placeholder="Extended time&#10;Breaks as needed&#10;Questions read aloud">${esc(p.acc)}</textarea></label>
+      <p class="small muted" style="margin:0">Kept in your folder’s data file only. It isn’t sent to the Google Sheet or put in messages to families, and it’s printed only when you check “IEP/504 and accommodations”.</p>
+      <p class="small planmsg" data-planmsg role="alert"></p>
+      <div class="actions" style="margin:0"><button class="btn small" data-plansave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-plancancel>Cancel</button></div></div></details>`;
+}
 const dropOf = key => (state.data.drops[key] || {}).date || null;
 const isDropped = key => { const d = dropOf(key); return !!d && d <= todayDk(); };
 const hasMsg = (key, dk) => (state.data.followUps[key] || []).some(f => f.day === dk);
@@ -2496,7 +2546,7 @@ function renderOverview(){
       const tip = [xd ? `Day you added: ${addedLabel(A, dk)}` : '', fd ? `Formative results that day${A.formByDk.get(dk).dated.has('the file name') ? ' (dated from the file name)' : ''}` : ''].filter(Boolean).join('. ');
       return `<th scope="col" data-dk="${dk}" class="${wkStart[n] ? 'wk' : ''}${dk === today ? ' today' : ''}${state.ovDay === dk ? ' dsel' : ''}"${tip ? ` title="${esc(tip)}"` : ''}><button class="ovdh" data-ovdh="${dk}" tabindex="-1" aria-label="${esc(longDate(dk))}: delete or check this day" aria-expanded="${state.ovDay === dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(dk)).slice(0, 2))}${
         xd ? '<b class="ovxd" aria-hidden="true">+</b>' : ''}</span><span class="ovmn">${parseDk(dk).getMonth() + 1}/</span>${parseDk(dk).getDate()}</button>${fd ? '<b class="ovfd" aria-hidden="true">F</b>' : ''}</th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${planTag(r.key, 'noprint')}</span>${dropOf(r.key) ? `<span class="ovdrop">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${longDate(c.dk)}: ${cellWords(c)}`, letters = ['L', 'C'].filter(l => c[l]).join('');
       const stop = selCell ? c.xk === sel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === sel ? ' sel' : ''}${c.unsched ? ' unsched' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === sel}">${
@@ -2541,7 +2591,8 @@ function ovKey(A, rows){
     <div class="ovkrow" aria-hidden="true"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}
       <span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span>${
       rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}${
-      rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}</div>
+      rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}${
+      rows.some(r => planOf(r.key)) ? '<span class="noprint"><span class="plantag">IEP</span> <span class="plantag">504</span> IEP or 504 plan</span>' : ''}</div>
     ${form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
       rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
     : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
@@ -2594,7 +2645,7 @@ function ovEditor(A, c, name){
   const lets = Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${k === 'C' ? false : c.auto[k]}" aria-pressed="${c[k]}" title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('');
   // "Finished work" is always there, hidden on days it doesn't apply, so the editor is the same size on every day.
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
+    <div class="ovpop-h"><b>${esc(name)}</b>${planTag(c.key)}<span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
     <p class="small ovfacts">${esc(zoom)}<br>${esc(formLine)}${f ? fEach(f).map(x => `<br>· ${esc(x)}`).join('') : ''}${clash ? `<br>${esc(clash)}` : ''}</p>
     <div class="ovcols"><div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
       <div class="ovgrp"><span class="small muted">Letters</span>${lets}
@@ -2863,7 +2914,8 @@ function includeBoxes(){
   const I = state.include;
   return `<label><input type="checkbox" data-include="table"${I.table ? ' checked' : ''}> Day-by-day table</label>
     <label><input type="checkbox" data-include="log"${I.log ? ' checked' : ''}> Follow-up log</label>
-    <label><input type="checkbox" data-include="notes"${I.notes ? ' checked' : ''}> My day notes</label>`;
+    <label><input type="checkbox" data-include="notes"${I.notes ? ' checked' : ''}> My day notes</label>
+    <label><input type="checkbox" data-include="plan"${I.plan ? ' checked' : ''}> IEP/504 and accommodations</label>`;
 }
 
 function renderStudents(){
@@ -2904,7 +2956,7 @@ function renderStudents(){
     else if (!info.inLatest) chips.push(`<span class="chip k-extra">Not on current schedule</span>`);
     const leftEarly = s.early + s.soft;
     h += `<tr>
-      <td class="c-name"><div class="nmrow"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>
+      <td class="c-name"><div class="nmrow"><span class="nmtag"><button class="name-btn" data-openstudent="${esc(s.key)}">${esc(s.name)}</button>${planTag(s.key, 'noprint')}</span>
         <button class="btn small ghost noprint" data-weeklymsg="${esc(s.key)}" title="Copy a message about ${esc(s.name)}’s attendance this week">Copy message</button></div>
         ${chips.length ? `<div class="chips" style="margin-top:3px">${chips.join('')}</div>` : ''}
         <span class="cardcounts">Absent ${s.absent} · Late ${s.late} · Left early ${leftEarly}</span></td>
@@ -2916,6 +2968,114 @@ function renderStudents(){
   h += `</tbody></table></div>
     <p class="small muted" style="margin-top:10px">Excused absences and finished-work time aren’t counted. Minutes received: time in Zoom during each student’s scheduled hours.</p>`;
   el.innerHTML = h;
+}
+
+/* ---------------- Reports: attendance for a group of students ----------------
+   Pick a report and which students; the dates are the same as on the other tabs. Each report is facts (counts, dates,
+   percents) and can be printed or downloaded as a CSV. */
+const RPT_KINDS = [
+  ['summary', 'Attendance summary', 'Days attended, minutes received, absences, late and left early, and Overview colors for each student, with totals for each group.'],
+  ['below', 'Days attended below a percent', 'Students who attended less than the percent you pick of their scheduled class days. Excused absences aren’t counted.'],
+  ['late', 'Late or left early', 'Students who were late, or left early, at least the number of times you pick, with the dates.'],
+  ['color', 'Overview colors', 'How many class days each student had each Overview color. On days with a Formative export, the colors come from it.'],
+  ['contact', 'Follow-ups and absences', 'Each student’s absences next to the follow-ups logged with their family in these dates.'],
+  ['plans', 'IEP and 504 accommodations', 'Students with an IEP or 504 plan, and their accommodations.'],
+];
+const RPT_WHO = [['all', 'All students'], ['iep', 'IEP'], ['504', '504'], ['plan', 'IEP or 504'], ['none', 'No plan']];
+const rptWhoOk = (key, who) => { const p = planOf(key); return who === 'all' || (who === 'none' ? !p : who === 'plan' ? !!p : !!p && p.type === who); };
+const rptWhoName = who => ({ all: 'All students', iep: 'Students with an IEP', '504': 'Students with a 504 plan', plan: 'Students with an IEP or 504 plan', none: 'Students without an IEP or 504 plan' })[who];
+// One row per student for the dates shown, from their scheduled class days (a class they came to without being scheduled
+// is counted on its own), with the Overview color of each of those days.
+function rptData(A){
+  const days = daysInRange(A.days), period = periodOf(A), who = state.rpt.who;
+  const sched = days.map(d => ({ ...d, students: d.students.filter(x => !x.unsched) }));
+  const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))]));
+  const rows = studentSummary(sched).filter(p => rptWhoOk(p.key, who)).map(p => {
+    const col = { engaged: 0, idle: 0, away: 0, excused: 0, absent: 0 }; let withF = 0;
+    for (const { day, s: x } of p.rec){ const c = cellState(A, p.key, day.dk, recs); if (c.cat in col) col[c.cat]++; if (A.formByDk.has(day.dk) && !x.isAbsent) withF++; }
+    const on = f => p.rec.filter(({ s: x }) => !isExcused(x) && f(x)).map(({ day }) => day.dk);
+    const fus = fuSorted(p.key), last = fus[0] || null;
+    return { ...p, col, withF, extra: days.filter(d => d.students.some(x => x.key === p.key && x.unsched)).length,
+      lateDates: on(x => hasFlag(x, 'late')), earlyDates: on(x => hasFlag(x, 'early') || hasFlag(x, 'soft')), absentDates: on(x => x.isAbsent),
+      fusIn: fus.filter(f => f.date >= period.from && f.date <= period.to), last };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+  return { days, period, rows };
+}
+const rptTotals = rows => { const t = { students: rows.length, n: 0, att: 0, pres: 0, req: 0, abs: 0, exc: 0, late: 0, early: 0, away: 0 };
+  for (const r of rows){ t.n += r.n; t.att += r.attended; t.pres += r.pres; t.req += r.req; t.abs += r.absent; t.exc += r.excused; t.late += r.late; t.early += r.early + r.soft; t.away += r.col.away; }
+  return { ...t, rate: pct(t.att, t.n), dose: pct(t.pres, t.req) }; };
+const ofPct = (a, b) => b ? `${nf(a)} of ${nf(b)} (${pct(a, b)}%)` : '—';
+const rptDates = ds => ds.length ? ds.map(monDay).join(', ') : '';
+const rptName = r => `<button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${dropOf(r.key) ? ` <span class="small muted">dropped ${esc(monDay(dropOf(r.key)))}</span>` : ''}`;
+// Each report: its rows (after its own filter and order) and columns: [heading, cell on the page, value(s) in the CSV, class].
+function rptSpec(A, D){
+  const R = state.rpt, rows = D.rows, plan = ['Plan', r => planShort(r.key) || '—', r => planShort(r.key)];
+  const csvName = ['Student', rptName, r => r.name + (dropOf(r.key) ? ` (dropped ${dropOf(r.key)})` : '')];
+  const lastFu = r => r.last ? `${monDay(r.last.date)}, ${fuHow(r.last).toLowerCase()}` : 'None logged';
+  if (R.kind === 'plans'){
+    const list = A.roster.filter(r => planOf(r.key) && rptWhoOk(r.key, R.who)).map(r => ({ ...r, plan: planOf(r.key) }));
+    return { rows: list, cols: [csvName, plan, ['Accommodations', r => planAcc(r.plan).length ? `<ul class="rptacc">${planAcc(r.plan).map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<span class="muted">None entered</span>', r => planAcc(r.plan).join('; ')]] };
+  }
+  if (R.kind === 'below') return { rows: rows.filter(r => r.rate !== null && r.rate < R.below).sort((a, b) => a.rate - b.rate || a.name.localeCompare(b.name)), cols: [csvName, plan,
+    ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['Absent', r => r.absent, r => r.absent, 'num'], ['Excused', r => r.excused, r => r.excused, 'num'],
+    ['Absent in a row now', r => r.streak ? `${r.streak} <span class="small muted">(${esc(rptDates(r.streakDates))})</span>` : '0', r => r.streak], ['Last follow-up', r => esc(lastFu(r)), r => lastFu(r)]] };
+  if (R.kind === 'late') return { rows: rows.filter(r => r.lateDates.length >= R.times || r.earlyDates.length >= R.times).sort((a, b) => b.lateDates.length + b.earlyDates.length - a.lateDates.length - a.earlyDates.length || a.name.localeCompare(b.name)), cols: [csvName, plan,
+    ['Late', r => r.lateDates.length, r => r.lateDates.length, 'num'], ['Late on', r => esc(rptDates(r.lateDates)), r => rptDates(r.lateDates)],
+    ['Left early', r => r.earlyDates.length, r => r.earlyDates.length, 'num'], ['Left early on', r => esc(rptDates(r.earlyDates)), r => rptDates(r.earlyDates)]] };
+  if (R.kind === 'color') return { rows: [...rows].sort((a, b) => b.col.away - a.col.away || a.name.localeCompare(b.name)), cols: [csvName, plan,
+    ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n]], ['<i class="ovsw c-engaged"></i>Engaged', r => r.col.engaged, r => r.col.engaged, 'num'],
+    ['<i class="ovsw c-idle"></i>Not engaging', r => r.col.idle, r => r.col.idle, 'num'], ['<i class="ovsw c-away"></i>Likely not present', r => r.col.away, r => r.col.away, 'num'],
+    ['Days with a Formative', r => r.withF, r => r.withF, 'num']] };
+  if (R.kind === 'contact'){
+    const since = r => r.absentDates.filter(dk => !r.last || dk > r.last.date).length;
+    return { rows: rows.filter(r => r.absent || r.fusIn.length).sort((a, b) => since(b) - since(a) || b.absent - a.absent || a.name.localeCompare(b.name)), cols: [csvName, plan,
+      ['Absent', r => r.absent, r => r.absent, 'num'], ['Absences since the last follow-up', r => since(r), r => since(r), 'num'],
+      ['Follow-ups in these dates', r => r.fusIn.length, r => r.fusIn.length, 'num'], ['Last follow-up', r => esc(lastFu(r)), r => lastFu(r)]] };
+  }
+  return { rows, cols: [csvName, plan, ['Days attended', r => ofPct(r.attended, r.n), r => [r.attended, r.n, r.rate]], ['Minutes received', r => ofPct(r.pres, r.req), r => [r.pres, r.req, r.dose]],
+    ['Absent', r => r.absent, r => r.absent, 'num'], ['Excused', r => r.excused, r => r.excused, 'num'], ['Late', r => r.late, r => r.late, 'num'], ['Left early', r => r.early + r.soft, r => r.early + r.soft, 'num'],
+    ['<i class="ovsw c-away"></i>Likely not present', r => r.col.away, r => r.col.away, 'num'], ['Extra classes', r => r.extra, r => r.extra, 'num']] };
+}
+const RPT_CSV_HEAD = { 'Days attended': ['Days attended', 'Class days', 'Days attended %'], 'Minutes received': ['Minutes received', 'Minutes scheduled', 'Minutes received %'] };
+function rptOutput(A){
+  const R = state.rpt, kind = RPT_KINDS.find(k => k[0] === R.kind) || RPT_KINDS[0], D = rptData(A), spec = rptSpec(A, D);
+  const dated = R.kind !== 'plans', any = Object.keys(state.data.plans).length;
+  let h = `<div class="printonly rpttitle"><h2>${esc(kind[1])}</h2><p>${esc(rptWhoName(R.who))}${dated ? ` · ${esc(fmtPeriod(D.period))}` : ''}${R.kind === 'below' ? ` · below ${R.below}%` : R.kind === 'late' ? ` · ${R.times} or more times` : ''} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}${state.data.settings.teacherName ? ` · ${esc(state.data.settings.teacherName)}` : ''}</p></div>`;
+  if (R.who !== 'all' && R.who !== 'none' && !any) return h + `<div class="notice info">No students are marked with an IEP or 504 plan yet. To mark one, click their name on the Students tab, then “Add IEP or 504” beside it.</div>`;
+  if (dated && !D.days.length) return h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
+  h += `<p class="listinfo">${plural(spec.rows.length, 'student')}${dated ? ` · ${plural(D.days.length, 'class day')} with Zoom reports` : ''}</p>`;
+  if (!spec.rows.length) return h + `<p class="muted">No students in this report for these dates and students.</p>`;
+  h += `<div class="tablewrap"><table class="sum rpt"><thead><tr>${spec.cols.map(c => `<th${c[3] ? ` class="${c[3]}"` : ''}>${c[0]}</th>`).join('')}</tr></thead><tbody>${
+    spec.rows.map(r => `<tr>${spec.cols.map(c => `<td${c[3] ? ` class="${c[3]}"` : ''}>${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  // Totals for each group (on the summary): all IEP students together, all 504 students, everyone else.
+  if (R.kind === 'summary'){
+    const groups = (R.who === 'all' ? [['IEP', 'iep'], ['504', '504'], ['No plan', 'none']] : []).map(([l, w]) => [l, D.rows.filter(r => rptWhoOk(r.key, w))]).filter(([, rs]) => rs.length);
+    const tot = [...groups, [R.who === 'all' ? 'All students' : 'These students', D.rows]].map(([l, rs]) => [l, rptTotals(rs)]);
+    h += `<h3 class="subhead">Totals</h3><div class="tablewrap"><table class="sum rpt rpttot"><thead><tr><th>Group</th><th class="num">Students</th><th>Days attended</th><th>Minutes received</th><th class="num">Absent</th><th class="num">Late</th><th class="num">Left early</th><th class="num">Likely not present</th></tr></thead><tbody>${
+      tot.map(([l, t]) => `<tr><td>${esc(l)}</td><td class="num">${t.students}</td><td>${ofPct(t.att, t.n)}</td><td>${ofPct(t.pres, t.req)}</td><td class="num">${t.abs}</td><td class="num">${t.late}</td><td class="num">${t.early}</td><td class="num">${t.away}</td></tr>`).join('')}</tbody></table></div>
+      <p class="small muted" style="margin-top:8px">A group’s days attended is all its students’ days added together. Excused absences and finished-work time aren’t counted. Extra classes (a class a student came to without being scheduled) aren’t in the totals.</p>`;
+  }
+  return h;
+}
+function rptCSV(){
+  const A = state.lastAnalysis || analyze(), D = rptData(A), spec = rptSpec(A, D), R = state.rpt, r0 = spec.rows[0];
+  // A column whose CSV value is a list (like attended, of, percent) gets one heading for each.
+  const head = spec.cols.flatMap(c => { const v = r0 ? c[2](r0) : null; return v instanceof Array ? (RPT_CSV_HEAD[c[0]] || []).slice(0, v.length) : [c[0].replace(/<[^>]+>/g, '')]; });
+  const rows = [head, ...spec.rows.map(r => spec.cols.flatMap(c => { const v = c[2](r); return v instanceof Array ? v.map(x => x ?? '') : [v ?? '']; }))];
+  downloadFile(`attendance-report_${R.kind}_${R.who}${R.kind === 'plans' ? '' : `_${stamp()}`}.csv`, toCSV(rows), 'text/csv');
+}
+function renderRpt(){
+  const el = $('#tab-rpt'), A = analyze(); state.lastAnalysis = A;
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const R = state.rpt, kind = RPT_KINDS.find(k => k[0] === R.kind) || RPT_KINDS[0];
+  const opt = R.kind === 'below' ? `<label>Below <input type="number" min="1" max="100" data-rptnum="below" value="${R.below}" aria-label="Percent of class days"> %</label>`
+    : R.kind === 'late' ? `<label>At least <input type="number" min="1" max="99" data-rptnum="times" value="${R.times}" aria-label="Number of times"> times</label>` : '';
+  el.innerHTML = `<div class="toolbar">${rangeBar()}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv>Download CSV</button><button class="btn small ghost" data-rptprint>Print</button></span></div>
+    <div class="panel rptpick noprint"><div class="rptrow"><label class="rptkind">Report <select data-rptkind>${RPT_KINDS.map(([k, l]) => `<option value="${k}"${k === kind[0] ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+      <div class="seg" role="group" aria-label="Students">${RPT_WHO.map(([k, l]) => `<button data-rptwho="${k}" aria-pressed="${R.who === k}">${esc(l)}</button>`).join('')}</div>
+      <span class="rptopt">${opt}</span></div>
+      <p class="small muted" style="margin:0">${esc(kind[2])}</p></div>
+    <div id="rptOut">${rptOutput(A)}</div>`;
 }
 
 /* ---------------- Student report ---------------- */
@@ -2979,16 +3139,19 @@ function reportHeader(ctx, o){
   // Dropped from the class: a line under the name saying so (with Undo). Until then, two quiet links at the right end of
   // the name row: "Dropped from the class?" opens a small menu to record it (state.dropEdit keeps it open through a redraw),
   // and "Delete student" asks first.
-  const links = drop || o.print ? '' : `<span class="noprint dropbtns"><details class="menu dropmenu" data-dropmenu="${esc(ctx.key)}"${state.dropEdit === ctx.key ? ' open' : ''}>
+  const links = o.print ? '' : `<span class="noprint dropbtns">${planMenu(ctx)}${drop ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(ctx.key)}"${state.dropEdit === ctx.key ? ' open' : ''}>
       <summary class="linkish">Dropped from the class?</summary><div class="pop dropform" role="group" aria-label="Dropped from the class">
         <div class="dropline"><span>Not in the class starting</span><input type="date" data-dropdate value="${esc(todayDk())}" aria-label="First day not in the class">
           <button class="btn small" data-dropsave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-dropcancel>Cancel</button></div>
         <p>Later days aren’t counted, and ${esc(ctx.first)} is hidden from the lists. Earlier days stay on this report.</p></div></details>
-      <button class="linkish" data-delstudent="${esc(ctx.key)}">Delete student</button></span>`;
+      <button class="linkish" data-delstudent="${esc(ctx.key)}">Delete student</button>`}</span>`;
+  const plan = planOf(ctx.key), acc = planAcc(plan);
+  const planBox = plan && (!o.print || (o.include && o.include.plan)) ? `<div class="planbox"><span class="plantag" title="${esc(PLAN_NAME[plan.type])}">${planShort(ctx.key)}</span><div><b>Accommodations</b>${
+    acc.length ? `<ul class="planacc">${acc.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ' <span class="muted">No accommodations entered.</span>'}</div></div>` : '';
   const dropLine = drop ? `<p class="dropnote">Dropped from the class starting ${esc(shortDate(drop))}. Later days aren’t counted.
       <button class="linkish noprint" data-undrop="${esc(ctx.key)}">Undo</button></p>` : '';
   return `<header class="rhead"><div class="eyebrow printonly">Intervention attendance report</div>
-    <div class="rname"><h2 tabindex="-1">${esc(ctx.name)}</h2>${links}</div>${dropLine}
+    <div class="rname"><h2 tabindex="-1">${esc(ctx.name)}</h2>${links}</div>${dropLine}${planBox}
     <p class="small muted">${esc(fmtPeriod(period))} · ${plural(nWeeks, 'week')} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports${roster.length ? ` · ${esc(roster.join(', '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()} · Prepared by ${esc(S.teacherName || '______')}</span></p>
     ${scheduleChart(info)}
     ${p ? minutesBlock(ctx) : ''}</header>`;
@@ -3450,6 +3613,7 @@ function teamSummary(ctx, inc){
   const L = [`${ctx.name}: intervention attendance`,
     `${fmtPeriod(period)} · ${plural(p ? p.sessions : 0, 'class day')} with Zoom reports`,
     `Scheduled: ${info.line ? `${info.line} · ${info.weekMin} minutes a week` : 'not on the schedule'}`];
+  const plan = planOf(ctx.key); if (inc.plan && plan) L.push(`${PLAN_NAME[plan.type]}${planAcc(plan).length ? `. Accommodations: ${planAcc(plan).join('; ')}` : ''}`);
   if (p){
     L.push('', `Days attended: ${ofN(p.attended, p.n, 'day')}${p.rate === null ? '' : ` (${p.rate}%)`}${p.excused ? `, plus ${p.excused} excused` : ''}`,
       `Minutes received: ${p.pres} of ${p.req}${p.dose === null ? '' : ` (${p.dose}%)`}${p.iReq && p.sReq ? `; instruction ${p.iPres} of ${p.iReq}, support ${p.sPres} of ${p.sReq}` : ''}`,
@@ -3617,7 +3781,8 @@ function sampleFolder(){
   const data = { version: 3, scheduleVersions: [{ from: '', text: scheduleText }], scheduleText,
     settings: { lateGrace: 5, leaveGrace: 5, gapMin: 5, sectionLen: 60, engagedPct: 50, teacherName: 'Ms. Rivera', className: 'Math 1 Intervention', contactLine: 'Room 12 (sample)' },
     ignored: ['ms rivera'], noClass: { [holiday]: { reason: 'holiday' } }, excused: {}, excusedAbsent: { [`${islaOut}|isla martin`]: true },
-    notes: {}, dayStatus: {}, followUps: {} };
+    notes: {}, dayStatus: {}, followUps: {},
+    plans: { 'diego ramirez': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nQuestions read aloud' }, 'kira sato': { type: '504', acc: 'Preferential seating\nCopy of class notes' } } };
   const files = [], present = {};
   for (const dk of days){
     const [ins, sup] = planOf(dk), rows = [['Ms. Rivera', 12 * 60 + 52, 15 * 60 + 3]];
@@ -3680,7 +3845,8 @@ function helpHTML(){
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every class day on one grid, like a paper attendance sheet. Click a day to see it or change it.</li>
       <li><b>Days</b>: who came on each class day, who was late or left early, and when each student was in Zoom.</li>
-      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share. <b>Copy message</b> writes a weekly note for a family.</li>
+      <li><b>Students</b>: each student’s totals. Click a name for a full report to print or share, or to mark an IEP or 504 plan and its accommodations. <b>Copy message</b> writes a weekly note for a family.</li>
+      <li><b>Reports</b>: attendance reports for a group of students, like only IEP and 504 students, students below a percent of days attended, or students often late. Print one or download it as a CSV.</li>
       ${tabHidden('support') ? '' : '<li><b>Support hour</b>: who was let go early from the support hour this week.</li>'}
       <li><b>Schedule</b>: your classes (day, time, instruction or support hour) and who comes to each. Paste it from your spreadsheet once, then change it there. Each change starts on the day you pick, and earlier days keep the schedule they had.</li>
       <li><b>Settings</b>: how many minutes count as late, your name for notes to families, your data, and the Google Sheet.</li></ul>
@@ -3739,6 +3905,7 @@ const TOUR = [
     title: 'Click a day to see or change it', text: 'You’ll see when the student joined and left. You can pick a different color, add a note, or mark a message sent home. To mark many days at once, use Quick mark.' },
   { tab: 'reports', at: () => $('#tab-reports details.day > summary'), title: 'Each class day', text: 'Who came, who was late and who left early, with a line showing when each student was in Zoom. Open a day to mark an absence as excused.' },
   { tab: 'students', at: () => $('#tab-students table.sum tbody tr'), title: 'Each student’s totals', text: 'Days attended and minutes received, for the dates you pick. Copy message writes a weekly note for a family. Click a name for a full report you can print.' },
+  { tab: 'rpt', at: () => $('#tab-rpt .rptpick'), title: 'Reports for a group', text: 'Pick a report and which students, like only students with an IEP or 504 plan. Print it or download a CSV.' },
   { tab: 'support', at: () => $('#tab-support .sup'), title: 'During the support hour', text: 'See who was let go early this week after finishing their work, and mark it as it happens.' },
   { tab: 'schedule', at: () => $('#tab-schedule .schboard') || $('#tab-schedule .schmain'), title: 'Your class schedule', text: 'Paste it from your spreadsheet once, then change it here: add or take students off a class, click a name to move a student, or click Edit to change a class’s day and time. Saving asks the day the change starts, so earlier days keep the schedule they had.' },
   { tab: 'settings', at: () => $('#tab-settings .panel'), title: 'Settings', text: 'How many minutes count as late or leaving early, and your name for notes to families.' },
@@ -4173,7 +4340,7 @@ function renameStudentKey(oldK, newK){
   }
   if (D.followUps[oldK]){ D.followUps[newK] = [...(D.followUps[newK] || []), ...D.followUps[oldK]]; delete D.followUps[oldK]; }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
-  for (const bag of [D.drops, D.deleted]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
+  for (const bag of [D.drops, D.deleted, D.plans]) if (bag[oldK]){ if (!bag[newK]) bag[newK] = bag[oldK]; delete bag[oldK]; }
 }
 function applySchedule(mode, from){
   const vs = state.data.scheduleVersions, text = state.draft;
@@ -4299,7 +4466,7 @@ function renderStatus(){
   el.innerHTML = s ? `<div class="notice ${s.type === 'info' ? 'info' : ''}"><span>${esc(s.text)}</span>${
     s.action ? `<button class="linkish" data-statusact="${esc(s.action.act)}">${esc(s.action.label)}</button>` : ''}${s.auto ? '' : '<button class="linkish" data-closestatus>Close</button>'}</div>` : '';
 }
-const RENDER = { overview: () => renderOverview(), reports: () => renderReports(), students: () => renderStudents(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
+const RENDER = { overview: () => renderOverview(), reports: () => renderReports(), students: () => renderStudents(), rpt: () => renderRpt(), support: () => renderSupport(), schedule: () => renderSchedule(), settings: () => renderSettings() };
 // The Support hour tab shows only for a class that has a support hour in its schedule.
 const hasSupport = () => state.data.scheduleVersions.some(v => Object.values(parsedSchedule(v.text).days).some(secs => secs.some(x => x.type === 'support' && x.students.length)));
 const tabHidden = t => t === 'support' && state.loaded && !hasSupport();
@@ -4551,7 +4718,7 @@ function focusSelector(t){
 
 /* ---------------- Events ---------------- */
 // A menu closed here is marked closed in state right away (its toggle event comes later), so a redraw doesn't reopen it.
-const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; };
+const closeMenu = m => { m.open = false; if ('addday' in m.dataset) state.addDay.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; if ('planmenu' in m.dataset) state.planEdit = null; };
 // Pressing anywhere outside the day editor closes it in place, without a redraw, so the box, date or menu being
 // clicked keeps its focus. A press that starts in the editor (a drag to select note text) never closes it.
 // A click anywhere else closes the day box, in place.
@@ -4717,7 +4884,20 @@ async function onClick(t){
   if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovScroll = null; state.ovScrollTo = d.ovday || null; renderCurrent(); return; }
   if (t.id === 'exportDays') return exportDays();
   if (t.id === 'exportSummary') return exportSummary();
-  if (has('data-printlist')) return window.print();
+  if (has('data-printlist') || has('data-rptprint')) return window.print();
+  if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
+  if (has('data-rptcsv')) return rptCSV();
+  if (d.plansave){
+    const m = t.closest('[data-planmenu]'), type = (m.querySelector('[data-plantype]:checked') || {}).value || '';
+    const acc = m.querySelector('[data-planacc]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n');
+    if (!type && acc){ m.querySelector('[data-planmsg]').textContent = 'Pick IEP or 504 plan to keep these accommodations.'; return; }
+    const was = planOf(d.plansave), name = (state.lastAnalysis || analyze()).nameOf[d.plansave] || d.plansave;
+    if (type) state.data.plans[d.plansave] = { type, acc }; else delete state.data.plans[d.plansave];
+    state.planEdit = null; changed(); renderCurrent();
+    if (type || was) setStatus(type ? `Saved ${name}’s ${PLAN_NAME[type]}.` : `Took off ${name}’s ${PLAN_NAME[was.type]}.`, 'info', { label: 'Undo', act: 'undo' });
+    return;
+  }
+  if (has('data-plancancel')){ const m = t.closest('details'); if (m) closeMenu(m); renderCurrent(); return; }
   if (d.printreports){
     const { all } = studentList(state.lastAnalysis || analyze());
     const keys = [...all].sort((a, b) => a.name.localeCompare(b.name)).map(s => s.key);
@@ -4857,6 +5037,8 @@ document.addEventListener('input', e => {
   if ('supsearch' in d){ state.supQuery = t.value; const r = $('#sup-results'); if (r) r.innerHTML = supportResults(supportWeek(state.lastAnalysis || analyze())); return; }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
   if (d.schadd !== undefined){ if (t.value) state.schAddDraft[d.schadd] = t.value; else delete state.schAddDraft[d.schadd]; }
+  // A report's number redraws only the report, so typing it isn't interrupted.
+  if (d.rptnum){ const v = Math.round(+t.value); if (v >= +t.min && v <= +t.max){ state.rpt[d.rptnum] = v; $('#rptOut').innerHTML = rptOutput(state.lastAnalysis || analyze()); } return; }
   if (d.schsame !== undefined){
     const [x, y] = JSON.parse(d.schsame), at = state.schRenames.findIndex(r => normKey(r[0]) === normKey(x) && normKey(r[1]) === normKey(y));
     state.draftUndo.push(draftStep());
@@ -4925,6 +5107,7 @@ document.addEventListener('change', e => {
   }
   if ('showdropped' in d){ state.showDropped = t.checked; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); }
+  if ('rptkind' in d){ state.rpt.kind = t.value; renderRpt(); const x = $('#tab-rpt [data-rptkind]'); if (x) x.focus(); }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); }
   // The schedule step updates in place, so typing a date isn't interrupted by a redraw.
   if (d.schedmode && state.schedChange){ state.schedChange.mode = d.schedmode; updateSchedStep(); }
@@ -5059,6 +5242,7 @@ document.addEventListener('toggle', e => {
   if (el.dataset && 'addday' in el.dataset){ state.addDay.open = el.open; if (!el.open) el.querySelector('.addmsg').textContent = ''; }
   if (el.dataset && 'rangemenu' in el.dataset) state.rangeMenu = el.open;
   if (el.dataset && 'dropmenu' in el.dataset){ state.dropEdit = el.open ? el.dataset.dropmenu : null; if (el.open) el.querySelector('[data-dropdate]').focus(); }
+  if (el.dataset && 'planmenu' in el.dataset){ state.planEdit = el.open ? el.dataset.planmenu : null; if (el.open){ const r = el.querySelector('[data-plantype]:checked'); if (r) r.focus(); } }
   // A menu opens rightward unless that would run off the window. The drop menu always opens leftward, inside the report.
   if (el.classList && el.classList.contains('menu') && el.open && !('dropmenu' in el.dataset)){
     const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
