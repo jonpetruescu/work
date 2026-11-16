@@ -2606,10 +2606,18 @@ function overviewDates(A, period){
 // Show: which students (a group), only those engaged on less than a percent of their class days, and the order. "Engaged" is
 // a day colored Present and engaged, out of the student's class days in the dates shown (excused absences aren't counted).
 const OV_ORDER = [['name', 'A to Z'], ['engaged', 'Least engaged first'], ['attended', 'Fewest days attended first']];
+// A day counts as it's colored on the Overview, from Zoom and Formative or picked by hand, with or without a Zoom report:
+// present (any of the three present colors), absent, or excused (counted apart). A day still to come counts once it has a report.
+const DAY_CATS = ['engaged', 'idle', 'away', 'absent', 'excused'];
+const dayCounts = (c, today = todayDk()) => DAY_CATS.includes(c.cat) && (!!c.rec || c.dk <= today);
 function ovStats(cells){
-  let n = 0, att = 0, eng = 0;
-  for (const c of cells){ if (!c.rec || isExcused(c.rec) || c.cat === 'excused') continue; n++; if (!c.rec.isAbsent) att++; if (c.cat === 'engaged') eng++; }
-  return { n, att, eng, engPct: pct(eng, n), attPct: pct(att, n) };
+  const today = todayDk(); let n = 0, att = 0, eng = 0, exc = 0, L = 0;
+  for (const c of cells){
+    if (!dayCounts(c, today)) continue;
+    if (c.cat === 'excused'){ exc++; continue; }
+    n++; if (c.cat !== 'absent'){ att++; if (c.L) L++; } if (c.cat === 'engaged') eng++;
+  }
+  return { n, att, eng, exc, L, abs: n - att, engPct: pct(eng, n), attPct: pct(att, n) };
 }
 const ovShowOn = () => { const S = state.ovShow; return S.who !== 'all' || S.under || S.order !== 'name'; };
 // The number beside a name when it's what the list is filtered or ordered by.
@@ -3131,37 +3139,38 @@ function renderStudents(){
 
 /* ---------------- Reports: a group of students, summed up ----------------
    For the dates shown and one group (everyone, IEP, 504, IEP or 504, ML, RFEP, or none of these): the headline numbers,
-   then charts. No student is named here; each student's own numbers are on the Students tab. Days are counted as on the
-   Students tab: excused absences and finished-work time aren't counted. */
+   then charts. No student is named here; each student's own numbers are on the Students tab. It sums up the Overview:
+   the same students (dropped ones when they're shown) and every class day as it's colored there, a color picked by hand
+   included, with or without a Zoom report. Excused days are counted apart. Minutes come from the days with a Zoom report. */
 const rptWhoName = who => (WHO.find(w => w[0] === who) || WHO[0])[2];
-// Each student in the group: their totals, and the Overview color of each of their class days.
+// Each student in the group, as the Overview shows them for these dates: their days that count and the totals of those.
 function rptData(A, who = state.rpt.who){
-  const days = daysInRange(A.days), period = periodOf(A);
+  const period = periodOf(A), dates = overviewDates(A, period), today = todayDk();
   const recs = new Map(A.days.map(d => [d.dk, new Map(d.students.map(x => [x.key, x]))]));
-  const rows = studentSummary(days).filter(p => whoOk(p.key, who)).map(p => {
-    const col = { engaged: 0, idle: 0, away: 0, absent: 0, excused: 0, nosched: 0 }, recCats = []; let eng = 0;
-    for (const { day, s: x } of p.rec){ const c = cellState(A, p.key, day.dk, recs); if (c.cat in col) col[c.cat]++; recCats.push({ dk: day.dk, x, cat: c.cat }); if (!isExcused(x) && c.cat === 'engaged') eng++; }
-    return { ...p, col, recCats, eng };
-  });
-  return { days, period, rows };
+  const rows = A.roster.filter(r => (state.showDropped || !isDropped(r.key)) && whoOk(r.key, who)).map(r => {
+    const cells = dates.map(dk => cellState(A, r.key, dk, recs));
+    return { key: r.key, days: cells.filter(c => dayCounts(c, today)), ...ovStats(cells) };
+  }).filter(r => r.days.length);
+  return { period, dates, rows };
 }
-// The group's totals: days, minutes and where they went, colors, and the same by week and by weekday.
+// The group's totals: days and their colors, Zoom's minutes and where they went, and the same by week and by weekday.
 function rptSum(rows){
   const z = () => ({ n: 0, att: 0, eng: 0, pres: 0, req: 0 });
-  const t = { students: rows.length, sessions: 0, ...z(), abs: 0, exc: 0, late: 0, early: 0, col: { engaged: 0, idle: 0, away: 0, absent: 0, excused: 0, nosched: 0 },
-    min: { in: 0, before: 0, out: 0, after: 0, absent: 0 }, weeks: new Map(), wdays: new Map() };
-  const add = (m, k, x, cat) => { const o = m.get(k) || { key: k, ...z() }; o.n++; if (!x.isAbsent) o.att++; if (cat === 'engaged') o.eng++; o.pres += x.presentMin; o.req += x.reqMin - finSplit(x).fin; m.set(k, o); };
+  const t = { students: rows.length, ...z(), abs: 0, exc: 0, L: 0, col: { engaged: 0, idle: 0, away: 0, absent: 0, excused: 0 },
+    min: { in: 0, before: 0, out: 0, after: 0, absent: 0 }, weeks: new Map(), wdays: new Map(), dates: new Set(), zoomDates: new Set() };
+  const mins = (o, x) => { o.pres += x.presentMin; o.req += x.reqMin - finSplit(x).fin; };
+  const add = (m, k, c) => { const o = m.get(k) || { key: k, ...z() }; o.n++; if (c.cat !== 'absent') o.att++; if (c.cat === 'engaged') o.eng++; if (c.rec) mins(o, c.rec); m.set(k, o); };
   for (const r of rows){
-    t.sessions += r.sessions; t.n += r.n; t.att += r.attended; t.eng += r.eng; t.pres += r.pres; t.req += r.req; t.abs += r.absent; t.exc += r.excused; t.late += r.late; t.early += r.early + r.soft;
-    for (const k in t.col) t.col[k] += r.col[k];
-    for (const { dk, x, cat } of r.recCats){
-      if (isExcused(x)) continue;
-      const P = dayParts(x); for (const ty of ['instruction', 'support']) for (const k in t.min) t.min[k] += P[ty][k];
-      add(t.weeks, weekKey(dk), x, cat); add(t.wdays, parseDk(dk).getDay(), x, cat);
+    t.n += r.n; t.att += r.att; t.eng += r.eng; t.abs += r.abs; t.exc += r.exc; t.L += r.L;
+    for (const c of r.days){
+      t.col[c.cat]++; t.dates.add(c.dk); if (c.rec) t.zoomDates.add(c.dk);
+      if (c.cat === 'excused') continue;
+      if (c.rec){ mins(t, c.rec); const P = dayParts(c.rec); for (const ty of ['instruction', 'support']) for (const k in t.min) t.min[k] += P[ty][k]; }
+      add(t.weeks, weekKey(c.dk), c); add(t.wdays, parseDk(c.dk).getDay(), c);
     }
   }
   const per = v => t.students ? v / t.students : null;
-  return { ...t, rate: pct(t.att, t.n), engRate: pct(t.eng, t.n), dose: pct(t.pres, t.req), absPer: per(t.abs), latePer: per(t.late), earlyPer: per(t.early) };
+  return { ...t, rate: pct(t.att, t.n), engRate: pct(t.eng, t.n), dose: pct(t.pres, t.req), absPer: per(t.abs), LPer: per(t.L) };
 }
 const nf1 = v => v === null ? '—' : (Math.round(v * 10) / 10).toLocaleString();
 const pctTxt = v => v === null ? '—' : `${v}%`;
@@ -3232,9 +3241,9 @@ function vizLineAt(svg, i){
 function vizLineOff(svg){ svg.querySelector('.vxh').setAttribute('visibility', 'hidden'); svg.querySelectorAll('.vxd').forEach(c => c.setAttribute('visibility', 'hidden')); vizTip(null); }
 // A row for each part of a whole: a swatch and its name, a bar for its share, the share and the amount.
 function vizRows(parts, total, unit, compare){
-  return `<ul class="vrows">${parts.map(([k, name, v, sw, cv]) => { const sh = total ? Math.round(v / total * 100) : 0;
-    return `<li tabindex="0" data-tip="${esc([name, `${sh}% · ${nf(v)} ${unit}`, ...(compare && cv !== undefined ? [`All students: ${cv}%`] : [])].join('\n'))}"><span class="ksw ${sw}" aria-hidden="true"></span><span class="vrn">${esc(name)}</span>
-      <span class="vrt"><span class="vrf ${sw}" style="width:${total ? (v / total * 100).toFixed(2) : 0}%"></span></span><span class="vrv"><b>${sh}%</b> ${nf(v)} ${unit}${compare && cv !== undefined ? `<span class="muted"> · all ${cv}%</span>` : ''}</span></li>`; }).join('')}</ul>`;
+  return `<ul class="vrows">${parts.map(([k, name, v, sw, cv]) => { const sh = total ? Math.round(v / total * 100) : 0, u = v === 1 && unit === 'days' ? 'day' : unit;
+    return `<li tabindex="0" data-tip="${esc([name, `${sh}% · ${nf(v)} ${u}`, ...(compare && cv !== undefined ? [`All students: ${cv}%`] : [])].join('\n'))}"><span class="ksw ${sw}" aria-hidden="true"></span><span class="vrn">${esc(name)}</span>
+      <span class="vrt"><span class="vrf ${sw}" style="width:${total ? (v / total * 100).toFixed(2) : 0}%"></span></span><span class="vrv"><b>${sh}%</b> ${nf(v)} ${u}${compare && cv !== undefined ? `<span class="muted"> · all ${cv}%</span>` : ''}</span></li>`; }).join('')}</ul>`;
 }
 const vizTable = (head, rows) => `<details class="vtab"><summary>Show the numbers</summary><div class="tablewrap"><table class="sum rpt"><thead><tr>${head.map(x => `<th>${esc(x)}</th>`).join('')}</tr></thead>
   <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
@@ -3246,35 +3255,34 @@ function rptOutput(A){
   let h = `<div class="printonly rpttitle"><h2>Attendance summary: ${esc(rptWhoName(R.who))}</h2><p>${esc(fmtPeriod(D.period))} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}${state.data.settings.teacherName ? ` · ${esc(state.data.settings.teacherName)}` : ''}</p></div>`;
   const marked = A.roster.some(r => R.who === 'all' || R.who === 'none' || whoOk(r.key, R.who));
   if (!marked) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'rfep' ? 'RFEP' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
-  if (!D.days.length) return h + `<div class="notice info">No Zoom reports fall in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
+  if (!D.dates.length) return h + `<div class="notice info">No class days in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
   if (!T.students || !T.n) return h + `<p class="muted">No class days for ${esc(rptWhoName(R.who).toLowerCase())} in these dates.</p>`;
-  h += `<p class="listinfo">${esc(rptWhoName(R.who))} · ${plural(T.students, 'student')} · ${plural(D.days.length, 'class day')} with Zoom reports · ${esc(fmtPeriod(D.period))}</p>`;
+  h += `<p class="listinfo">${esc(rptWhoName(R.who))} · ${plural(T.students, 'student')} · ${plural(T.dates.size, 'class day')}${T.zoomDates.size < T.dates.size ? ` (${T.zoomDates.size} with a Zoom report)` : ''} · ${esc(fmtPeriod(D.period))}</p>`;
   // The headline numbers, each with the same number for all students when this is a smaller group.
   const tile = (label, value, detail, cmp) => `<div class="rtile"><div class="rt-l">${label}</div><div class="rt-v">${value}</div><div class="rt-d">${detail}</div>${all && cmp !== null ? `<div class="rt-c">All students: ${cmp}</div>` : ''}</div>`;
   h += `<div class="rtiles">${tile('Students', T.students, R.who === 'all' ? 'in these dates' : `of ${all.students} in these dates`, null)}
     ${tile('Days attended', pctTxt(T.rate), `${nf(T.att)} of ${nf(T.n)} class days`, all && pctTxt(all.rate))}
     ${tile('Engaged days', pctTxt(T.engRate), `${nf(T.eng)} of ${nf(T.n)} class days`, all && pctTxt(all.engRate))}
-    ${tile('Minutes received', pctTxt(T.dose), `${nf(T.pres)} of ${nf(T.req)} min`, all && pctTxt(all.dose))}
+    ${tile('Minutes received', pctTxt(T.dose), `${nf(T.pres)} of ${nf(T.req)} min in Zoom reports`, all && pctTxt(all.dose))}
     ${tile('Absences', nf1(T.absPer), `per student (${nf(T.abs)} in all)`, all && nf1(all.absPer))}
-    ${tile('Late', nf1(T.latePer), `times per student (${nf(T.late)})`, all && nf1(all.latePer))}
-    ${tile('Left early', nf1(T.earlyPer), `times per student (${nf(T.early)})`, all && nf1(all.earlyPer))}</div>`;
+    ${tile('Late or left early', nf1(T.LPer), `days per student with an L (${nf(T.L)} in all)`, all && nf1(all.LPer))}</div>`;
   const card = (title, sub, body, wide) => `<figure class="rcard${wide ? ' wide' : ''}"><figcaption><h3>${title}</h3>${sub ? `<p class="small muted">${sub}</p>` : ''}</figcaption>${body}</figure>`;
   const legend = `<div class="vlegend"><span><i class="vkey" style="background:var(--viz-1)"></i>Days attended</span><span><i class="vkey" style="background:var(--viz-2)"></i>Engaged days</span></div>`;
   let cards = card('Week by week', 'Days attended and engaged days, out of the group’s class days each week. Point at a week for its numbers.',
     legend + vizLines('rptweeks', W, Wall) + vizTable(['Week of', 'Class days', 'Days attended', 'Engaged days', 'Minutes received'],
-      W.map(o => [monDay(o.key), o.n, `${o.att} (${pctTxt(o.rate)})`, `${o.eng} (${pctTxt(o.engRate)})`, `${nf(o.pres)} of ${nf(o.req)} (${pctTxt(o.dose)})`])), true);
+      W.map(o => [monDay(o.key), o.n, `${o.att} (${pctTxt(o.rate)})`, `${o.eng} (${pctTxt(o.engRate)})`, o.req ? `${nf(o.pres)} of ${nf(o.req)} (${pctTxt(o.dose)})` : 'No Zoom report'])), true);
   // How the class days went, in the Overview's colors (an excused absence is one of them), and where the scheduled minutes went.
-  const cs = [['engaged', OV_CAT.engaged], ['idle', OV_CAT.idle], ['away', OV_CAT.away], ['absent', OV_CAT.absent], ['excused', OV_CAT.excused], ['nosched', OV_CAT.nosched]].filter(([k]) => k !== 'nosched' || T.col.nosched);
+  const cs = [['engaged', OV_CAT.engaged], ['idle', OV_CAT.idle], ['away', OV_CAT.away], ['absent', OV_CAT.absent], ['excused', OV_CAT.excused]];
   const ctot = cs.reduce((a, [k]) => a + T.col[k], 0), acTot = all ? cs.reduce((a, [k]) => a + all.col[k], 0) : 0;
-  cards += card('How class days went', 'Each class day’s color on the Overview.', vizRows(cs.map(([k, name]) => [k, name, T.col[k], `c-${k}`, all && acTot ? Math.round(all.col[k] / acTot * 100) : undefined]), ctot, 'days', !!all)
+  cards += card('How class days went', 'Each class day’s color on the Overview, colors you picked by hand included.', vizRows(cs.map(([k, name]) => [k, name, T.col[k], `c-${k}`, all && acTot ? Math.round(all.col[k] / acTot * 100) : undefined]), ctot, 'days', !!all)
     + vizTable(['Color', 'Class days', 'Share'], cs.map(([k, name]) => [name, T.col[k], `${ctot ? Math.round(T.col[k] / ctot * 100) : 0}%`])));
   const ms = [['in', 'In Zoom', 's-in'], ['before', 'Before joining (late)', 's-before'], ['out', 'Out of Zoom mid-class', 's-out'], ['after', 'After leaving early', 's-after'], ['absent', 'Absent days', 's-absent']];
   const mtot = ms.reduce((a, [k]) => a + T.min[k], 0), amTot = all ? ms.reduce((a, [k]) => a + all.min[k], 0) : 0;
-  cards += card('Where scheduled minutes went', 'Every scheduled minute, from Zoom. Finished-work and excused time aren’t counted.',
+  cards += card('Where scheduled minutes went', 'Every scheduled minute on the days with a Zoom report. Finished-work time and excused days aren’t counted.',
     vizRows(ms.map(([k, name, sw]) => [k, name, T.min[k], sw, all && amTot ? Math.round(all.min[k] / amTot * 100) : undefined]), mtot, 'min', !!all)
     + vizTable(['Where', 'Minutes', 'Share'], ms.map(([k, name]) => [name, nf(T.min[k]), `${mtot ? Math.round(T.min[k] / mtot * 100) : 0}%`])));
   // How the group's students spread out: how many attended (or were engaged on) each share of their class days.
-  const withDays = D.rows.filter(r => r.n), fa = r => Math.round(r.attended / r.n * 100), fe = r => Math.round(r.eng / r.n * 100);
+  const withDays = D.rows.filter(r => r.n), fa = r => Math.round(r.att / r.n * 100), fe = r => Math.round(r.eng / r.n * 100);
   const bands = BANDS.map(([l, test]) => { const v = [withDays.filter(r => test(fa(r))).length, withDays.filter(r => test(fe(r))).length];
     return { label: l, values: v, tips: v.map(n => plural(n, 'student')) }; });
   // An example from the tallest "Days attended" bar, so the chart reads at a glance.
@@ -3293,12 +3301,12 @@ function rptOutput(A){
     cards += card('By group', 'A student can be in more than one group (an IEP and ML).', `<div class="tablewrap"><table class="sum rpt"><thead><tr><th>Group</th><th class="num">Students</th><th>Days attended</th><th>Engaged days</th><th>Minutes received</th><th class="num">Absences per student</th></tr></thead><tbody>${
       [...gs, ['All students', T]].map(([l, g], i) => `<tr${i === gs.length ? ' class="rptall"' : ''}><td>${esc(l)}</td><td class="num">${g.students}</td><td>${pctTxt(g.rate)}</td><td>${pctTxt(g.engRate)}</td><td>${pctTxt(g.dose)}</td><td class="num">${nf1(g.absPer)}</td></tr>`).join('')}</tbody></table></div>`, true);
   }
-  return h + `<div class="rgrid">${cards}</div><p class="small muted" style="margin-top:10px">Excused absences and finished-work time aren’t counted. Engaged days are days colored “Present and engaged” on the Overview.</p>`;
+  return h + `<div class="rgrid">${cards}</div><p class="small muted" style="margin-top:10px">Each class day counts as it’s colored on the Overview, colors you picked by hand included, with or without a Zoom report. Days attended are days in any of the three present colors; engaged days are days colored “Present and engaged”. Excused days aren’t counted in the shares. Minutes come from Zoom reports, without finished-work time.</p>`;
 }
 function rptCSV(){
   const A = state.lastAnalysis || analyze(), T = rptSum(rptData(A).rows), R = state.rpt;
   const rows = [['Week of', 'Class days', 'Days attended', 'Days attended %', 'Engaged days', 'Engaged days %', 'Minutes received', 'Minutes scheduled', 'Minutes received %'],
-    ...[...T.weeks.values()].sort((a, b) => a.key.localeCompare(b.key)).map(o => [o.key, o.n, o.att, pct(o.att, o.n) ?? '', o.eng, pct(o.eng, o.n) ?? '', o.pres, o.req, pct(o.pres, o.req) ?? '']),
+    ...[...T.weeks.values()].sort((a, b) => a.key.localeCompare(b.key)).map(o => [o.key, o.n, o.att, pct(o.att, o.n) ?? '', o.eng, pct(o.eng, o.n) ?? '', o.req ? o.pres : '', o.req || '', pct(o.pres, o.req) ?? '']),
     ['All weeks', T.n, T.att, T.rate ?? '', T.eng, T.engRate ?? '', T.pres, T.req, T.dose ?? '']];
   downloadFile(`attendance-summary_${R.who}_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
@@ -3306,7 +3314,7 @@ function renderRpt(){
   const el = $('#tab-rpt'), A = analyze(); state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   const R = state.rpt;
-  el.innerHTML = `<div class="toolbar">${rangeBar()}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv title="The week-by-week numbers for this group">Download CSV</button><button class="btn small ghost" data-rptprint>Print</button></span></div>
+  el.innerHTML = `<div class="toolbar">${rangeBar()}${droppedToggle(A)}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv title="The week-by-week numbers for this group">Download CSV</button><button class="btn small ghost" data-rptprint>Print</button></span></div>
     <div class="panel rptpick noprint"><div class="rptrow"><span class="rptlab">Students</span>
       <div class="seg" role="group" aria-label="Students">${WHO.map(([k, l, t]) => `<button data-rptwho="${k}" aria-pressed="${R.who === k}" title="${esc(t)}">${esc(l)}</button>`).join('')}</div></div></div>
     <div id="rptOut">${rptOutput(A)}</div>`;
