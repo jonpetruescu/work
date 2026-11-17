@@ -1,0 +1,2065 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Privacy lock: this page may not load anything over the network or send anything anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homeroom tracker</title>
+<style>
+:root{
+  --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
+  --ink:#1C2433; --muted:#566074; --faint:#626B7D; --rule:#A3ACBA; --bar:#24324D;
+  --ok:#1D6F47; --ok-bg:#DFF1E7;
+  --late:#8F4B00; --late-bg:#FBE8D2;
+  --bad:#A8231A; --bad-bg:#FADFDB;
+  --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Five text sizes: notes, small text, body, headings, page titles */
+  --fs-xs:.75rem; --fs-sm:.8125rem; --fs-md:.9375rem; --fs-lg:1.125rem; --fs-xl:1.5rem;
+  /* The Overview's colors: the teacher's own */
+  --ov-present:#93C47D; --ov-excused:#6D9EEB; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;   /* the browser's own boxes, lists and scroll bars are dark too */
+    --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
+    --ink:#E5E9F1; --muted:#A4AEBF; --faint:#8C96A8; --rule:#4E5A6E; --bar:#A9C2F5;
+    --ok:#74D3A2; --ok-bg:#163428; --late:#F2B36B; --late-bg:#3D2A12;
+    --bad:#F28B82; --bad-bg:#40201D;
+    --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
+    --ov-present:#5E8F4B; --ov-excused:#4C78C4; --ov-absent:#B44A4A; --ov-none:#262F3D; --ov-ink:#10151E;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Header: the name and privacy line on the left, the folder on the right, the tabs below */
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:12px 0 4px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 12px;flex:none;max-width:100%}
+.brand h1{font-size:var(--fs-lg);line-height:1.2;white-space:nowrap}
+.brand p{margin:0;color:var(--muted);font-size:var(--fs-sm);white-space:nowrap}
+.folder #reopen{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.folder{margin-left:auto;display:flex;flex:1 1 0;min-width:0;justify-content:flex-end;flex-wrap:nowrap;align-items:center;gap:12px;white-space:nowrap}
+.folder .where{color:var(--muted);font-size:var(--fs-sm);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.folder .where b{color:var(--ink);font-weight:600}
+.btn{border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:var(--fs-md)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.small{padding:3px 9px;font-size:var(--fs-sm);font-weight:600}
+.btn:disabled{opacity:.5;cursor:default}
+.folder .btn{height:32px;padding:0 14px;font-size:.875rem}
+nav.tabs{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+nav.tabs button{flex:none;background:none;border:0;padding:8px 0 9px;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-md);border-bottom:3px solid transparent}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bar)}
+.savebar{font-size:var(--fs-sm);color:var(--muted);margin-left:auto;align-self:center;display:flex;gap:8px;align-items:center}
+.savebar .linkish{color:var(--muted)}
+.savebar .saved{color:var(--ok)}
+.savebar .btn.warn{background:var(--late);border-color:var(--late);color:var(--surface)}
+.tabrow{display:flex;flex-wrap:wrap;gap:10px}
+.helpbtn{align-self:center;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-weight:600;font-size:var(--fs-sm);cursor:pointer}
+.helpbtn:hover{border-color:var(--muted)}
+.helpbtn b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--bar);color:var(--btn-ink);font-size:.75rem}
+
+main.wrap{padding:22px 20px 60px}
+.notice{border:1px solid var(--line);border-left:4px solid var(--late);background:var(--surface);padding:10px 14px;border-radius:6px;margin:0 0 14px;font-size:var(--fs-md)}
+.notice.info{border-left-color:var(--bar)}
+.notice ul{margin:6px 0 0;padding-left:20px}
+/* Messages float over the bottom corner, so nothing on the page moves when one comes or goes. */
+#status{position:fixed;right:24px;bottom:24px;z-index:25;max-width:420px}
+#status .notice{display:flex;align-items:baseline;gap:12px;margin:0;box-shadow:0 6px 24px rgba(0,0,0,.14)}
+#status .linkish{margin-left:auto;flex:none}
+#status .notice .linkish + .linkish{margin-left:12px}
+.muted{color:var(--muted)}
+.small{font-size:var(--fs-sm)}
+
+/* Start screen and set-up steps */
+.start{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:26px 28px;max-width:760px;margin-bottom:16px}
+.start h2{font-size:var(--fs-xl);margin-bottom:6px}
+.start ol{padding-left:22px;margin:14px 0 18px}
+.start li{margin:8px 0}
+.start .lead{font-size:var(--fs-md);margin:0 0 16px}
+.start h3{font-size:var(--fs-md);font-family:var(--sans);margin:20px 0 0}
+.start .actions{margin-top:0}
+.startsetup{margin-top:18px}
+.steps{list-style:none;margin:14px 0 0;padding:0}
+.steps > li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--grid)}
+.steps > li:first-child{border-top:0}
+.steps .stepn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);font-weight:700;font-size:var(--fs-sm);color:var(--muted)}
+.steps > li.done .stepn{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.steps > li.now .stepn{border-color:var(--bar);color:var(--ink)}
+.steps > li.later{color:var(--muted)}
+.steps details ol{margin:6px 0 0;padding-left:20px;font-size:var(--fs-sm)}
+.steps details li{margin:3px 0}
+.steps p{margin:2px 0 0;font-size:var(--fs-sm)}
+.steps .actions{margin-top:8px}
+.steps details{margin-top:8px}
+.demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.demo-bar .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-left:auto}
+
+/* Toolbar: one even 32px strip with one text size. Controls inside a popover keep their own sizes. */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.toolbar > *{flex:none}
+.toolbar .grow{flex:1 1 0}
+.toolbar .tbend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;max-width:100%}
+.toolbar :is(.search,.btn,summary.btn,select):not(.pop *){height:32px;font-size:var(--fs-sm)}
+.toolbar :is(.btn,summary.btn):not(.pop *){display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;height:30px;padding:0 12px;cursor:pointer;font-size:var(--fs-sm);color:var(--muted);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--bar);color:var(--btn-ink)}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 10px;min-width:220px}
+.toolbar .search{width:200px;min-width:0;padding:0 10px}
+.sortby{font-size:var(--fs-sm);color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.sortby select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm)}
+.listinfo{font-size:var(--fs-sm);color:var(--muted);margin:0 0 10px}
+
+/* Date range: three presets and a "Custom dates…" menu in one segmented control, which never changes size. */
+.seg.range{overflow:visible;flex-wrap:wrap;max-width:100%}
+.seg.range > :first-child{border-radius:6px 0 0 6px}
+.rangemenu > summary{display:block;width:10.5em;height:30px;line-height:30px;padding:0 12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-sm);border-radius:0 6px 6px 0}
+.rangemenu > summary.on{background:var(--bar);color:var(--btn-ink)}
+.seg.range .pop{flex-direction:row;align-items:center;gap:10px;padding:10px 12px;min-width:0}
+.range label{font-size:var(--fs-sm);color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.range input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm)}
+
+/* Small menus that open over the page, so nothing under them moves */
+.menu{position:relative;display:inline-block}
+.menu > summary{list-style:none}
+.menu > summary::-webkit-details-marker{display:none}
+.menu .pop{position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:6px;min-width:280px;display:flex;flex-direction:column;gap:2px}
+.menu .pop p{margin:0}
+.dropline{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.menu input[type=date],.menu input[type=text]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:var(--fs-sm)}
+.menu.formmenu .pop{width:460px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}
+.formmenu label{display:grid;gap:3px;font-weight:600}
+.formmenu label input{font-weight:400}
+.menumsg{min-height:1.4em;color:var(--bad)}
+
+/* Tables */
+.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table.sum{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+table.sum th{font-size:var(--fs-sm);color:var(--muted);font-weight:600;text-align:left;padding:10px 12px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sum td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
+table.sum tr:last-child td{border-bottom:0}
+table.sum .num{text-align:right;white-space:nowrap}
+table.sum .zero{color:var(--faint)}
+table.sum .sub{display:block;font-size:var(--fs-sm);color:var(--muted)}
+.meter{display:flex;align-items:center;gap:8px;min-width:130px}
+.meter .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden;min-width:50px}
+.meter .fill{display:block;height:100%;background:var(--bar)}
+.meter b{font-weight:600;min-width:38px;text-align:right}
+.chip{display:inline-block;font-size:var(--fs-xs);font-weight:600;border-radius:5px;padding:1px 7px;white-space:nowrap;vertical-align:1px}
+.chip.due{background:var(--bad-bg);color:var(--bad)}
+.chip.left{background:var(--grid);color:var(--muted)}
+.chip.need{background:var(--late-bg);color:var(--late)}
+.name-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer;font-weight:600;color:var(--ink);font-size:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.name-btn:hover{text-decoration-color:var(--ink)}
+.nmline{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.linkish{position:relative;background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:var(--fs-sm)}
+.linkish:hover{color:var(--ink)}
+.linkish:disabled{color:var(--faint);cursor:default;text-decoration:none}
+/* Text links get a hit area of at least 24px, so they're as easy to click as buttons, without moving anything. */
+.linkish::after{content:"";position:absolute;inset:-5px -3px}
+.subhead{font-family:var(--serif);font-size:var(--fs-lg);margin:22px 0 8px}
+
+/* Panels (Setup, Study hall) */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 24px}
+.panel h2{font-size:var(--fs-lg);margin-bottom:6px}
+.panel > p{margin:0 0 10px}
+.stack > * + *{margin-top:16px}
+.two{display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,1.1fr);gap:24px;align-items:start}
+.set{display:grid;grid-template-columns:minmax(0,max-content) 64px minmax(0,max-content);gap:10px;align-items:center}
+.set input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;width:64px}
+.set .unit{color:var(--muted);font-size:var(--fs-sm)}
+.setgrid{display:grid;grid-template-columns:max-content max-content;gap:10px 14px;align-items:center}
+.setgrid input,.setgrid select,.settext input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;height:34px}
+.setgrid input[type=time],.setgrid select{width:9.5em}
+.settext{display:grid;grid-template-columns:minmax(140px,auto) 1fr;gap:10px 14px;align-items:center;max-width:620px}
+.settext input{width:100%}
+.wdays{display:flex;gap:14px;flex-wrap:wrap;border:0;margin:0;padding:0}
+.wdays legend{padding:0;margin-bottom:4px;font-size:var(--fs-sm);color:var(--muted)}
+.wdays label{display:inline-flex;gap:6px;align-items:center}
+.psub{font-family:var(--sans);font-size:var(--fs-sm);font-weight:600;margin:12px 0 0}
+.psub:first-child{margin-top:0}
+.list{margin:6px 0 0;padding:0;list-style:none}
+.list li{display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-md);min-height:36px}
+.list li > span:first-child{flex:1;min-width:0}
+.list .when{color:var(--muted);font-size:var(--fs-sm);margin-left:6px}
+textarea{width:100%;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:10px;font-size:var(--fs-sm);line-height:1.4;resize:vertical}
+textarea.stupaste{min-height:190px}
+.lbl{display:block;font-weight:600;font-size:var(--fs-sm);margin-bottom:4px}
+.actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.inl{display:inline-flex;gap:6px;align-items:center;font-size:var(--fs-sm)}
+.inl input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 7px;font-size:var(--fs-sm)}
+.formmsg{height:3em;overflow:hidden;margin:6px 0 0;font-size:var(--fs-sm)}
+.formmsg.bad{color:var(--bad)}
+
+/* Log a meeting: one row, always there, so nothing moves when it's used */
+.logform{display:flex;flex-wrap:nowrap;gap:10px;align-items:flex-end}
+.logform label{display:grid;gap:3px;font-size:var(--fs-sm);font-weight:600}
+.logform label.grow{flex:1;min-width:0}
+.logform select,.logform input{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 7px;font-size:var(--fs-sm);font-weight:400}
+.logform select{width:13em}
+.logform .btn{height:30px;flex:none}
+.logform.na{visibility:hidden}
+.logpanel{margin-bottom:16px;padding:16px 20px 10px}
+.logpanel h2{margin-bottom:2px}
+.logpanel > p{margin:0 0 10px}
+
+/* Meetings list */
+.mlist{list-style:none;margin:0;padding:0}
+.mlist li{display:grid;grid-template-columns:5.2em minmax(9em,max-content) minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm)}
+.mlist li:last-child{border-bottom:0}
+.mlist li.none{display:block;color:var(--muted)}
+.mlist .when{color:var(--ink);font-weight:600}
+.mlist .how{color:var(--muted)}
+.mlist .txt{min-width:0;overflow-wrap:anywhere}
+
+/* Study hall switch: a menu that asks for the date, opening over the page */
+.shmenu > summary{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 2px;cursor:pointer;border-radius:999px;font-size:var(--fs-sm);font-weight:600;color:var(--ink)}
+.shmenu > summary:hover .swt{box-shadow:0 0 0 3px var(--grid)}
+.swt{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--rule);flex:none}
+.swt::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.shmenu.on .swt{background:var(--ok)}
+.shmenu.on .swt::after{left:18px}
+.swl{display:inline-block;width:2em}
+.shmenu .pop{width:470px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}
+.plist{list-style:none;margin:6px 0 0;padding:0}
+.plist li{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm);min-height:40px}
+.plist input,.paddrow input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:var(--fs-sm)}
+.plist label,.paddrow label{display:inline-flex;gap:6px;align-items:center}
+.paddrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:10px;font-size:var(--fs-sm)}
+
+/* Student page */
+.sreport{max-width:960px}
+.rbar [data-studentback]{min-width:9em}
+.rbar .pn{display:flex;gap:8px;align-items:center;font-size:var(--fs-sm);color:var(--muted);min-width:0}
+.rbar .pn > span{min-width:4.5em;text-align:center}
+.toolbar.rbar .pn .btn{display:block;width:130px;line-height:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rbar .pnx{width:130px}
+.rhead,.rsec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin-bottom:16px}
+.eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.rhead h2{font-size:var(--fs-xl);margin:0}
+.rhead h2:focus{outline:none}
+.rhead p{margin:2px 0;font-size:var(--fs-md)}
+.rsec h3{font-size:var(--fs-lg);margin-bottom:10px}
+.rsec h3 .small{font-family:var(--sans);font-weight:400}
+.rsec h3.psub{font-family:var(--sans);font-size:var(--fs-md);margin:18px 0 0}
+.rsec > p{margin:0 0 8px}
+.rtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.tile .l{font-size:.82rem;color:var(--muted)}
+.tile .n{font-size:1.5rem;font-weight:600;line-height:1.2;font-variant-numeric:proportional-nums}
+.tile .s{font-size:.8rem;color:var(--muted);line-height:1.35;margin-top:2px}
+.tile.due .n{color:var(--bad)}
+.dstrip{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 6px}
+.dstrip li{display:grid;justify-items:center;gap:2px;width:46px;font-size:var(--fs-xs);color:var(--muted);line-height:1.2}
+.dstrip i{position:relative;display:flex;align-items:center;justify-content:center;width:32px;height:24px;border-radius:4px;font-style:normal;font-weight:700;color:var(--ov-ink)}
+.dstrip .wd{font-size:.68rem}
+.legend-line{font-size:var(--fs-sm);color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin:10px 0 0}
+.legend-line > span{display:inline-flex;gap:5px;align-items:center}
+.notes{list-style:none;margin:0;padding:0}
+.notes li{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm)}
+.notes li:last-child{border-bottom:0}
+.notes .when{min-width:12em;color:var(--muted)}
+.printonly{display:none}
+
+/* Overview grid: the teacher's colors */
+.c-present{background:var(--ov-present)} .c-excused{background:var(--ov-excused)} .c-absent{background:var(--ov-absent)}
+.c-none,.c-extra{background:var(--ov-none)}
+.c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
+.c-none,.c-extra,.c-missing,.c-later{--ov-ink:var(--ink)}   /* marks on these days use the page ink, so they show in dark mode too */
+.dstrip i.c-missing,.dstrip i.c-later{box-shadow:inset 0 0 0 1px var(--line)}
+.dstrip i.c-missing{color:var(--late)}
+.dstrip i.c-extra::after{content:"";position:absolute;inset:3px;border:1.5px dashed var(--ink);border-radius:2px}
+/* The key above the grid: three labeled rows, always 86px, so the grid never moves. */
+.ovkey{height:86px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.ovkrow{display:flex;flex-wrap:nowrap;align-items:center;gap:2px 14px;min-height:24px;font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
+.ovkrow > span{display:inline-flex;align-items:center;gap:5px}
+.ovkey b{color:var(--ink)}
+.ovkh{min-width:4.6em;color:var(--ink);font-weight:600}
+.ovkend{margin-left:auto}
+.ovsw{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:2px;font-style:normal;font-size:var(--fs-xs);border:1px solid var(--line);position:relative}
+.ovsw.ovnote-k{background:linear-gradient(225deg,var(--ink) 0 4px,var(--surface) 4px)}
+.ovsw.c-extra::after{content:"";position:absolute;inset:1px;border:1.5px dashed var(--ink);border-radius:1px}
+.ovsw.c-missing{color:var(--late);font-weight:700}
+.ovwrap{position:relative;margin-top:8px}
+.ovblock{position:relative;width:fit-content;max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:14px}
+.ovblock::-webkit-scrollbar{height:10px}
+.ovblock::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+.ovblock::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.ovt th.ovmo span{position:sticky;left:calc(var(--ovnamew, 170px) + 6px)}
+table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
+.ovt th,.ovt td{padding:0;border-right:1px solid var(--surface);border-bottom:1px solid var(--surface)}
+.ovt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--ink);font-weight:600;text-align:center;white-space:nowrap;padding:2px 1px;font-size:var(--fs-xs);font-variant-numeric:proportional-nums;line-height:1.25}
+.ovt thead tr:nth-child(2) th{top:22px}
+.ovt th.ovmo{text-align:left;color:var(--ink);padding-left:6px;height:22px;font-size:var(--fs-sm);line-height:17px}
+.ovt th.today,.ovt th.today .ovwd{color:var(--focus)}
+.ovwd{display:block;font-weight:400;font-size:var(--fs-xs);color:var(--muted)}
+.ovkind{display:block;font-size:.625rem;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.ovkind.sh{color:var(--ink)}
+.ovt .wk{border-left:2px solid var(--rule)}
+.ovt th.ovname{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px 0 8px;min-width:170px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink);border-right:1px solid var(--line);font-size:var(--fs-md)}
+.ovt th.ovname .name-btn{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration-color:transparent}
+.ovt th.ovname .name-btn:hover{text-decoration-color:var(--ink)}
+.ovleft{display:block;font-size:var(--fs-xs);font-weight:500;color:var(--muted);line-height:1.1}
+.ovt thead th.ovcorner{z-index:4;vertical-align:bottom;padding-bottom:4px;color:var(--muted)}
+.ovt thead th.ov1h{z-index:4;position:sticky;right:0;vertical-align:bottom;padding:0 10px 4px;text-align:left;color:var(--muted);border-left:1px solid var(--line)}
+.ovt tbody tr:hover th.ovname{background:var(--paper)}
+.ovc{width:38px;min-width:38px;height:26px}
+.ovb{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;gap:1px;width:100%;height:26px;cursor:pointer;color:var(--ov-ink);font-size:var(--fs-xs);font-weight:700;letter-spacing:.02em}
+.ovb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+/* Two-tone ring (ink outside, page color inside), so the focused or open day shows on every color in both themes */
+.ovb:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--surface)}
+.ovc.sel .ovb,.ov1c.sel .ovb{outline:3px solid var(--ink);outline-offset:-3px;box-shadow:inset 0 0 0 5px var(--surface)}
+.c-extra .ovb::after{content:"";position:absolute;inset:3px;border:1.5px dashed var(--ov-ink);border-radius:2px;pointer-events:none}
+.c-missing .ovb,.c-later .ovb{color:inherit}
+.ovn,.dstrip .dn{position:absolute;top:0;right:0;width:0;height:0;border-top:7px solid var(--ov-ink);border-left:7px solid transparent}
+.ovt td.ov1c{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line);width:136px;min-width:136px}
+.ov1c .ovb{justify-content:flex-start;padding:0 10px;color:var(--ink);font-weight:500;white-space:nowrap}
+.ov1c .ovb:hover{box-shadow:inset 0 0 0 2px var(--line)}
+.ov1c.due .ovb{color:var(--bad);font-weight:700}
+.ov1c.none .ovb{font-weight:700}
+.ov1c.left .ovb{color:var(--muted)}
+/* The day editor and the 1-on-1 box: every part is there on every day (one that doesn't apply is turned off, not
+   left out), so the box is the same size on every day and when anything in it is pressed. */
+.ovpop{position:absolute;z-index:10;width:500px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:14px 16px;font-size:var(--fs-sm)}
+.ovpop-h{display:flex;flex-wrap:nowrap;align-items:baseline;gap:4px 10px;white-space:nowrap;min-width:0}
+.ovpop-h b{font-size:var(--fs-md)}
+.ovpop-h .muted{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ovx{margin-left:auto}
+.ovfacts{height:6.4em;overflow-y:auto;margin:6px 0 10px;overscroll-behavior:contain}
+.ovcols{display:grid;grid-template-columns:230px 1fr;gap:0 20px}
+.ovgrp{display:flex;flex-direction:column}
+.ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:5px;padding:0 6px;font-size:var(--fs-sm);cursor:pointer;color:var(--ink);width:100%;height:26px;justify-content:flex-start}
+.ovchip[aria-pressed="true"]{background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ovchip:hover:not(:disabled),.ovlet:hover:not(:disabled){background:var(--grid)}
+.ovchip:disabled,.ovlet:disabled{color:var(--faint);cursor:default}
+.ovlet .tbox{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ovlet[aria-pressed="true"] .tbox{background:var(--focus);border-color:var(--focus)}
+.ovlet[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.ovset{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:2px}
+.ovset.on{background:var(--focus)}
+.ovhint{margin:8px 6px 0;height:4.2em}
+.ovnoteb{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;margin:10px 0 6px}
+.ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:var(--fs-sm)}
+.ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
+.ov1pop{width:560px}
+.ov1facts{height:2.9em;margin:6px 0 6px;overflow:hidden}
+.ov1list{height:150px;overflow-y:auto;border-top:1px solid var(--grid);border-bottom:1px solid var(--grid);margin-bottom:10px;overscroll-behavior:contain}
+.ov1pop .logform select{width:11em}
+.ov1pop .logmsg{height:1.4em;margin:4px 0 0}
+.ovlink{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
+.ovlink select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;max-width:210px;font-size:var(--fs-sm)}
+.logmsg{height:1.5em;margin:6px 0 0;font-size:var(--fs-sm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.logmsg.bad{color:var(--bad)}
+
+/* Help (a native dialog: Esc closes it, and focus stays inside) */
+dialog.dlg{border:1px solid var(--line);border-radius:12px;padding:0;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);background:var(--surface);color:var(--ink);box-shadow:0 16px 48px rgba(0,0,0,.28)}
+dialog.dlg::backdrop{background:rgba(15,20,30,.45)}
+.dlg-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--line)}
+.dlg-head h2{font-size:var(--fs-xl)}
+.dlg-head .btn{margin-left:auto}
+.dlg-body{padding:6px 22px 22px}
+.dlg-body h3{font-size:var(--fs-lg);margin:20px 0 6px}
+.dlg-body p,.dlg-body li{font-size:var(--fs-md);line-height:1.55}
+.dlg-body ul,.dlg-body ol{padding-left:22px;margin:6px 0}
+.dlg-body li{margin:3px 0}
+.dlg-body .keyrow{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:6px 16px;align-items:baseline;margin:6px 0}
+kbd{display:inline-block;min-width:1.6em;padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--paper);font:600 var(--fs-sm) var(--sans);text-align:center}
+.helpkey{list-style:none;padding:0 !important;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 16px}
+.helpkey li{display:flex;align-items:center;gap:8px;margin:0}
+.faq dt{font-weight:600;margin-top:10px}
+.faq dd{margin:2px 0 0;color:var(--ink)}
+.skip{position:absolute;left:12px;top:-60px;z-index:40;background:var(--surface);color:var(--ink);border:2px solid var(--focus);border-radius:6px;padding:8px 12px;font-weight:600}
+.skip:focus{top:8px}
+main:focus{outline:none}
+
+@media print{
+  :root{
+    --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
+    --ink:#1C2433; --muted:#566074; --faint:#8790A0; --rule:#A3ACBA; --bar:#24324D;
+    --ok:#1D6F47; --ok-bg:#DFF1E7; --late:#8F4B00; --late-bg:#FBE8D2; --bad:#A8231A; --bad-bg:#FADFDB;
+    --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
+    --ov-present:#93C47D; --ov-excused:#6D9EEB; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
+  }
+  @page{margin:.5in}
+  body{background:#fff}
+  main.wrap{padding:0}
+  header.top nav, .folder, .toolbar, .savebar, .helpbtn, .linkish, .noprint, .logform, .logmsg, .notice, #status, #banner, .skip, .ovpop{display:none !important}
+  .printonly{display:block}
+  span.printonly{display:inline}
+  header.top{display:none}
+  h2.ptitle{display:block;font-size:var(--fs-lg);margin:0 0 4px}
+  .ovt .ovleft{font-size:.5rem}
+  .tablewrap{overflow:visible;border:0}
+  table.sum{font-size:.8rem}
+  table.sum th,table.sum td{padding:5px 8px}
+  table.sum tr{break-inside:avoid}
+  .meter .track,.meter .fill,.chip,.tile,.dstrip i,.ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .name-btn{text-decoration:none}
+  .rhead,.rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0;break-inside:avoid}
+  .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
+  .sreport{max-width:none}
+  .ovblock{border:0;overflow:visible}
+  .ovt tr{break-inside:avoid}
+  .ovt thead th,.ovt thead tr:nth-child(2) th,.ovt th.ovname,.ovt td.ov1c,.ovt thead th.ov1h{position:relative;top:auto;right:auto}
+  .ovt th.ovmo span{position:static}
+  .ovt thead th{font-size:.56rem;padding:2px 0}
+  .ovt th.ovmo{height:auto;font-size:.62rem}
+  .ovt th.ovname{min-width:0;width:140px;max-width:140px;font-size:.7rem}
+  .ovc{width:var(--pcw, 24px);min-width:var(--pcw, 24px);height:15px}
+  .ovb{height:15px;font-size:.6rem}
+  .ovt td.ov1c{width:96px;min-width:96px}
+  .ov1c .ovb{padding:0 4px;font-size:.6rem}
+  .ovwd,.ovkind{font-size:.5rem}
+  .ovkey{height:auto;padding:4px 8px;margin-bottom:6px}
+  .ovkrow{font-size:.62rem;min-height:0}
+  p.ovprint{margin:0 0 6px;font-weight:600}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important} }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Homeroom tracker</h1>
+        <p id="privacyLine">Runs only on this computer. Nothing is uploaded.</p>
+      </div>
+      <div class="folder" id="folderBar"></div>
+    </div>
+    <div class="tabrow">
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" id="t-overview" aria-controls="tab-overview" data-tab="overview" aria-selected="true" title="Every student and every homeroom and study hall day on one grid">Overview</button>
+        <button role="tab" id="t-students" aria-controls="tab-students" data-tab="students" aria-selected="false" title="Each student’s homeroom and study hall attendance and 1-on-1s">Students</button>
+        <button role="tab" id="t-meetings" aria-controls="tab-meetings" data-tab="meetings" aria-selected="false" title="Who’s due for a 1-on-1, and every meeting">1-on-1s</button>
+        <button role="tab" id="t-study" aria-controls="tab-study" data-tab="study" aria-selected="false" title="Who needs study hall, and since when">Study hall</button>
+        <button role="tab" id="t-setup" aria-controls="tab-setup" data-tab="setup" aria-selected="false" title="Your students, the homeroom and study hall times, and your data">Setup</button>
+      </nav>
+      <div class="savebar" id="saveBar"></div>
+      <button class="helpbtn" id="helpBtn" data-help aria-haspopup="dialog" aria-keyshortcuts="?" title="Help (press ?)"><b aria-hidden="true">?</b>Help</button>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="main" tabindex="-1">
+  <div id="banner"></div>
+  <div id="status" aria-live="polite"></div>
+  <section id="tab-overview" role="tabpanel" aria-labelledby="t-overview"></section>
+  <section id="tab-students" role="tabpanel" aria-labelledby="t-students" hidden></section>
+  <section id="tab-meetings" role="tabpanel" aria-labelledby="t-meetings" hidden></section>
+  <section id="tab-study" role="tabpanel" aria-labelledby="t-study" hidden></section>
+  <section id="tab-setup" role="tabpanel" aria-labelledby="t-setup" hidden></section>
+</main>
+<dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
+<input type="file" id="folderInput" webkitdirectory multiple hidden>
+<script>
+'use strict';
+/* ------------------------------------------------------------------
+   Everything below runs on this computer. The Content-Security-Policy above blocks every network request.
+   Data written: one file, homeroom-tracker-data.json, inside the folder you choose (students, study hall
+   dates, 1-on-1s logged by hand, marks and notes, settings, linked Zoom names). Zoom reports are only read.
+   ------------------------------------------------------------------ */
+const DATA_FILE = 'homeroom-tracker-data.json';
+const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const WEEKDAYS = [1, 2, 3, 4, 5];
+const HAS_FSA = typeof window.showDirectoryPicker === 'function';
+const KIND = { hr: 'Homeroom', sh: 'Study hall' };
+const CAT = { present: 'Present', absent: 'Absent', excused: 'Excused' };
+// What a day on the grid shows, in plain words.
+const CELL = { present: 'Present', absent: 'Absent', excused: 'Excused', none: 'Not required', extra: 'Came, not required',
+  missing: 'No Zoom report yet', later: 'Not yet' };
+const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const mins = ms => Math.round(ms / 60000);
+// Formatting dates is slow when every call builds a new formatter, so each format is built once.
+const DTF = {};
+const dtf = o => { const k = JSON.stringify(o); return DTF[k] || (DTF[k] = new Intl.DateTimeFormat([], o)); };
+const fmt = t => t == null ? '—' : dtf({ hour: 'numeric', minute: '2-digit' }).format(t);
+const fmtMin = m => { m = Math.round(m); let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${pad(mi)} ${ap}`; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtRange = (a, b) => { const A = fmtMin(a), B = fmtMin(b); return (A.slice(-2) === B.slice(-2) ? A.slice(0, -3) : A) + '–' + B; };
+const dkOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pct = (n, d) => d ? Math.round(n / d * 100) : null;
+const plural = (n, w, ws) => `${n} ${n === 1 ? w : (ws || w + 's')}`;
+const todayDk = () => dkOf(new Date());
+const parseDk = dk => { const [y, m, d] = String(dk).split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (dk, n) => { const d = parseDk(dk); d.setDate(d.getDate() + n); return dkOf(d); };
+const weekKey = dk => { const d = parseDk(dk); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return dkOf(d); };
+const daysBetween = (a, b) => Math.round((parseDk(b) - parseDk(a)) / 864e5);
+const asDate = d => typeof d === 'string' ? parseDk(d) : d;
+const shortDate = d => dtf({ weekday: 'short', month: 'short', day: 'numeric' }).format(asDate(d));
+const monDay = d => dtf({ month: 'short', day: 'numeric' }).format(asDate(d));
+const longDate = d => dtf({ weekday: 'long', month: 'long', day: 'numeric' }).format(asDate(d));
+const isDk = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(parseDk(v)) && dkOf(parseDk(v)) === v;
+const isHm = v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+const hmMin = s => { const [h, m] = String(s).split(':').map(Number); return h * 60 + m; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+// First name, for short labels. Handles "Diaz, Ana" too.
+function firstName(name){
+  const s = String(name).replace(/^[^\p{L}]+/u, ''), m = s.match(/^([^,]+),\s*([^\s,]+)/);
+  return (m ? m[2] : s.split(/\s+/)[0]) || String(name);
+}
+function listJoin(items, max = 4){
+  const xs = items.length === max + 1 ? items : items.slice(0, max), more = items.length - xs.length;
+  if (more > 0) return `${xs.join(', ')} and ${more} more`;
+  return xs.length < 2 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+}
+function fmtPeriod(p){
+  const a = parseDk(p.from), b = parseDk(p.to), o = { month: 'short', day: 'numeric' };
+  if (a.getFullYear() !== b.getFullYear()) return `${dtf({ ...o, year: 'numeric' }).format(a)} – ${dtf({ ...o, year: 'numeric' }).format(b)}`;
+  return `${dtf(o).format(a)} – ${dtf(o).format(b)}, ${b.getFullYear()}`;
+}
+const sinceText = n => n === 0 ? 'today' : n === 1 ? 'yesterday' : `${n} days ago`;
+const daysText = ws => ws.length ? listJoin(ws.map(w => cap(DAYS[w]) + 's'), 5) : 'no days';
+
+/* ---------------- The data file ---------------- */
+function defaultData(){
+  return { version: 1,
+    settings: { homeroomDay: 1, homeroomStart: '08:30', homeroomEnd: '09:00', studyDays: [2, 4], studyStart: '14:00', studyEnd: '15:00',
+      lateGrace: 5, leaveGrace: 5, oneOnOneDays: 14, oneOnOneMin: 5, teacherName: '' },
+    students: [],    // [{ key, name, added, removed }]: on the list from added, until the day before removed
+    studyHall: {},   // { studentKey: [{ from, to }] } needs study hall from `from`; `to` is the first day they don't ("done starting")
+    meetings: {},    // { studentKey: [{ id, date, note }] } 1-on-1s logged by hand
+    status: {},      // { 'YYYY-MM-DD|hr|studentKey': { cat, L, note } } a day set by hand (kind hr: homeroom, sh: study hall)
+    aliases: {},     // { zoomNameKey: studentKey }
+    ignored: [] };   // Zoom names that aren't students
+}
+const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], oneOnOneDays: [1, 90], oneOnOneMin: [1, 60] };
+// Study hall dates in order, with dates that overlap joined into one.
+function normPeriods(list){
+  const s = [...list].sort((a, b) => a.from.localeCompare(b.from)), out = [];
+  for (const p of s){
+    const last = out[out.length - 1];
+    if (last && (!last.to || p.from <= last.to)){ if (!p.to || !last.to) delete last.to; else if (p.to > last.to) last.to = p.to; }
+    else out.push(p.to ? { from: p.from, to: p.to } : { from: p.from });
+  }
+  return out;
+}
+// Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
+// Fields this page doesn't know are dropped, and so are bad dates.
+function withDefaults(d){
+  d = obj(d);
+  const base = defaultData(), set = obj(d.settings), S = { ...base.settings, studyDays: [...base.settings.studyDays] };
+  for (const [k, [lo, hi]] of Object.entries(NUM_SETTINGS)){ const v = Number(set[k]); if (set[k] !== '' && set[k] !== null && Number.isFinite(v)) S[k] = Math.min(hi, Math.max(lo, Math.round(v))); }
+  if (WEEKDAYS.includes(Number(set.homeroomDay))) S.homeroomDay = Number(set.homeroomDay);
+  if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
+  for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
+  if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
+  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [] }, seen = new Set();
+  for (const x of Array.isArray(d.students) ? d.students : []){
+    const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
+    if (!name || !key || seen.has(key)) continue;
+    seen.add(key);
+    const st = { key, name };
+    if (isDk(s.added)) st.added = s.added;
+    if (isDk(s.removed)) st.removed = s.removed;
+    out.students.push(st);
+  }
+  for (const [k, v] of Object.entries(obj(d.studyHall))) if (k && Array.isArray(v)){
+    const ps = normPeriods(v.map(obj).filter(p => isDk(p.from) && !(isDk(p.to) && p.to <= p.from)).map(p => isDk(p.to) ? { from: p.from, to: p.to } : { from: p.from }));
+    if (ps.length) out.studyHall[k] = ps;
+  }
+  for (const [k, v] of Object.entries(obj(d.meetings))) if (k && Array.isArray(v)){
+    const ms = v.map(obj).filter(m => isDk(m.date)).map(m => ({ id: String(m.id || uid()).slice(0, 40), date: m.date, note: String(m.note || '').slice(0, 300) }));
+    if (ms.length) out.meetings[k] = ms;
+  }
+  for (const [k, v] of Object.entries(obj(d.status))){
+    const [dk, kind, ...rest] = k.split('|'), key = rest.join('|'), x = obj(v), o = {};
+    if (!isDk(dk) || !own(KIND, kind) || !key) continue;
+    if (own(CAT, x.cat)) o.cat = x.cat;
+    if (typeof x.L === 'boolean') o.L = x.L;
+    if (typeof x.note === 'string' && x.note.trim()) o.note = x.note.trim().slice(0, 300);
+    if (Object.keys(o).length) out.status[`${dk}|${kind}|${key}`] = o;
+  }
+  for (const [k, v] of Object.entries(obj(d.aliases))) if (k && typeof v === 'string' && v) out.aliases[k] = v;
+  out.ignored = [...new Set((Array.isArray(d.ignored) ? d.ignored : []).filter(x => typeof x === 'string' && x))];
+  return out;
+}
+
+const state = {
+  data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
+  folderName: '', loaded: false, dirty: false, saving: false, status: null,
+  tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovScroll: null, ovPrintAll: false,
+  logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
+};
+
+/* ---------------- Text helpers ---------------- */
+function normKey(s){
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[.'’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/* ---------------- Zoom reports ---------------- */
+function parseCSV(text){
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ row.push(cell); cell = ''; }
+    else if (c === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+function parseZoomTime(s){
+  if (!s) return null; s = String(s).trim(); if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d\d:?\d\d)$/i.test(s)){ const t = Date.parse(s); if (!isNaN(t)) return new Date(t); }   // a time with its zone
+  let y, mo, d, h, mi, se, ap, m;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[\s,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
+    mo = +m[1]; d = +m[2]; y = +m[3]; if (y < 100) y += 2000; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
+  } else if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])?/))){
+    y = +m[1]; mo = +m[2]; d = +m[3]; h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7];
+  } else { const t = /\d{1,2}:\d{2}/.test(s) ? Date.parse(s) : NaN; return isNaN(t) ? null : new Date(t); }   // other formats need a time of day: "8" isn't a date
+  if (ap){ ap = ap.toLowerCase(); if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0; }
+  return new Date(y, mo - 1, d, h, mi, se);
+}
+function parseZoomFile(name, text){
+  const rows = parseCSV(String(text).replace(/^﻿/, ''));
+  const hi = rows.findIndex(r => r.some(c => /^join time/i.test(c.trim())) && r.some(c => /^leave time/i.test(c.trim())));
+  if (hi < 0){
+    const looksUnique = rows.some(r => r.some(c => /duration/i.test(c)) && r.some(c => /name/i.test(c)));
+    return { error: looksUnique
+      ? 'This file has no join or leave times. It was probably exported with “Show unique users” checked. Export it again with that box unchecked.'
+      : 'This doesn’t look like a Zoom participant report (no “Join Time” column).' };
+  }
+  const h = rows[hi].map(c => c.trim().toLowerCase());
+  let nameIdx = h.findIndex(c => c.startsWith('name') || c.includes('participant'));
+  if (nameIdx < 0) nameIdx = 0;
+  const joinIdx = h.findIndex(c => c.startsWith('join time'));
+  const leaveIdx = h.findIndex(c => c.startsWith('leave time'));
+  const waitIdx = h.findIndex(c => c.includes('waiting'));
+  let emailIdx = h.findIndex((c, i) => c.includes('email') && i > nameIdx);
+  if (emailIdx < 0) emailIdx = h.findIndex(c => c.includes('email'));
+  const out = [];
+  for (const r of rows.slice(hi + 1)){
+    const nm = (r[nameIdx] || '').trim();
+    const join = parseZoomTime(r[joinIdx]), leave = parseZoomTime(r[leaveIdx]);
+    if (!nm || !join || !leave || leave <= join) continue;
+    if (waitIdx >= 0 && /^y/i.test((r[waitIdx] || '').trim())) continue;   // time in the waiting room isn't time in the meeting
+    out.push({ name: nm, email: emailIdx >= 0 ? (r[emailIdx] || '').trim() : '', join, leave });
+  }
+  if (!out.length) return { error: 'No participant rows with join and leave times were found in this file.' };
+  return { rows: out };
+}
+function parsedFile(f){ return f.parsed || (f.parsed = parseZoomFile(f.name, f.text)); }
+
+/* ---------------- Matching Zoom names to students ---------------- */
+function zoomCandidates(raw){
+  const s = String(raw || '').trim();
+  const m = s.match(/^(.*?)\s*\(([^()]+)\)\s*$/);   // "Current name (Original name)"
+  const parts = m ? [m[1], m[2]] : [s];
+  return parts.map(x => x.replace(/['’]s\s+(i?phone|ipad|android|galaxy|chromebook|macbook(\s+(air|pro))?|mac|laptop|computer|pc|tablet|device)\b.*$/i, '').trim()).filter(Boolean);
+}
+function buildMatcher(roster, aliases){
+  const E = roster.map(r => { const toks = r.key.split(' '); return { key: r.key, name: r.name, toks, first: toks[0], last: toks[toks.length - 1], rest: toks.slice(1) }; });
+  const byKey = new Map(E.map(e => [e.key, e]));
+  const steps = [
+    t => E.filter(e => e.key === t.join(' ')),
+    t => t.length > 1 ? E.filter(e => e.toks.length > 1 && t.includes(e.first) && t.includes(e.last)) : [],
+    t => t.length > 1 ? E.filter(e => t[0] === e.first && t.slice(1).every(x => e.rest.includes(x))) : [],
+    t => t.length > 1 ? E.filter(e => t[0] === e.first && t.slice(1).every(x => x.length === 1) && e.rest.some(x => x[0] === t[1])) : [],
+    t => E.filter(e => e.toks.join('') === t.join('')),
+    t => t.length === 1 ? E.filter(e => e.first === t[0]) : []
+  ];
+  return (raw, email) => {
+    const cands = [...new Set([normKey(raw), ...zoomCandidates(raw).map(normKey)])].filter(Boolean);
+    for (const k of cands){ const a = aliases[k]; if (a && byKey.has(a)) return byKey.get(a); }
+    const toks = cands.map(k => k.split(' '));
+    for (const step of steps) for (const t of toks){ const r = step(t); if (r.length === 1) return r[0]; }
+    if (email){
+      const local = normKey(String(email).split('@')[0]).replace(/[^a-z]/g, '');
+      if (local.length >= 4){
+        const r = E.filter(e => { const rj = e.rest.join(''); return e.last.length >= 3 &&
+          (local.includes(rj || e.last) || local.includes(e.last)) && (local.includes(e.first) || local.startsWith(e.first[0])); });
+        if (r.length === 1) return r[0];
+      }
+    }
+    return null;
+  };
+}
+
+/* ---------------- Attendance math ---------------- */
+function mergeIntervals(list){
+  const s = list.map(x => [x[0], x[1]]).sort((a, b) => a[0] - b[0]); const out = [];
+  for (const iv of s){ const last = out[out.length - 1]; if (last && iv[0] <= last[1]) last[1] = Math.max(last[1], iv[1]); else out.push(iv); }
+  return out;
+}
+const overlap = (list, A, B) => list.reduce((t, [a, b]) => t + Math.max(0, Math.min(b, B) - Math.max(a, A)), 0);
+const sumIv = list => list.reduce((t, [a, b]) => t + b - a, 0);
+
+const settings = () => state.data.settings;
+const winOf = kind => { const S = settings(); return kind === 'hr' ? [hmMin(S.homeroomStart), hmMin(S.homeroomEnd)] : [hmMin(S.studyStart), hmMin(S.studyEnd)]; };
+const winText = kind => fmtRange(...winOf(kind));
+const kindOn = (kind, wd) => kind === 'hr' ? wd === settings().homeroomDay : settings().studyDays.includes(wd);
+const roster = () => [...state.data.students].sort((a, b) => a.name.localeCompare(b.name));
+// A student is on the list from the day they were added until the day before they left.
+const onList = (s, dk) => (!s.added || s.added <= dk) && (!s.removed || dk < s.removed);
+const isCurrent = s => !s.removed || s.removed > todayDk();
+const shPeriods = key => state.data.studyHall[key] || [];
+const needsSH = (key, dk) => shPeriods(key).some(p => p.from <= dk && (!p.to || dk < p.to));
+// The study hall dates that are going on now or still to come (what the switch on the Study hall tab shows).
+const openPeriod = key => [...shPeriods(key)].reverse().find(p => !p.to || p.to > todayDk()) || null;
+
+/* Reads every Zoom report and sorts each person's time in it by the clock:
+   - in the homeroom time on the homeroom day: homeroom that day;
+   - in the study hall time on a study hall day: study hall that day;
+   - anything else: the rest of that file's rows on that date are one meeting. With 1 to 3 students in it, each student who
+     was in it at least the minimum minutes had a 1-on-1 that day. */
+function analyze(){
+  const D = state.data, S = D.settings, W = { hr: winOf('hr'), sh: winOf('sh') };
+  const students = roster(), byKey = new Map(students.map(s => [s.key, s]));
+  const match = buildMatcher(students, D.aliases), ignored = new Set(D.ignored), teacher = normKey(S.teacherName);
+  const isTeacher = raw => !!teacher && [normKey(raw), ...zoomCandidates(raw).map(normKey)].includes(teacher);
+  const fileErrors = [], classes = new Map(), others = new Map();
+  let nZoom = 0;
+  for (const f of state.files){
+    const z = parsedFile(f);
+    if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
+    nZoom++;
+    for (const r of z.rows){
+      const j = r.join, dk = dkOf(j), wd = j.getDay(), a = j.getTime(), b = r.leave.getTime();
+      // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
+      const at = m => new Date(j.getFullYear(), j.getMonth(), j.getDate(), 0, m).getTime();
+      // A row in both times (homeroom and study hall back to back on the same day) counts for both.
+      const kinds = ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0]));
+      const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
+      for (const kind of kinds.length ? kinds : [null]){
+        const id = kind ? `${dk}|${kind}` : `${f.name}|${dk}`, bag = kind ? classes : others;
+        if (!bag.has(id)) bag.set(id, { id, dk, kind, files: new Set(), win: kind ? [at(W[kind][0]), at(W[kind][1])] : null, byKey: new Map(), unmatched: new Map(), start: a });
+        const g = bag.get(id); g.files.add(f.name); g.start = Math.min(g.start, a);
+        if (skip) continue;   // the teacher's own rows still show the class met
+        if (m){
+          if (!g.byKey.has(m.key)) g.byKey.set(m.key, { key: m.key, intervals: [], names: new Set() });
+          const e = g.byKey.get(m.key); e.intervals.push([a, b]); e.names.add(r.name);
+        } else if (rk && !g.unmatched.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email });
+      }
+    }
+  }
+  // Homeroom and study hall: present when in Zoom at least a minute during the time; L when late or left early.
+  const G = S.lateGrace * 60000, L = S.leaveGrace * 60000;
+  for (const g of classes.values()){
+    const [A0, B0] = g.win; g.res = new Map();
+    for (const e of g.byKey.values()){
+      const merged = mergeIntervals(e.intervals), inWin = merged.filter(([a, b]) => b > A0 && a < B0), ms = overlap(merged, A0, B0);
+      const first = inWin.length ? inWin[0][0] : null, last = inWin.length ? inWin[inWin.length - 1][1] : null;
+      const present = ms >= 60000, late = present && first > A0 + G, early = present && last < B0 - L;
+      g.res.set(e.key, { present, late, early, L: late || early, first, last, min: mins(ms),
+        lateMin: late ? mins(first - A0) : 0, earlyMin: early ? mins(B0 - last) : 0, names: [...e.names] });
+    }
+  }
+  // 1-on-1s from Zoom: one per student per date (two reports the same day count once, with the longer time).
+  const zoomMeet = new Map(), unmatched = [];
+  for (const g of others.values()){
+    const keys = [...g.byKey.keys()];
+    if (keys.length >= 1 && keys.length <= MAX_GROUP) for (const e of g.byKey.values()){
+      const merged = mergeIntervals(e.intervals), m = mins(sumIv(merged));
+      if (m < S.oneOnOneMin) continue;
+      const list = zoomMeet.get(e.key) || [], same = list.find(x => x.date === g.dk);
+      const others2 = keys.filter(k => k !== e.key).map(k => (byKey.get(k) || {}).name || k);
+      if (same){ same.minutes = Math.max(same.minutes, m); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...others2])]; }
+      else list.push({ id: `z-${g.dk}`, date: g.dk, minutes: m, at: merged[0][0], files: [...g.files], with: others2, source: 'zoom' });
+      zoomMeet.set(e.key, list);
+    }
+    // Names nobody knows, from a meeting small enough to be a 1-on-1 (a staff meeting's names aren't listed)
+    if (keys.length + g.unmatched.size <= MAX_GROUP) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, meeting at ${fmt(g.start)}` });
+  }
+  for (const g of classes.values()) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, ${KIND[g.kind].toLowerCase()}` });
+  const dks = [...classes.values()].map(g => g.dk).concat(Object.keys(D.status).map(k => k.slice(0, 10))).sort();
+  return { students, byKey, classes, zoomMeet, unmatched, fileErrors, nZoom, oldest: dks[0] || null };
+}
+
+/* ---------------- Date range (Overview, Students, 1-on-1s) ---------------- */
+function rangeBounds(){
+  const r = state.range;
+  if (r.preset === 'all') return { from: '', to: '' };
+  if (r.preset === 'custom') return { from: r.from || '', to: r.to || '' };
+  const d = new Date(); d.setDate(d.getDate() - (+r.preset - 1));
+  return { from: dkOf(d), to: '' };
+}
+const inRange = dk => { const b = rangeBounds(); return (!b.from || dk >= b.from) && (!b.to || dk <= b.to); };
+// The dates a person reads: an open start becomes the first day with a report, an open end becomes today.
+function periodOf(A){
+  const b = rangeBounds(), today = todayDk();
+  const from = b.from || (A.oldest && A.oldest < today ? A.oldest : weekKey(today)), to = b.to || today;
+  return { from, to: to < from ? from : to, open: !b.to || b.to >= today };
+}
+// Every homeroom and study hall day in the dates shown. An open range runs to the end of this week ("not yet").
+function classDays(period){
+  const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
+  for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
+    const wd = parseDk(dk).getDay();
+    if (kindOn('hr', wd)) out.push({ dk, kind: 'hr' });
+    if (kindOn('sh', wd)) out.push({ dk, kind: 'sh' });
+  }
+  return out;
+}
+function rangeBar(){
+  const p = state.range.preset, b = rangeBounds(), on = p === 'custom' && !!(b.from || b.to);
+  const shown = !on ? 'Custom dates…' : b.from && b.to ? `${monDay(b.from)} – ${monDay(b.to)}` : b.from ? `From ${monDay(b.from)}` : `Until ${monDay(b.to)}`;
+  const said = !on ? 'Custom dates' : `Custom dates, ${b.from && b.to ? `${monDay(b.from)} to ${monDay(b.to)}` : b.from ? `from ${monDay(b.from)}` : `until ${monDay(b.to)}`}`;
+  return `<div class="seg range" role="group" aria-label="Dates"><button data-range="all" aria-pressed="${p === 'all'}">All dates</button>
+    <button data-range="14" aria-pressed="${p === '14'}">Past 2 weeks</button>
+    <button data-range="30" aria-pressed="${p === '30'}">Past 30 days</button>
+    <details class="menu rangemenu" data-rangemenu${state.rangeMenu ? ' open' : ''}><summary${on ? ` class="on" title="${esc(shown)}"` : ''} aria-label="${esc(said)}">${esc(shown)}</summary>
+      <div class="pop" role="group" aria-label="Custom dates"><label>From <input type="date" data-rfrom value="${esc(b.from)}"></label>
+        <label>to <input type="date" data-rto value="${esc(b.to)}"></label></div></details></div>`;
+}
+function stamp(){ const { from, to } = rangeBounds(); return from || to ? `${from || 'start'}_to_${to || 'latest'}` : 'all-dates'; }
+
+/* ---------------- One student's day ---------------- */
+// Homeroom: everyone on the list that day is expected. Study hall: only students who need it that day.
+function cellState(A, s, dk, kind){
+  const key = s.key, xk = `${dk}|${kind}|${key}`, ov = state.data.status[xk] || {}, today = todayDk();
+  const g = A.classes.get(`${dk}|${kind}`), rec = g ? g.res.get(key) || null : null, came = !!(rec && rec.present);
+  const listed = onList(s, dk), req = listed && (kind === 'hr' || needsSH(key, dk));
+  const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'present' : 'absent') : dk > today ? 'later' : 'missing';
+  const cat = req && own(CAT, ov.cat) ? ov.cat : base, autoL = !!(rec && rec.present && rec.L);
+  const L = cat === 'present' && (typeof ov.L === 'boolean' ? ov.L : autoL);
+  return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, note: ov.note || '', hand: req && (!!ov.cat || typeof ov.L === 'boolean') };
+}
+const cellWords = c => [CELL[c.cat], c.L ? 'late or left early' : '', c.hand ? 'set by you' : '', c.note ? `note: ${c.note}` : ''].filter(Boolean).join(', ');
+// Days counted: present and absent days so far. Excused days and days with no report aren't counted.
+function statsOf(cells){
+  const today = todayDk(); let n = 0, att = 0, exc = 0, L = 0, noRep = 0;
+  for (const c of cells){
+    if (!c.req || c.dk > today) continue;
+    if (c.cat === 'excused') exc++;
+    else if (c.cat === 'present'){ n++; att++; if (c.L) L++; }
+    else if (c.cat === 'absent') n++;
+    else if (c.cat === 'missing') noRep++;
+  }
+  return { n, att, exc, L, noRep, abs: n - att, pct: pct(att, n) };
+}
+// Every 1-on-1, from Zoom and logged by hand, newest first.
+function meetingsOf(A, key){
+  const z = A.zoomMeet.get(key) || [], h = (state.data.meetings[key] || []).map(m => ({ ...m, source: 'hand' }));
+  return [...z, ...h].sort((a, b) => b.date.localeCompare(a.date) || (a.source === 'zoom' ? -1 : 1));
+}
+// Days since the last 1-on-1, and whether the next one is due (the due days have passed).
+function oneOnOne(A, s){
+  const N = settings().oneOnOneDays, today = todayDk(), past = meetingsOf(A, s.key).filter(m => m.date <= today);
+  const last = past.length ? past[0].date : null, since = last ? daysBetween(last, today) : null;
+  if (!isCurrent(s)) return { status: 'left', last, since };
+  if (!last) return { status: 'none', last, since };
+  const dueIn = N - since;
+  return { status: dueIn <= 0 ? 'due' : 'ok', last, since, dueIn, over: -dueIn };
+}
+const oneShort = o => o.status === 'none' ? 'None yet' : o.status === 'due' ? (o.over > 0 ? `Due, ${plural(o.over, 'day')} over` : 'Due today')
+  : o.status === 'left' ? 'Left homeroom' : cap(sinceText(o.since));
+const oneNext = o => o.status === 'none' ? 'None yet' : o.status === 'due' ? (o.over > 0 ? `Due now (${plural(o.over, 'day')} over)` : 'Due now') : o.status === 'left' ? '—' : `Due in ${plural(o.dueIn, 'day')}`;
+const isDue = r => r.cur && r.one.status !== 'ok';
+function rowFor(A, s, days){
+  const cells = days.map(d => cellState(A, s, d.dk, d.kind));
+  return { ...s, cells, cur: isCurrent(s), hr: statsOf(cells.filter(c => c.kind === 'hr')), sh: statsOf(cells.filter(c => c.kind === 'sh')), one: oneOnOne(A, s),
+    nMeet: meetingsOf(A, s.key).filter(m => inRange(m.date) && m.date <= todayDk()).length };
+}
+// The students in the dates shown: everyone on the list on any of those days (a student who left keeps their earlier days).
+function studentRows(A, days){
+  return A.students.map(s => rowFor(A, s, days)).filter(r => !days.length ? r.cur : r.cells.some(c => c.listed || c.cat === 'extra' || c.hand || c.note));
+}
+
+/* ---------------- Overview ---------------- */
+function renderOverview(){
+  const el = $('#tab-overview');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  const period = periodOf(A), days = classDays(period), today = todayDk(), q = normKey(state.query);
+  const rows = studentRows(A, days).filter(r => (!q || normKey(r.name).includes(q))
+    && (state.ovShow === 'all' || (state.ovShow === 'sh' ? needsSH(r.key, today) : isDue(r))));
+  const selCell = state.ovSel ? rows.flatMap(r => r.cells).find(c => c.xk === state.ovSel) : null;
+  if (state.ovSel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor
+  const selRow = state.ov1 ? rows.find(r => r.key === state.ov1) : null;
+  if (state.ov1 && !selRow) state.ov1 = null;
+  const shows = [['all', 'All', 'Every student'], ['sh', 'Needs study hall', 'Students who need study hall today'], ['due', '1-on-1 due', 'Students whose 1-on-1 is due, or who haven’t had one yet']];
+  let h = `<div class="toolbar">${rangeBar()}
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <div class="seg" role="group" aria-label="Show">${shows.map(([k, l, tip]) => `<button data-show="${k}" aria-pressed="${state.ovShow === k}" title="${esc(tip)}">${esc(l)}</button>`).join('')}</div>
+    <span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
+  if (!A.nZoom) h += setupCard(A);
+  if (A.fileErrors.length) h += `<div class="notice"><b>Some files weren’t used:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
+  h += unmatchedNotice(A, period);
+  if (days.length && rows.length) h += `<p class="printonly ovprint">Homeroom and study hall, ${esc(fmtPeriod({ from: days[0].dk, to: days[days.length - 1].dk }))} · ${plural(rows.length, 'student')}${
+    state.query ? ` · Search: “${esc(state.query)}”` : ''}${state.ovShow !== 'all' ? ` · ${esc(shows.find(x => x[0] === state.ovShow)[1])}` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</p>`;
+  h += ovKey();
+  if (!days.length || !rows.length){
+    el.innerHTML = h + `<p class="muted">${!days.length ? 'No homeroom or study hall days in these dates.' : state.query ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'
+      : `No students match what’s chosen. <button class="linkish" data-show="all">Show everyone</button>`}</p>`;
+    return;
+  }
+  // One grid, as tall as the class list, that scrolls sideways like a spreadsheet (names stay on the left, 1-on-1s on
+  // the right). It opens on the newest days. Printed, the weeks wrap into blocks that fit the paper, newest on top.
+  const wkStart = days.map((d, n) => n === 0 || weekKey(d.dk) !== weekKey(days[n - 1].dk));
+  const weeks = [];
+  days.forEach((d, n) => { if (wkStart[n]) weeks.push([]); weeks[weeks.length - 1].push(n); });
+  let blocks = [days.map((d, n) => n)];
+  if (state.ovPrintAll){
+    const k = Math.ceil(days.length / 28); let n = 0; blocks = [];
+    for (const wk of [...weeks].reverse()){
+      if (!blocks.length) blocks.push([]);
+      blocks[blocks.length - 1].unshift(...wk); n += wk.length;
+      if (blocks.length < k && n >= days.length * blocks.length / k - wk.length / 2) blocks.push([]);
+    }
+    blocks = blocks.filter(b => b.length);
+  }
+  let first = !selCell && !selRow;
+  const table = idx => {
+    let months = '', m0 = 0;
+    while (m0 < idx.length){
+      let m1 = m0; const mo = parseDk(days[idx[m0]].dk).getMonth();
+      while (m1 < idx.length && parseDk(days[idx[m1]].dk).getMonth() === mo) m1++;
+      const d0 = parseDk(days[idx[m0]].dk), long = dtf({ month: 'long' }).format(d0);
+      months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}" title="${esc(long)}"><span>${esc(m1 - m0 >= 3 ? long : dtf({ month: 'short' }).format(d0))}</span></th>`;
+      m0 = m1;
+    }
+    const head = idx.map(n => { const d = days[n], g = A.classes.get(`${d.dk}|${d.kind}`);
+      const tip = `${KIND[d.kind]}, ${longDate(d.dk)}, ${winText(d.kind)}. ${g ? `Zoom report: ${[...g.files].join(', ')}` : d.dk > today ? 'Not yet.' : 'No Zoom report yet.'}`;
+      return `<th scope="col" data-dk="${d.dk}" class="${wkStart[n] ? 'wk' : ''}${d.dk === today ? ' today' : ''}" title="${esc(tip)}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(d.dk)).slice(0, 2))}</span>${parseDk(d.dk).getDate()}<span class="ovkind ${d.kind}">${d.kind.toUpperCase()}</span></th>`; }).join('');
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${
+      r.removed ? `<span class="ovleft">left ${esc(monDay(r.removed))}</span>` : ''}</th>${idx.map(ci => {
+      const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
+      const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
+      return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === state.ovSel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === state.ovSel}">${
+        c.cat === 'missing' ? '?' : ''}${c.L ? '<span class="ovl">L</span>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+    }).join('')}${ov1Cell(r, ri, days.length, selRow)}</tr>`).join('');
+    const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(760 / idx.length)))}px"` : '';
+    return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
+      <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}<th class="ov1h" rowspan="2" scope="col">1-on-1</th></tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  h += `<div class="ovwrap">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}</div>`;
+  el.innerHTML = h;
+  // Back to where the grid was scrolled (the newest days the first time, or after the dates change).
+  const sc = $('#tab-overview .ovblock');
+  if (sc && !state.ovPrintAll){
+    sc.style.setProperty('--ovnamew', sc.querySelector('th.ovname').offsetWidth + 'px');
+    sc.scrollLeft = state.ovScroll ?? sc.scrollWidth;
+    state.ovScroll = sc.scrollLeft; pinMonths(sc);
+  }
+  placeOvPop();
+}
+function ov1Cell(r, ri, c, selRow){
+  const o = r.one, cls = o.status === 'due' ? ' due' : o.status === 'none' ? ' none' : o.status === 'left' ? ' left' : '';
+  const said = `${r.name}, last 1-on-1: ${o.last ? `${longDate(o.last)}, ${sinceText(o.since)}` : 'none'}${o.status === 'due' ? `. ${oneShort(o)}` : o.status === 'none' ? '. None yet' : ''}`;
+  const on = selRow && selRow.key === r.key;
+  return `<td class="ov1c${cls}${on ? ' sel' : ''}"><button class="ovb" data-ov1="${esc(r.key)}" data-r="${ri}" data-c="${c}" tabindex="-1" aria-label="${esc(said)}" title="${esc(said)}" aria-expanded="${!!on}">${esc(oneShort(o))}</button></td>`;
+}
+// Zoom names that matched no one, from the days shown: link each to a student once, or ignore it.
+function unmatchedNotice(A, period){
+  const by = new Map();
+  for (const u of A.unmatched) if (u.dk >= period.from && u.dk <= period.to){ if (!by.has(u.rk)) by.set(u.rk, { ...u, whens: [] }); by.get(u.rk).whens.push(u.when); }
+  if (!by.size) return '';
+  const opts = roster().map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+  return `<div class="notice"><b>Zoom names that don’t match a student.</b> Link each to a student once, or Ignore it.${settings().teacherName ? '' : ' If one of them is you, put your Zoom name on the <button class="linkish" data-goto="setup">Setup</button> tab.'}
+    ${[...by.values()].map(u => { const facts = [u.email, ...u.whens.slice(0, 3), u.whens.length > 3 ? `and ${plural(u.whens.length - 3, 'more')}` : ''].filter(Boolean).join('; ');
+      return `<div class="ovlink" data-rk="${esc(u.rk)}"><b>${esc(u.raw)}</b> <span class="muted small">${esc(facts)}</span>
+        <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`; }).join('')}</div>`;
+}
+// The key above the grid: always three rows, so the grid never moves.
+function ovKey(){
+  const S = settings();
+  return `<div class="ovkey" aria-hidden="true">
+    <div class="ovkrow"><span class="ovkh">Colors</span>${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
+    <div class="ovkrow"><span class="ovkh">Marks</span><span><b>L</b> Late or left early</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a day to change it.</span></div>
+    <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> Days since the last one; due every ${plural(S.oneOnOneDays, 'day')}</span></div></div>`;
+}
+// What's known about one day, in plain words.
+function cellFacts(c){
+  const out = [], r = c.rec, g = c.g, today = todayDk(), first = firstName(c.s.name);
+  if (!c.listed) out.push(c.s.added && c.dk < c.s.added ? `Not on your list yet this day (on it from ${monDay(c.s.added)}).` : `Not on your list this day (left ${monDay(c.s.removed)}).`);
+  else if (c.kind === 'sh' && !c.req) out.push(`${first} doesn’t need study hall this day, so it isn’t counted.`);
+  if (!g) out.push(c.dk > today ? 'This day hasn’t happened yet.' : c.dk === today ? 'No Zoom report yet today.' : 'No Zoom report in the folder for this day.');
+  else if (!r) out.push('Zoom: not in the report.');
+  else if (!r.present) out.push(`Zoom: in the meeting less than a minute during ${KIND[c.kind].toLowerCase()}.`);
+  else {
+    out.push(`Zoom: joined ${fmt(r.first)}, left ${fmt(r.last)} (${r.min} min during ${KIND[c.kind].toLowerCase()}).`);
+    const ex = [r.late ? `joined ${r.lateMin} min late` : '', r.early ? `left ${r.earlyMin} min early` : ''].filter(Boolean).join(', ');
+    if (ex) out.push(cap(ex) + '.');
+  }
+  if (r && r.names.some(n => normKey(n) !== c.key)) out.push(`Zoom name: ${r.names.map(n => `“${n}”`).join(', ')}.`);
+  if (g) out.push(`Report: ${[...g.files].join(', ')}`);
+  return out;
+}
+// The editor for one day, next to its cell. The same size on every day.
+function ovEditor(A, c){
+  const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean';
+  const cats = Object.entries(CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.req && c.ov.cat === k}"${dis}><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
+  const hint = !c.req ? 'Not required this day, so it isn’t counted. You can still add a note.'
+    : c.cat === 'excused' ? 'Excused days aren’t counted.' : c.cat === 'missing' ? 'Days with no Zoom report aren’t counted until there is one, or until you mark them.' : 'Counted in this student’s attendance.';
+  return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(KIND[c.kind])}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
+    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))} · ${esc(winText(c.kind))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
+    <p class="small ovfacts">${cellFacts(c).map(esc).join('<br>')}</p>
+    <div class="ovcols"><div class="ovgrp" role="group" aria-label="Mark"><span class="small muted">Mark</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
+      <div class="ovgrp"><span class="small muted">Letter</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
+        <p class="small muted ovhint">${esc(hint)}</p></div></div>
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" maxlength="300"></label>
+    <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button></div></div>`;
+}
+function meetingLi(m, key){
+  const how = m.source === 'zoom' ? `Zoom, ${m.minutes} min${m.with.length ? `, with ${listJoin(m.with)}` : ''}` : 'Logged by hand';
+  return `<li><span class="when">${esc(monDay(m.date))}</span><span class="how">${esc(how)}</span><span class="txt">${esc(m.note || '')}</span>${
+    m.source === 'hand' ? `<button class="linkish" data-mdel="${esc(key)}|${esc(m.id)}" aria-label="Delete the ${esc(monDay(m.date))} meeting">Delete</button>` : '<span></span>'}</li>`;
+}
+// "Log a meeting": a student (unless it's for one student), a date and a note. Always the same size.
+function logForm(key, hidden){
+  const today = todayDk();
+  return `<div class="logform${hidden ? ' na' : ''}" data-logform="${esc(key)}">${key ? '' : `<label>Student <select data-logkey>${'<option value="">Choose…</option>'}${roster().filter(isCurrent).map(s => `<option value="${esc(s.key)}"${state.logKey === s.key ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>`}
+    <label>Date <input type="date" data-logdate value="${today}" max="${today}"${hidden ? ' tabindex="-1"' : ''}></label>
+    <label class="grow">Note <input type="text" data-lognote maxlength="300" placeholder="Optional, like “phone call”"${hidden ? ' tabindex="-1"' : ''}></label>
+    <button class="btn small" data-logadd${hidden ? ' tabindex="-1"' : ''}>Log a meeting</button></div>`;
+}
+const logMsgHTML = where => { const m = state.logMsg && state.logMsg.where === where ? state.logMsg : null; return `<p class="logmsg${m && m.bad ? ' bad' : ''}" role="status">${m ? esc(m.text) : ''}</p>`; };
+// One student's 1-on-1s, from the last column of the grid.
+function ov1Pop(A, r){
+  const ms = meetingsOf(A, r.key), o = r.one, N = settings().oneOnOneDays;
+  const head = o.last ? `Last 1-on-1: ${longDate(o.last)} (${sinceText(o.since)}).` : 'No 1-on-1s yet.';
+  const next = o.status === 'left' ? `Left homeroom ${monDay(r.removed)}.` : o.status === 'due' ? `${o.over > 0 ? `Due now: ${plural(o.over, 'day')} over` : 'Due today'} (one every ${plural(N, 'day')}).`
+    : o.status === 'ok' ? `Next one due in ${plural(o.dueIn, 'day')}.` : `Due every ${plural(N, 'day')}.`;
+  return `<div class="ovpop ov1pop" role="dialog" aria-label="${esc(r.name)}, 1-on-1s" data-ov1pop="${esc(r.key)}">
+    <div class="ovpop-h"><b>${esc(r.name)}</b><span class="muted">1-on-1s</span><button class="linkish ovx" data-ovclose>Close</button></div>
+    <p class="small ov1facts">${esc(head)} ${esc(next)}</p>
+    <ul class="mlist ov1list" aria-label="Meetings">${ms.length ? ms.map(m => meetingLi(m, r.key)).join('') : '<li class="none">None yet.</li>'}</ul>
+    ${logForm(r.key, !r.cur)}${logMsgHTML('pop')}
+    <div class="ovpop-f"><button class="linkish" data-ovopen="${esc(r.key)}">Open ${esc(firstName(r.name))}’s page</button></div></div>`;
+}
+// The open box sits beside its cell, inside the window.
+function placeOvPop(){
+  const pop = $('#tab-overview .ovpop'); if (!pop) return;
+  const sel = pop.dataset.ovpop ? `.ovb[data-ovcell="${CSS.escape(pop.dataset.ovpop)}"]` : `.ovb[data-ov1="${CSS.escape(pop.dataset.ov1pop)}"]`;
+  const cell = $(`#tab-overview ${sel}`), wrap = $('#tab-overview .ovwrap');
+  if (!cell){ pop.remove(); return; }
+  const r = cell.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  let left = r.left - w.left + r.width + 8;
+  if (left + pop.offsetWidth > w.width) left = Math.max(0, r.left - w.left - pop.offsetWidth - 8);
+  pop.style.left = left + 'px';
+  let top = r.top - 20;
+  if (top + pop.offsetHeight > innerHeight - 8) top = innerHeight - 8 - pop.offsetHeight;
+  pop.style.top = (Math.max(8, top) - w.top) + 'px';
+}
+function setOverride(xk, patch){
+  const o = { ...(state.data.status[xk] || {}), ...patch };
+  for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
+  if (Object.keys(o).length) state.data.status[xk] = o; else delete state.data.status[xk];
+  changed();
+}
+function ovCell(xk){
+  const A = state.lastAnalysis || analyze(), [dk, kind, ...rest] = xk.split('|'), s = A.byKey.get(rest.join('|'));
+  return s ? cellState(A, s, dk, kind) : null;
+}
+function pinMonths(sc){
+  const left = sc.querySelector('th.ovname').getBoundingClientRect().right;
+  for (const th of sc.querySelectorAll('th.ovmo')){ const sp = th.firstElementChild; sp.style.visibility = th.getBoundingClientRect().right - left < sp.offsetWidth + 8 ? 'hidden' : ''; }
+}
+
+/* ---------------- Students tab ---------------- */
+function meter(v){
+  if (v === null) return '<span class="zero">—</span>';
+  return `<span class="meter"><span class="track"><span class="fill" style="width:${v}%"></span></span><b>${v}%</b></span>`;
+}
+const SORTS = [['name', 'Name A–Z'], ['hr', 'Homeroom %, lowest first'], ['sh', 'Study hall %, lowest first'], ['since', 'Days since 1-on-1, most first']];
+function sortRows(rows){
+  const byPct = (a, b) => (a ?? 101) - (b ?? 101), nm = (a, b) => a.name.localeCompare(b.name);
+  const since = r => !r.cur ? -2 : r.one.status === 'none' ? Infinity : r.one.since;
+  const out = [...rows].sort(nm);
+  if (state.sort === 'hr') out.sort((a, b) => byPct(a.hr.pct, b.hr.pct) || nm(a, b));
+  if (state.sort === 'sh') out.sort((a, b) => byPct(a.sh.pct, b.sh.pct) || nm(a, b));
+  if (state.sort === 'since') out.sort((a, b) => since(b) - since(a) || nm(a, b));
+  return out;
+}
+function studentList(A){
+  const period = periodOf(A), days = classDays(period), q = normKey(state.query), all = sortRows(studentRows(A, days));
+  return { period, days, all, list: all.filter(r => !q || normKey(r.name).includes(q)) };
+}
+const attText = (st, what) => st.n ? `${st.att} of ${plural(st.n, what)}${st.exc ? ` · ${st.exc} excused` : ''}` : st.exc ? `${plural(st.exc, what)}, all excused` : '';
+function lastText(o){ return o.last ? `${monDay(o.last)} · ${sinceText(o.since)}` : 'None yet'; }
+function dueChip(o){ return o.status === 'due' ? `<span class="chip due">${esc(o.over > 0 ? `Due, ${plural(o.over, 'day')} over` : 'Due today')}</span>` : ''; }
+function renderStudents(){
+  const el = $('#tab-students');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  if (state.student && A.byKey.has(state.student)){ renderStudentPage(A, el); return; }
+  state.student = null;
+  const { period, days, all, list } = studentList(A), today = todayDk();
+  let h = `<div class="toolbar">${rangeBar()}
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student"><span class="grow"></span>
+    <span class="tbend"><label class="sortby">Sort by <select data-sortby>${SORTS.map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+    <button class="btn small ghost" data-exportcsv>Download CSV</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
+  const nHr = days.filter(d => d.kind === 'hr' && d.dk <= today).length, nSh = days.filter(d => d.kind === 'sh' && d.dk <= today).length;
+  h += `<h2 class="printonly ptitle">Homeroom attendance: students</h2><p class="listinfo">${esc(fmtPeriod({ from: period.from, to: period.to }))} · ${plural(nHr, 'homeroom day')} and ${plural(nSh, 'study hall day')} so far · ${plural(all.length, 'student')}<span class="printonly">${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</span></p>`;
+  h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Homeroom</th><th>Study hall</th><th>Last 1-on-1</th><th class="num">1-on-1s</th></tr></thead><tbody>`;
+  if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
+  for (const r of list){
+    const need = needsSH(r.key, today) ? openPeriod(r.key) : null;
+    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${r.removed && !r.cur ? `<span class="chip left">Left ${esc(monDay(r.removed))}</span>` : ''}</span></td>
+      <td>${meter(r.hr.pct)}<span class="sub">${esc(attText(r.hr, 'day') || 'No days counted yet')}</span></td>
+      <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Needs study hall since ${esc(monDay(need.from))}</span>` : ''}</td>
+      <td>${r.cur ? `${esc(lastText(r.one))} ${dueChip(r.one)}` : `<span class="muted">${esc(r.one.last ? lastText(r.one) : '—')}</span>`}</td>
+      <td class="num">${r.nMeet ? r.nMeet : '<span class="zero">0</span>'}</td></tr>`;
+  }
+  h += `</tbody></table></div>
+    <p class="small muted" style="margin-top:10px">Homeroom: days present out of the homeroom days counted. Study hall: days present out of the days each student needed study hall. Excused days and days with no Zoom report aren’t counted. 1-on-1s: meetings in these dates.</p>`;
+  el.innerHTML = h;
+}
+function exportCSV(){
+  const A = state.lastAnalysis || analyze(), { period, all } = studentList(A), today = todayDk();
+  const rows = [['Student', 'Homeroom days present', 'Homeroom days counted', 'Homeroom %', 'Homeroom excused', 'Homeroom late or left early',
+    'Study hall days present', 'Study hall days required', 'Study hall %', 'Study hall excused', 'Needs study hall now', 'Needs study hall since',
+    'Last 1-on-1', 'Days since last 1-on-1', 'Next 1-on-1', '1-on-1s in these dates', 'On the list since', 'Left', 'Dates']];
+  for (const r of [...all].sort((a, b) => a.name.localeCompare(b.name))){
+    const p = needsSH(r.key, today) ? openPeriod(r.key) : null;
+    rows.push([r.name, r.hr.att, r.hr.n, r.hr.pct ?? '', r.hr.exc, r.hr.L, r.sh.att, r.sh.n, r.sh.pct ?? '', r.sh.exc, p ? 'Yes' : 'No', p ? p.from : '',
+      r.one.last || '', r.one.since ?? '', oneNext(r.one), r.nMeet, r.added || '', r.removed || '', fmtPeriod(period)]);
+  }
+  downloadFile(`homeroom-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+
+/* ---------------- One student's page ---------------- */
+function renderStudentPage(A, el){
+  const { period, days, list } = studentList(A), s = A.byKey.get(state.student), r = list.find(x => x.key === s.key) || rowFor(A, s, days);
+  const i = list.findIndex(x => x.key === r.key), prev = i > 0 ? list[i - 1] : null, next = i >= 0 && i < list.length - 1 ? list[i + 1] : null, none = '<span class="pnx"></span>';
+  const back = ({ overview: '← Overview', meetings: '← 1-on-1s', study: '← Study hall' })[state.studentTab] || '← All students', today = todayDk(), N = settings().oneOnOneDays;
+  let h = `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
+    ${i >= 0 && list.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
+      <span>${i + 1} of ${list.length}</span>${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
+    ${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
+  const o = r.one, need = needsSH(r.key, today) ? openPeriod(r.key) : null;
+  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', s.removed ? `${s.removed > today ? 'Leaving' : 'Left'} homeroom ${monDay(s.removed)}` : '', need ? `Needs study hall since ${monDay(need.from)}` : ''].filter(Boolean);
+  const tile = (label, value, sub, cls = '') => `<div class="tile${cls}"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div><div class="s">${esc(sub)}</div></div>`;
+  h += `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow printonly">Homeroom attendance</div>
+    <h2 tabindex="-1">${esc(r.name)}</h2>
+    <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${settings().teacherName ? ` · ${esc(settings().teacherName)}` : ''}</span></p>
+    <div class="rtiles">${tile('Homeroom', r.hr.pct === null ? '—' : `${r.hr.pct}%`, attText(r.hr, 'day') || 'No days counted yet')}
+      ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'required day') || 'Not required in these dates')}
+      ${tile('Last 1-on-1', o.last ? cap(sinceText(o.since)) : 'None yet', o.status === 'left' ? (o.last ? monDay(o.last) : '') : o.last ? `${monDay(o.last)} · ${oneNext(o)}` : `Due every ${plural(N, 'day')}`, o.status === 'due' || o.status === 'none' ? ' due' : '')}
+      ${tile('1-on-1s', String(r.nMeet), 'in these dates')}</div></header>`;
+  const hrCells = r.cells.filter(c => c.kind === 'hr' && (c.listed || c.cat === 'extra' || c.note));
+  const shCells = r.cells.filter(c => c.kind === 'sh' && (c.req || c.cat === 'extra' || c.note));
+  h += `<section class="rsec"><h3>Homeroom days <span class="small muted">${esc(daysText([settings().homeroomDay]))}, ${esc(winText('hr'))}</span></h3>${dayStrip(hrCells, 'Homeroom days')}</section>`;
+  h += `<section class="rsec"><h3>Study hall <span class="small muted">${esc(daysText(settings().studyDays))}${settings().studyDays.length ? ', ' + esc(winText('sh')) : ''}</span></h3>
+    ${dayStrip(shCells, 'Study hall days', 'No study hall days required in these dates.')}
+    <h3 class="psub">Dates ${esc(firstName(r.name))} needs study hall</h3>${periodsEditor(r)}</section>`;
+  const ms = meetingsOf(A, r.key);
+  h += `<section class="rsec"><h3>1-on-1s</h3><p class="small">${esc(o.last ? `Last one ${longDate(o.last)} (${sinceText(o.since)}). ${oneNext(o)}.` : `None yet. Due every ${plural(N, 'day')}.`)}</p>
+    <ul class="mlist">${ms.length ? ms.map(m => meetingLi(m, r.key)).join('') : '<li class="none">None yet.</li>'}</ul>
+    <div style="margin-top:12px">${logForm(r.key, !r.cur)}${logMsgHTML('page')}</div></section>`;
+  const notes = Object.entries(state.data.status).filter(([k, v]) => v.note && k.split('|').slice(2).join('|') === r.key).map(([k, v]) => ({ dk: k.slice(0, 10), kind: k.split('|')[1], note: v.note }))
+    .sort((a, b) => b.dk.localeCompare(a.dk));
+  h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
+    : '<p class="small muted">No notes yet. To add one, click a day on the Overview.</p>'}</section></article>`;
+  el.innerHTML = h;
+}
+function dayStrip(cells, label, empty = 'No days in these dates.'){
+  if (!cells.length) return `<p class="small muted">${esc(empty)}</p>`;
+  const kinds = new Set(cells.map(c => c.cat));
+  return `<ul class="dstrip" aria-label="${esc(label)}">${cells.map(c => { const words = `${shortDate(c.dk)}: ${cellWords(c)}`;
+    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : c.L ? 'L' : ''}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
+    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${cells.some(c => c.L) ? '<span><b>L</b> Late or left early</span>' : ''}</div>`;
+}
+// The dates a student needs study hall: each one can be changed or deleted here, and new dates added.
+function periodsEditor(r){
+  const ps = shPeriods(r.key), today = todayDk();
+  const said = p => p.to ? `${monDay(p.from)} – ${monDay(addDays(p.to, -1))}` : p.from > today ? `Starting ${monDay(p.from)}` : `Since ${monDay(p.from)}`;
+  return `${ps.length ? `<ul class="plist printonly">${ps.map(p => `<li>${esc(said(p))}</li>`).join('')}</ul>` : '<p class="small muted printonly">None.</p>'}
+    <div class="noprint">${ps.length ? `<ul class="plist">${ps.map((p, i) => `<li data-period="${esc(r.key)}|${i}"><label>Starting <input type="date" data-shfrom value="${esc(p.from)}"></label>
+      <label>Done starting <input type="date" data-shto value="${esc(p.to || '')}" aria-describedby="sh-hint"></label><button class="linkish" data-shdel="${esc(r.key)}|${i}">Delete</button></li>`).join('')}</ul>
+      <p class="small muted" id="sh-hint" style="margin:6px 0 0">Leave “Done starting” empty while ${esc(firstName(r.name))} still needs study hall.</p>` : '<p class="small muted">None yet.</p>'}
+    <div class="paddrow"><label>Needs study hall starting <input type="date" data-shnew value="${today}"></label><button class="btn small" data-shadd="${esc(r.key)}">Add</button></div>${logMsgHTML('sh')}</div>`;
+}
+
+/* ---------------- 1-on-1s tab ---------------- */
+function renderMeetings(){
+  const el = $('#tab-meetings');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  const N = settings().oneOnOneDays;
+  const cur = A.students.filter(isCurrent).map(s => ({ ...s, one: oneOnOne(A, s) }));
+  const rank = o => o.status === 'none' ? Infinity : o.since;
+  cur.sort((a, b) => rank(b.one) - rank(a.one) || a.name.localeCompare(b.name));
+  let h = `<div class="toolbar">${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>
+    <h2 class="printonly ptitle">1-on-1s · printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</h2>
+    <div class="panel logpanel noprint"><h2>Log a meeting</h2><p class="small muted">For a 1-on-1 that wasn’t on Zoom, like a phone call or a talk after class. Zoom meetings are found by themselves.</p>
+      ${logForm('')}${logMsgHTML('tab')}</div>
+    <h2 class="subhead">Who’s due <span class="small muted" style="font-family:var(--sans);font-weight:400">· a 1-on-1 every ${plural(N, 'day')}, most days since the last one first</span></h2>
+    <div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Last 1-on-1</th><th class="num">Days since</th><th>Next one</th></tr></thead><tbody>
+    ${cur.map(r => `<tr><td><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></td><td>${r.one.last ? esc(shortDate(r.one.last)) : '<span class="zero">—</span>'}</td>
+      <td class="num">${r.one.since ?? '<span class="zero">—</span>'}</td><td>${r.one.status === 'due' ? `<span class="chip due">${esc(oneNext(r.one))}</span>` : r.one.status === 'none' ? '<b>None yet</b>' : esc(oneNext(r.one))}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  const all = A.students.flatMap(s => meetingsOf(A, s.key).filter(m => inRange(m.date)).map(m => ({ ...m, key: s.key, name: s.name })))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  h += `<h2 class="subhead">Meetings in these dates <span class="small muted" style="font-family:var(--sans);font-weight:400">· ${plural(all.length, 'meeting')}</span></h2>`;
+  h += all.length ? `<div class="tablewrap"><table class="sum"><thead><tr><th>Date</th><th>Student</th><th>How</th><th class="num">Minutes</th><th>Note</th><th class="noprint"><span class="sr">Delete</span></th></tr></thead><tbody>
+    ${all.map(m => `<tr><td>${esc(shortDate(m.date))}</td><td><button class="name-btn" data-openstudent="${esc(m.key)}">${esc(m.name)}</button></td>
+      <td>${m.source === 'zoom' ? `From Zoom${m.with.length ? `<span class="sub">with ${esc(listJoin(m.with))}</span>` : ''}` : 'By hand'}</td>
+      <td class="num">${m.source === 'zoom' ? m.minutes : '<span class="zero">—</span>'}</td><td>${esc(m.note || '')}</td>
+      <td class="noprint">${m.source === 'hand' ? `<button class="linkish" data-mdel="${esc(m.key)}|${esc(m.id)}" aria-label="Delete ${esc(m.name)}’s ${esc(monDay(m.date))} meeting">Delete</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+    : `<p class="muted">No 1-on-1s in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</p>`;
+  h += `<p class="small muted" style="margin-top:10px">From Zoom: a meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer, where the student was in it at least ${plural(settings().oneOnOneMin, 'minute')}. You can change these on the Setup tab.</p>`;
+  el.innerHTML = h;
+}
+
+/* ---------------- Study hall tab ---------------- */
+function shSwitch(s){
+  const p = openPeriod(s.key), on = !!p, today = todayDk(), first = firstName(s.name);
+  return `<details class="menu shmenu${on ? ' on' : ''}" data-shmenu="${esc(s.key)}"><summary aria-label="${esc(s.name)} needs study hall: ${on ? 'yes' : 'no'}. Change"><span class="swt" aria-hidden="true"></span><span class="swl">${on ? 'Yes' : 'No'}</span></summary>
+    <div class="pop" role="group" aria-label="${esc(on ? `${s.name}: done with study hall` : `${s.name}: needs study hall`)}">
+      <div class="dropline"><span>${on ? 'Done with study hall starting' : 'Needs study hall starting'}</span><input type="date" data-shdate value="${today}" aria-label="${on ? 'First day not needed' : 'First day needed'}">
+        <button class="btn small" data-${on ? 'shoff' : 'shon'}="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
+      <p class="muted">${esc(on ? `Study hall stops being required for ${first} on that day. Earlier days stay as they are.` : `${first} is expected at study hall from that day on.`)}</p></div></details>`;
+}
+function renderStudy(){
+  const el = $('#tab-study');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  const S = settings(), today = todayDk(), from = A.oldest && A.oldest < today ? A.oldest : weekKey(today), days = classDays({ from, to: today, open: false }).filter(d => d.kind === 'sh');
+  const rows = A.students.filter(isCurrent).map(s => ({ ...s, st: statsOf(days.map(d => cellState(A, s, d.dk, 'sh'))) }));
+  const said = p => p.to ? `${monDay(p.from)} – ${monDay(addDays(p.to, -1))}` : p.from > today ? `starting ${monDay(p.from)}` : `since ${monDay(p.from)}`;
+  const n = rows.filter(r => needsSH(r.key, today)).length;
+  let h = `<div class="panel" style="margin-bottom:16px"><h2>Study hall: ${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}</h2>
+    <p class="small" style="margin:0">Students who need study hall are expected there; everyone else isn’t. Turn it on when a student has a grade under 60%, and off when they don’t. ${plural(n, 'student needs', 'students need')} study hall today.</p></div>
+    <div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Needs study hall</th><th>Dates needed</th><th>Attendance while required</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></td><td>${shSwitch(r)}</td>
+      <td>${shPeriods(r.key).length ? esc(shPeriods(r.key).map(said).join('; ')) : '<span class="zero">—</span>'}</td>
+      <td>${r.st.n || r.st.exc ? `${meter(r.st.pct)}<span class="sub">${esc(attText(r.st, 'required day'))}</span>` : '<span class="zero">—</span>'}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="small muted" style="margin-top:10px">Attendance while required: every study hall day so far that the student needed it. Excused days and days with no Zoom report aren’t counted. A student who came on a day they didn’t need it shows on the Overview as “came, not required”.</p>`;
+  el.innerHTML = h;
+}
+function shTurnOn(key, from){
+  state.data.studyHall[key] = normPeriods([...shPeriods(key), { from }]); changed();
+}
+function shTurnOff(key, to){
+  const p = openPeriod(key); if (!p) return;
+  const list = shPeriods(key).filter(x => x !== p);
+  if (to > p.from) list.push({ from: p.from, to });
+  if (list.length) state.data.studyHall[key] = normPeriods(list); else delete state.data.studyHall[key];
+  changed();
+}
+
+/* ---------------- Setup ---------------- */
+const setRow = (id, key, label, unit) => { const [lo, hi] = NUM_SETTINGS[key]; return `<label for="${id}">${esc(label)}</label><input id="${id}" type="number" min="${lo}" max="${hi}" data-set="${key}" value="${esc(state.data.settings[key])}" aria-describedby="${id}-u">
+  <span class="unit" id="${id}-u">${esc(unit)}</span>`; };
+function renderSetup(){
+  const el = $('#tab-setup');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  const S = settings(), today = todayDk(), cur = A.students.filter(isCurrent), gone = A.students.filter(s => !isCurrent(s));
+  const firstFrom = A.students.length ? today : A.oldest && A.oldest < today ? A.oldest : today;
+  const wdOpt = w => `<option value="${w}"${S.homeroomDay === w ? ' selected' : ''}>${cap(DAYS[w])}</option>`;
+  const stuLi = s => `<li><span>${esc(s.name)}${s.added ? `<span class="when">since ${esc(monDay(s.added))}</span>` : ''}${s.removed ? `<span class="when">leaving ${esc(monDay(s.removed))}</span>` : ''}</span>
+    <details class="menu formmenu" data-stumenu><summary class="linkish">Edit</summary><div class="pop" role="group" aria-label="Edit ${esc(s.name)}">
+      <label>Name <input type="text" data-stuname value="${esc(s.name)}" maxlength="120"></label>
+      <label>On your list starting <input type="date" data-stuadded value="${esc(s.added || '')}"></label>
+      <p class="muted">A new spelling keeps ${esc(firstName(s.name))}’s marks, notes, study hall dates and meetings, and Zoom names that matched the old one still match.</p>
+      <div class="actions" style="margin-top:2px"><button class="btn small" data-stusave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div><p class="menumsg" role="status"></p></div></details>
+    <details class="menu formmenu" data-stumenu><summary class="linkish">Remove…</summary><div class="pop" role="group" aria-label="Remove ${esc(s.name)}">
+      <div class="dropline"><span>Not in homeroom starting</span><input type="date" data-sturmdate value="${today}" aria-label="First day not in homeroom"><button class="btn small" data-sturemove="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
+      <p class="muted">Earlier days stay as they are, and later days aren’t expected.</p>
+      <p><button class="linkish" data-studelete="${esc(s.key)}">Added by mistake? Delete ${esc(s.name)}</button></p></div></details></li>`;
+  const msg = state.logMsg && state.logMsg.where === 'stu' ? state.logMsg : null;
+  el.innerHTML = `<div class="stack" style="max-width:980px">
+    <div class="panel"><h2>Students</h2><div class="two">
+      <div><label class="lbl" for="stuPaste">Add students: paste names, one per line</label>
+        <textarea id="stuPaste" class="stupaste" data-stupaste placeholder="Ana Diaz&#10;Ben Carter&#10;Chloe Nguyen"></textarea>
+        <div class="actions"><label class="inl">On your list starting <input type="date" data-stufrom value="${firstFrom}"></label><button class="btn small" data-addstudents>Add students</button></div>
+        <p class="formmsg${msg && msg.bad ? ' bad' : ''}" role="status">${msg ? esc(msg.text) : ''}</p>
+        <p class="small muted" style="margin:4px 0 0">You can copy a column of names from a spreadsheet. Names already on your list are skipped.</p></div>
+      <div><h3 class="psub">On your list (${cur.length})</h3>${cur.length ? `<ul class="list">${cur.map(stuLi).join('')}</ul>` : '<p class="small muted">No students yet.</p>'}
+        ${gone.length ? `<h3 class="psub">Left homeroom</h3><ul class="list">${gone.map(s => `<li><span>${esc(s.name)}<span class="when">left ${esc(monDay(s.removed))}</span></span><button class="btn small ghost" data-stuback="${esc(s.key)}">Bring back</button></li>`).join('')}</ul>` : ''}</div></div></div>
+    <div class="two">
+      <div class="panel"><h2>Homeroom</h2><div class="setgrid">
+        <label for="s-hrday">Day</label><select id="s-hrday" data-setday>${WEEKDAYS.map(wdOpt).join('')}</select>
+        <label for="s-hrs">Starts</label><input type="time" id="s-hrs" data-settime="homeroomStart" value="${esc(S.homeroomStart)}">
+        <label for="s-hre">Ends</label><input type="time" id="s-hre" data-settime="homeroomEnd" value="${esc(S.homeroomEnd)}"></div></div>
+      <div class="panel"><h2>Study hall</h2><div class="setgrid">
+        <span>Days</span><fieldset class="wdays"><legend class="sr">Study hall days</legend>${WEEKDAYS.map(w => `<label><input type="checkbox" data-studyday="${w}"${S.studyDays.includes(w) ? ' checked' : ''}> ${cap(DAYS[w]).slice(0, 3)}</label>`).join('')}</fieldset>
+        <label for="s-shs">Starts</label><input type="time" id="s-shs" data-settime="studyStart" value="${esc(S.studyStart)}">
+        <label for="s-she">Ends</label><input type="time" id="s-she" data-settime="studyEnd" value="${esc(S.studyEnd)}"></div></div></div>
+    <div class="two">
+      <div class="panel"><h2>Late and leaving early</h2><div class="set">
+        ${setRow('s-late', 'lateGrace', 'Late if they join more than', 'min after the start')}
+        ${setRow('s-leave', 'leaveGrace', 'Left early if they leave more than', 'min before the end')}</div>
+        <p class="small muted" style="margin:10px 0 0">Either one puts an L on the day. Both apply to homeroom and study hall.</p></div>
+      <div class="panel"><h2>1-on-1s</h2><div class="set">
+        ${setRow('s-due', 'oneOnOneDays', 'A 1-on-1 is due every', 'days')}
+        ${setRow('s-min', 'oneOnOneMin', 'From Zoom, it counts when a student is in it at least', 'min')}</div>
+        <p class="small muted" style="margin:10px 0 0">A Zoom meeting counts as a 1-on-1 when it’s outside homeroom and study hall times and has ${MAX_GROUP} students or fewer in it. Log other meetings by hand on the 1-on-1s tab.</p></div></div>
+    <div class="panel"><h2>Zoom names</h2>
+      <div class="settext"><label for="s-teacher">Your name in Zoom (never counted as a student)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Jordan Rivera"></div>
+      <h3 class="psub">Linked</h3>
+      ${Object.keys(state.data.aliases).length ? `<ul class="list">${Object.entries(state.data.aliases).map(([z, k]) => `<li><span>“${esc(z)}” is ${esc((A.byKey.get(k) || {}).name || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet. Names that don’t match a student show on the Overview, where you can link them.</p>'}
+      <h3 class="psub">Ignored</h3>
+      ${state.data.ignored.length ? `<ul class="list">${state.data.ignored.map(z => `<li><span>“${esc(z)}”</span><button class="btn small ghost" data-unignore="${esc(z)}">Stop ignoring</button></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}</div>
+    <div class="panel"><h2>Your data</h2>${state.demo ? `
+      <p class="small"><b>This is the sample class.</b> The students are made up, and nothing you change here is saved. When you open your own folder, the sample goes away.</p>
+      <div class="actions"><button class="btn" data-pick>Open your folder</button></div>` : `
+      <p class="small">Everything you enter here (students, study hall dates, meetings you log, marks, notes, settings and linked Zoom names) is saved in <b>${DATA_FILE}</b> in your folder. Zoom reports are only read, never changed.</p>
+      ${state.canWrite ? '<p class="small">Changes save automatically.</p>'
+        : state.dirHandle ? '<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your folder.</p>'
+        : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your folder, replacing the old one.${state.dirty ? ' <b>You have changes that aren’t saved.</b>' : ''}</p>`}
+      <div class="actions">${state.dirHandle && !state.canWrite ? '<button class="btn" id="grantSave">Allow saving to folder</button>' : ''}
+        <button class="btn${state.canWrite ? ' ghost' : ''}" id="dlData">Download my data</button></div>`}
+      <p class="small muted" style="margin-top:14px">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere. For IT review: the page’s Content-Security-Policy blocks every network request, it uses no outside code, and it works with Wi‑Fi turned off.</p></div></div>`;
+}
+// A pasted list: one name per line (a column copied from a spreadsheet works too). Headers and blank lines are skipped.
+function addStudents(text, from){
+  const D = state.data, have = new Map(D.students.map(s => [s.key, s])), added = [], back = [], skipped = [];
+  for (const line of String(text).split(/\r?\n/)){
+    const name = line.split('\t').map(x => x.trim()).find(Boolean)?.replace(/^["']+|["']+$/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) || '';
+    const key = normKey(name);
+    if (!key || /^(student( full)?( name)?|names?|full name)$/.test(key)) continue;
+    const s = have.get(key);
+    if (s){ if (!isCurrent(s)){ delete s.removed; back.push(s.name); } else if (!added.includes(s.name)) skipped.push(s.name); continue; }
+    const st = { key, name, added: from };
+    D.students.push(st); have.set(key, st); added.push(name);
+  }
+  if (added.length || back.length) changed();
+  return { added, back, skipped };
+}
+// A new spelling moves the student's marks, notes, study hall dates and meetings with them, and the old spelling stays
+// linked to them, so Zoom names that matched it still do (it's listed under Zoom names on Setup, where it can be unlinked).
+function renameKey(oldK, newK){
+  const D = state.data;
+  if (!D.aliases[oldK]) D.aliases[oldK] = newK;
+  for (const k of Object.keys(D.status)){ const [dk, kind, ...rest] = k.split('|'); if (rest.join('|') === oldK){ const nk = `${dk}|${kind}|${newK}`; if (!D.status[nk]) D.status[nk] = D.status[k]; delete D.status[k]; } }
+  if (D.studyHall[oldK]){ D.studyHall[newK] = normPeriods([...(D.studyHall[newK] || []), ...D.studyHall[oldK]]); delete D.studyHall[oldK]; }
+  if (D.meetings[oldK]){ D.meetings[newK] = [...(D.meetings[newK] || []), ...D.meetings[oldK]]; delete D.meetings[oldK]; }
+  for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
+}
+
+/* ---------------- Start screen, set-up steps, sample class ---------------- */
+function zoomHelp(){
+  return `<details class="small"><summary><b>How to get the report from Zoom</b></summary>
+    <ol><li>Sign in at zoom.us in your browser and open <b>Reports</b>, then <b>Usage</b>.</li>
+    <li>Find the meeting and click the number in the <b>Participants</b> column.</li>
+    <li>Leave <b>Show unique users</b> unchecked so drop-offs and rejoins are kept.</li>
+    <li>Click <b>Export</b> and save the CSV into your homeroom folder. Do this for homeroom, study hall and your 1-on-1s.</li></ol></details>`;
+}
+function startScreen(){
+  const h = state.savedHandle, privacy = '<p class="small muted">Runs entirely on this computer. Nothing on this page is uploaded or sent anywhere.</p>';
+  const demo = '<button class="btn ghost" data-demo>Try a sample class</button>';
+  const steps = `<ol><li>Make a folder on this computer and put this file in it.</li>
+      <li>Save Zoom participant reports (CSV files) for homeroom, study hall and your 1-on-1s into the same folder.</li>
+      <li>Click <b>${h ? 'Choose a different folder' : 'Open homeroom folder'}</b> and choose that folder.</li>
+      <li>On the <b>Setup</b> tab, paste your student list and check the homeroom and study hall days and times. They’re saved in the folder for next time.</li></ol>`;
+  if (h) return `<div class="start"><h2>Open ${esc(h.name)}</h2><p class="muted lead">Your folder from last time.</p>
+    <div class="actions"><button class="btn" data-reopen>Open ${esc(h.name)}</button>${demo}<button class="linkish" data-pick>Choose a different folder</button></div>
+    <details class="small startsetup"><summary><b>Setting up a new folder</b></summary>${steps}${zoomHelp()}</details>${privacy}</div>`;
+  return `<div class="start"><h2>Homeroom, study hall and 1-on-1s from your Zoom reports</h2>
+    <p class="muted lead">Open the folder where you save your Zoom reports. To look around first, open a sample class with made-up students.</p>
+    <div class="actions"><button class="btn" data-pick>Open homeroom folder</button>${demo}</div>
+    <h3>Setting up for the first time</h3>${steps}${zoomHelp()}
+    ${HAS_FSA ? '' : '<p class="small muted">Tip: Chrome and Edge remember your folder and save changes to it. In this browser, choose the folder each time and download the data file after changes.</p>'}
+    ${privacy}</div>`;
+}
+// What's left to set up. Steps that are done are checked off, and only the next one says what to do.
+function setupCard(A){
+  const folder = `<b>${esc(state.folderName || 'your folder')}</b>`;
+  const steps = [
+    { done: true, title: 'Open your homeroom folder', doneText: `${folder} is open.` },
+    { done: A.students.length > 0, title: 'Add your students', text: 'Paste your homeroom list on the Setup tab, and check the homeroom and study hall days and times there.', act: '<button class="btn small" data-goto="setup">Go to Setup</button>' },
+    { done: A.nZoom > 0, title: 'Add your Zoom reports', text: `Save Zoom participant reports (CSV) in ${folder}, then click Refresh.`, act: '<button class="btn small" data-refresh>Refresh</button>', more: zoomHelp() }];
+  const next = steps.findIndex(x => !x.done), done = steps.filter(x => x.done).length;
+  return `<div class="start setup"><h2>Get set up</h2><p class="muted" style="margin:4px 0 0">${done} of ${steps.length} done</p><ol class="steps">${steps.map((x, i) => {
+    const now = i === next;
+    return `<li class="${x.done ? 'done' : now ? 'now' : 'later'}"><span class="stepn" aria-hidden="true">${x.done ? '✓' : i + 1}</span><div><b>${esc(x.title)}</b><span class="sr">${x.done ? ', done' : now ? ', next' : ''}</span>
+      ${x.done && x.doneText ? `<p class="muted">${x.doneText}</p>` : now ? `<p>${x.text}</p>` : ''}${now && x.act ? `<div class="actions">${x.act}</div>` : ''}${now && x.more ? x.more : ''}</div></li>`; }).join('')}</ol></div>`;
+}
+/* The sample class: made-up students, kept in memory only and never saved. Four weeks of homeroom Mondays and study hall
+   Tuesdays and Thursdays up to yesterday, and Zoom 1-on-1s: some students are due, one has never had one, a meeting
+   with five students (a club) and one only 3 minutes long don't count, and one meeting was logged by hand. */
+function sampleFolder(){
+  let seed = 2026;   // the same sample every time
+  const rnd = () => (seed = seed * 48271 % 2147483647) / 2147483647, int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const today = todayDk(), wk = weekKey(today), mon0 = addDays(wk, wk < today ? -21 : -28), mons = [0, 1, 2, 3].map(i => addDays(mon0, 7 * i));
+  const teacher = 'Jordan Rivera';
+  const names = ['Amara Okafor', 'Ben Whitfield', 'Carmen Reyes', 'Dev Patel', 'Elif Demir', 'Felix Wagner', 'Grace Lin', 'Hugo Martins', 'Isabel Cruz', 'Jonah Brooks'];
+  const students = names.map(n => ({ key: normKey(n), name: n, added: n === 'Jonah Brooks' ? mons[1] : mon0, ...(n === 'Felix Wagner' ? { removed: mons[3] } : {}) }));
+  const studyHall = { 'carmen reyes': [{ from: mon0 }], 'dev patel': [{ from: mon0, to: mons[2] }], 'isabel cruz': [{ from: mons[2] }], 'hugo martins': [{ from: mons[3] }] };
+  const zt = (dk, m) => { const [y, mo, d] = dk.split('-'), h = Math.floor(m / 60); return `${mo}/${d}/${y} ${pad(h % 12 || 12)}:${pad(m % 60)}:00 ${h >= 12 ? 'PM' : 'AM'}`; };
+  const mdY = dk => { const [y, m, d] = dk.split('-'); return `${m}-${d}-${y}`; };
+  const files = [], listed = (n, dk) => onList(students.find(s => s.name === n), dk);
+  const file = (name, dk, rows) => files.push({ name, modified: Date.now(), text: 'Name (Original Name),User Email,Join Time,Leave Time,Duration (Minutes),Guest,In Waiting Room\n'
+    + rows.map(([n, a, b]) => [csvCell(n), '', zt(dk, a), zt(dk, b), b - a, 'No', 'No'].join(',')).join('\n') + '\n' });
+  // Homeroom, Mondays 8:30–9:00. Ben is late twice, Dev misses two (one excused), Elif leaves early once,
+  // Grace joins from her phone, and Hugo's first Monday is on a family iPad (a name to link).
+  mons.forEach((dk, i) => {
+    const rows = [[teacher, 8 * 60 + 20, 9 * 60 + 4]];
+    for (const n of names){
+      if (!listed(n, dk)) continue;
+      let iv = [[8 * 60 + 30 - int(0, 3), 9 * 60 + int(0, 1)]], zn = n;
+      if (n === 'Ben Whitfield' && (i === 1 || i === 3)) iv = [[8 * 60 + 41, 9 * 60]];
+      if (n === 'Dev Patel' && (i === 1 || i === 3)) iv = [];
+      if (n === 'Elif Demir' && i === 2) iv = [[8 * 60 + 29, 8 * 60 + 46]];
+      if (n === 'Isabel Cruz' && i === 2) iv = [[8 * 60 + 29, 8 * 60 + 40], [8 * 60 + 44, 9 * 60]];
+      if (n === 'Grace Lin') zn = 'Grace’s iPhone';
+      if (n === 'Hugo Martins' && i === 0) zn = 'Mom’s iPad';
+      for (const [a, b] of iv) rows.push([zn, a, b]);
+    }
+    file(`zoom-homeroom-${mdY(dk)}.csv`, dk, rows);
+  });
+  // Study hall, Tuesdays and Thursdays 2–3 PM: the students who need it, and Amara, who comes twice without needing to.
+  const need = (k, dk) => (studyHall[k] || []).some(p => p.from <= dk && (!p.to || dk < p.to)), count = {};
+  let j = 0;
+  for (let dk = mon0; dk < today; dk = addDays(dk, 1)){
+    if (![2, 4].includes(parseDk(dk).getDay())) continue;
+    const rows = [[teacher, 13 * 60 + 55, 15 * 60 + 2]];
+    for (const n of names){
+      const k = normKey(n); if (!listed(n, dk)) continue;
+      const c = need(k, dk) ? (count[k] = (count[k] || 0) + 1) - 1 : -1;   // which of the student's required days this is
+      let iv = [];
+      if (c >= 0){
+        iv = [[14 * 60 - int(0, 2), 15 * 60 + int(0, 1)]];
+        if (n === 'Carmen Reyes' && c === 2) iv = [];
+        if (n === 'Carmen Reyes' && c === 4) iv = [[14 * 60 + 12, 15 * 60]];
+        if (n === 'Dev Patel' && c === 1) iv = [];
+        if (n === 'Isabel Cruz' && c === 1) iv = [[14 * 60, 14 * 60 + 40]];
+      } else if (n === 'Amara Okafor' && (j === 1 || j === 3)) iv = [[14 * 60 + 1, 14 * 60 + 50]];
+      for (const [a, b] of iv) rows.push([n, a, b]);
+    }
+    file(`zoom-study-hall-${mdY(dk)}.csv`, dk, rows);
+    j++;
+  }
+  // 1-on-1s, after school or mid-morning (outside homeroom and study hall), on the nearest weekday.
+  const back = n => { const dk = addDays(today, -n), w = parseDk(dk).getDay(); return w === 6 ? addDays(dk, -1) : w === 0 ? addDays(dk, -2) : dk; };
+  const meet = (n, who, start, len, label) => { const dk = back(n); file(`zoom-${label}-${mdY(dk)}.csv`, dk, [[teacher, start - 2, start + len + 3], ...who.map(w => [w, start, start + len])]); };
+  meet(3, ['Amara Okafor'], 15 * 60 + 30, 20, '1on1-amara');
+  meet(16, ['Ben Whitfield'], 15 * 60 + 30, 15, '1on1-ben');
+  meet(5, ['Ben Whitfield'], 10 * 60, 3, 'check-in-ben');   // only 3 minutes: not a 1-on-1
+  meet(9, ['Carmen Reyes', 'Isabel Cruz'], 15 * 60 + 30, 25, '1on1-carmen-isabel');
+  meet(20, ['Dev Patel'], 15 * 60 + 30, 18, '1on1-dev');
+  meet(19, ['Elif Demir'], 15 * 60 + 30, 15, '1on1-elif');
+  meet(6, ['Elif Demir'], 10 * 60, 20, '1on1-elif-2');
+  meet(15, ['Felix Wagner'], 10 * 60, 15, '1on1-felix');
+  meet(12, ['Hugo Martins'], 15 * 60 + 30, 20, '1on1-hugo');
+  meet(2, ['Amara Okafor', 'Ben Whitfield', 'Dev Patel', 'Elif Demir', 'Hugo Martins'], 15 * 60 + 30, 45, 'chess-club');   // five students: not a 1-on-1
+  const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [],
+    meetings: { 'grace lin': [{ id: 'sample1', date: back(8), note: 'Phone call (her Zoom wasn’t working)' }] },
+    status: { [`${mons[3]}|hr|dev patel`]: { cat: 'excused', note: 'Doctor’s appointment' }, [`${mons[1]}|hr|ben whitfield`]: { note: 'Wi‑Fi trouble at home' } } };
+  return { files, dataText: JSON.stringify(data) };
+}
+function loadSample(){
+  const x = sampleFolder();
+  state.tab = 'overview'; state.ovScroll = null; state.query = '';
+  ingest(x.files, x.dataText, 'Sample class', true);
+}
+function leaveSample(){
+  Object.assign(state, { demo: false, loaded: false, data: defaultData(), files: [], folderName: '', dirty: false, undo: [], redo: [], snap: null,
+    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ov1: null, logMsg: null });
+  setStatus(null); render(); navReplace();
+}
+
+/* ---------------- Help ---------------- */
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘' : 'Ctrl';
+function helpHTML(){
+  const S = settings(), kb = (keys, what) => `<span>${keys.map(k => `<kbd>${esc(k)}</kbd>`).join(' ')}</span><span>${esc(what)}</span>`;
+  return `<div class="dlg-head"><h2 id="helpTitle">Help</h2><button class="btn small ghost" data-dlgclose>Close</button></div><div class="dlg-body">
+    <h3>Getting started</h3>
+    <ol><li>Make a folder on this computer and put this file in it.</li><li>After homeroom, study hall or a 1-on-1, save the Zoom participant report (CSV) in that folder.</li>
+      <li>Click <b>Open homeroom folder</b> and choose the folder.</li><li>On the <b>Setup</b> tab, paste your student list once and check the days and times.</li></ol>
+    ${zoomHelp()}
+    ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
+    <h3>What each tab is for</h3>
+    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. The last column shows how long it’s been since each student’s last 1-on-1; click it to see their meetings or log one.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and their last 1-on-1. Click a name for the student’s page, where you can change the dates they need study hall, see their meetings and notes, and print it.</li>
+      <li><b>1-on-1s</b>: who’s due for a 1-on-1, most days since the last one first, and every meeting. Log a meeting that wasn’t on Zoom, like a phone call.</li>
+      <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
+      <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and 1-on-1 rules, and your data.</li></ul>
+    <h3>How attendance is worked out</h3>
+    <ul><li>A Zoom report counts for homeroom when it has someone in it during homeroom time (${esc(daysText([S.homeroomDay]))}, ${esc(winText('hr'))}), and for study hall the same way (${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}).</li>
+      <li><b>Present</b>: in Zoom during that time. <b>L</b>: joined more than ${plural(S.lateGrace, 'minute')} after the start, or left more than ${plural(S.leaveGrace, 'minute')} before the end.</li>
+      <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
+      <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
+      <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
+      <li><b>1-on-1s</b>: a Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer. Each student who was in it at least ${plural(S.oneOnOneMin, 'minute')} had a 1-on-1 that day. A student is <b>due</b> once ${plural(S.oneOnOneDays, 'day')} pass without one.</li></ul>
+    <h3>Colors and marks</h3>
+    <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
+      <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
+    <h3>Keyboard</h3>
+    <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid')}${kb(['Enter'], 'Open the day (or the 1-on-1s) you’re on')}${kb(['Esc'], 'Close it')}
+      ${kb([MOD, 'Z'], 'Undo')}${kb([MOD, 'Y'], 'Redo')}${kb(['/'], 'Find a student')}${kb(['?'], 'This help')}</div>
+    <h3>Common questions</h3>
+    <dl class="faq"><dt>A student shows as absent, but they were there.</dt><dd>Zoom may know them by another name, like a parent’s name or “iPad.” Look for <b>Zoom names that don’t match a student</b> on the Overview and link the name. You only do this once.</dd>
+      <dt>A file I just saved doesn’t show up.</dt><dd>Click <b>Refresh</b> at the top of the page.</dd>
+      <dt>A student left, or joined late in the year.</dt><dd>On the Setup tab, use <b>Remove…</b> with the date they left, or set the date they joined with <b>Edit</b>. Their other days stay as they are.</dd>
+      <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download my data</b> after making changes and put the file in your folder.</dd>
+      <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
+  </div>`;
+}
+function openHelp(){
+  const d = $('#helpDlg');
+  d.innerHTML = helpHTML(); if (!d.open) d.showModal();
+  d.querySelector('[data-dlgclose]').focus();
+}
+
+/* ---------------- Exports ---------------- */
+function csvCell(v){
+  let s = String(v ?? '');
+  if (typeof v !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;   // keep spreadsheets from treating names as formulas
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+const toCSV = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+function downloadFile(name, text, type, note = ' Look for it in your Downloads folder.'){
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  setStatus(`Downloaded ${name}.${note}`, 'info');
+}
+
+/* ---------------- Drawing the page ---------------- */
+function renderFolderBar(){
+  const b = $('#folderBar');
+  let h = '';
+  if (state.loaded){
+    const nZoom = state.files.filter(f => !parsedFile(f).error).length, counts = plural(nZoom, 'Zoom report'), name = state.folderName || 'Your folder';
+    h = state.demo ? `<span class="where" title="Sample class, made-up students · ${esc(counts)}"><b>Sample class</b> · ${esc(counts)}</span><button class="btn" id="pick">Open your folder</button>`
+      : `<span class="where" title="${esc(name)} · ${esc(counts)}"><b>${esc(name)}</b> · ${esc(counts)}</span>
+      <button class="btn ghost" id="refresh" title="Read the folder again, for files you’ve just saved in it">Refresh</button><button class="linkish" id="pick">Change folder</button>`;
+  } else if (state.savedHandle){
+    h = `<button class="btn" id="reopen" title="Open ${esc(state.savedHandle.name)}">Open ${esc(state.savedHandle.name)}</button><button class="btn ghost" id="pick">Choose a different folder</button>`;
+  } else h = '<button class="btn" id="pick">Open homeroom folder</button>';
+  b.innerHTML = h;
+}
+// Always says where your changes are: being saved, saved, or not saved yet (with the one button that saves them).
+function renderSaveState(){
+  const el = $('#saveBar');
+  const s = !state.loaded ? '' : state.demo ? '<span>Sample class: changes aren’t saved</span>'
+    : state.canWrite ? (state.dirty || state.saving ? '<span>Saving…</span>' : '<span class="saved">✓ All changes saved</span>')
+    : !state.dirty ? '' : state.dirHandle ? '<button class="btn small warn" data-statusact="grantsave" title="Your changes aren’t in the folder yet">Not saved: allow saving</button>'
+    : '<button class="btn small warn" data-statusact="download" title="This browser can’t save into the folder by itself">Not saved: download data file</button>';
+  const h = s + (state.loaded && state.undo.length ? `<button class="linkish" data-undo title="Undo your last change (${MOD}+Z)">Undo</button>` : '')
+    + (state.loaded && state.redo.length ? `<button class="linkish" data-redo title="Redo (${MOD}+Y)">Redo</button>` : '');
+  if (el.innerHTML !== h) el.innerHTML = h;
+}
+function renderStatus(){
+  const el = $('#status'), s = state.status;
+  el.innerHTML = s ? `<div class="notice ${s.type === 'info' ? 'info' : ''}"><span>${esc(s.text)}</span>${
+    s.action ? `<button class="linkish" data-statusact="${esc(s.action.act)}">${esc(s.action.label)}</button>` : ''}${s.auto ? '' : '<button class="linkish" data-closestatus>Close</button>'}</div>` : '';
+}
+function renderBanner(){
+  const h = state.demo ? `<div class="notice info demo-bar"><span><b>Sample class.</b> The students are made up, and nothing you change is saved.</span>
+    <span class="acts"><button class="linkish" data-leavesample>Leave the sample</button></span></div>` : '';
+  const el = $('#banner'); if (el.innerHTML !== h) el.innerHTML = h;
+}
+const RENDER = { overview: () => renderOverview(), students: () => renderStudents(), meetings: () => renderMeetings(), study: () => renderStudy(), setup: () => renderSetup() };
+function render(){
+  renderFolderBar(); renderSaveState(); renderStatus(); renderBanner();
+  // Tabs work like tabs everywhere else: one Tab stop, and the arrow keys move between them.
+  document.querySelectorAll('nav.tabs button').forEach(b => { const on = b.dataset.tab === state.tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+  for (const t of Object.keys(RENDER)) $('#tab-' + t).hidden = state.tab !== t;
+  RENDER[state.tab]();
+}
+function renderCurrent(){ RENDER[state.tab](); }
+function setStatus(text, type, action){
+  state.status = text ? { text, type, auto: type === 'info', action } : null; renderStatus();
+  clearTimeout(state.statusTimer);
+  if (type === 'info') state.statusTimer = setTimeout(() => { if (state.status && state.status.text === text) setStatus(null); }, action ? 9000 : 5000);
+}
+
+/* ---------------- Folder access and saving ---------------- */
+function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('homeroom-tracker', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k){ try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e){ return null; } }
+async function idbSet(k, v){ try { const db = await idb(); await new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e){ /* remembering the folder is a convenience */ } }
+// Asked only when switching to a different folder would drop changes that never reached the old one.
+function okToSwitch(folderName){
+  return !(state.loaded && state.dirty && !state.demo && folderName !== state.folderName)
+    || confirm('Some changes aren’t saved in the folder yet. Click Cancel, then “Download my data” on the Setup tab to keep them. Or click OK to open this folder without them.');
+}
+async function pickFolder(){
+  if (!HAS_FSA){ $('#folderInput').value = ''; $('#folderInput').click(); return; }
+  try {
+    const h = await window.showDirectoryPicker({ id: 'homeroom', mode: 'readwrite' });
+    if (!okToSwitch(h.name)) return;
+    state.dirHandle = h; state.savedHandle = h; await idbSet('dir', h);
+    await loadFromHandle();
+  } catch (e){ if (e && e.name !== 'AbortError') setStatus(folderError(e)); }
+}
+function folderError(e){
+  return e && /Security|NotAllowed/.test(e.name) ? 'Your browser won’t open that folder, because it keeps some folders (like Desktop or Downloads itself) off-limits. Make a folder inside one of them, like “Homeroom” in Documents, and choose that.'
+    : `That folder couldn’t be opened. Try choosing it again. If it keeps happening, close the tab and open this file again.${e && e.message ? ` (${e.message})` : ''}`;
+}
+async function reopen(){
+  const h = state.dirHandle || state.savedHandle; if (!h) return pickFolder();
+  try {
+    let p = await h.queryPermission({ mode: 'readwrite' });
+    if (p !== 'granted') p = await h.requestPermission({ mode: 'readwrite' });
+    if (p !== 'granted'){
+      const r = await h.requestPermission({ mode: 'read' });
+      if (r !== 'granted'){ setStatus('Access to the folder wasn’t allowed. Click “Open homeroom folder” to try again.'); return; }
+    }
+    state.dirHandle = h; await loadFromHandle();
+  } catch (e){ setStatus(`Your folder from last time couldn’t be opened. It may have been moved or renamed. Click “Open homeroom folder” and choose it again.${e && e.message ? ` (${e.message})` : ''}`); state.savedHandle = null; renderFolderBar(); if (!state.loaded) renderCurrent(); }
+}
+async function loadFromHandle(){
+  const h = state.dirHandle, files = []; let dataText = null;
+  setStatus(`Reading ${h.name}…`, 'info');
+  for await (const [name, entry] of h.entries()){
+    if (entry.kind !== 'file') continue;
+    const low = name.toLowerCase();
+    if (low === DATA_FILE) dataText = await (await entry.getFile()).text();
+    else if (low.endsWith('.csv')){ const file = await entry.getFile(); files.push({ name, text: await file.text(), modified: file.lastModified }); }
+  }
+  state.canWrite = (await h.queryPermission({ mode: 'readwrite' })) === 'granted';
+  ingest(files, dataText, h.name);
+}
+async function loadFromInput(list){
+  const files = []; let dataText = null, folder = '';
+  for (const f of list){
+    const low = f.name.toLowerCase();
+    if (!folder && f.webkitRelativePath) folder = f.webkitRelativePath.split('/')[0];
+    if (f.webkitRelativePath && f.webkitRelativePath.split('/').length > 2) continue;   // files in folders inside it aren't read
+    if (low === DATA_FILE) dataText = await f.text();
+    else if (low.endsWith('.csv')) files.push({ name: f.name, text: await f.text(), modified: f.lastModified });
+  }
+  if (!okToSwitch(folder)) return;
+  state.dirHandle = null; state.canWrite = false;
+  ingest(files, dataText, folder);
+}
+function ingest(files, dataText, folderName, demo = false){
+  let msg = null, info = false;
+  const same = state.loaded && !state.demo && !demo && folderName === state.folderName, had = new Set(state.files.map(f => f.name));
+  // Refreshing the same folder keeps changes that haven't reached the folder yet, instead of reloading the older file.
+  const keep = same && state.dirty;
+  if (keep){ msg = 'Your changes that aren’t saved in the folder yet were kept.'; info = true; }
+  else if (dataText){
+    try { state.data = withDefaults(JSON.parse(dataText)); }
+    catch (e){
+      // Nothing is saved over a file that couldn't be read, until the teacher allows it.
+      state.data = defaultData(); state.canWrite = false;
+      msg = `${DATA_FILE} couldn’t be read, so your students and settings weren’t loaded. Nothing will be saved over it unless you allow saving.`;
+    }
+  }
+  else if (!same) state.data = defaultData();   // a different folder with no data file starts empty
+  state.files = files.sort((a, b) => a.name.localeCompare(b.name));
+  if (same && !msg){ const fresh = state.files.filter(f => !had.has(f.name)); msg = fresh.length ? `Found ${plural(fresh.length, 'new file')}: ${listJoin(fresh.map(f => f.name), 3)}.` : 'Up to date. No new files in the folder.'; info = true; }
+  state.demo = demo; if (demo){ state.dirHandle = null; state.canWrite = false; }   // the sample is never saved into a folder
+  if (!same){ state.undo = []; state.redo = []; state.student = null; state.ovSel = null; state.ov1 = null; state.ovScroll = null; state.logMsg = null; state.logKey = ''; }
+  state.snap = JSON.stringify(state.data); state.saveFailed = false;
+  state.folderName = folderName; state.loaded = true; state.dirty = keep;
+  state.status = null;
+  render(); navReplace(); setStatus(msg, info ? 'info' : undefined);
+  if (keep && state.dirHandle && state.canWrite) changed();
+}
+let saveTimer = null, undoOpen = false;
+// Every change keeps the data as it was before, for Undo. The changes one click makes are one step.
+function changed(){
+  const now = JSON.stringify(state.data);
+  if (state.snap !== null && now !== state.snap && !undoOpen){
+    state.undo.push(state.snap); if (state.undo.length > 100) state.undo.shift();
+    state.redo = []; undoOpen = true; setTimeout(() => { undoOpen = false; });
+  }
+  state.snap = now;
+  state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); renderSaveState();
+}
+// Undo (or Redo) puts the data back as it was, saves it, and redraws. Boxes open on something that may be gone close.
+function undo(redo){
+  const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
+  if (!state.loaded || !from.length) return;
+  to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
+  Object.assign(state, { ovSel: null, ov1: null, logMsg: null });
+  if (state.student && !state.data.students.some(s => s.key === state.student)) state.student = null;
+  state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
+  render();
+  setStatus(redo ? 'Put the change back.' : 'Undid your last change.', 'info', redo ? (state.undo.length ? { label: 'Undo', act: 'undo' } : null) : { label: 'Redo', act: 'redo' });
+}
+async function save(){
+  if (state.demo || !(state.dirHandle && state.canWrite)){ renderSaveState(); return; }
+  state.saving = true; renderSaveState();
+  try {
+    const fh = await state.dirHandle.getFileHandle(DATA_FILE, { create: true });
+    const w = await fh.createWritable(); await w.write(JSON.stringify(state.data, null, 2)); await w.close();
+    state.dirty = false; state.saveFailed = false;
+  } catch (e){
+    state.canWrite = false;
+    if (!state.saveFailed) setStatus('Your changes couldn’t be saved in the folder. They’re still here on the page. Click “Allow saving” to try again.', undefined, { label: 'Allow saving', act: 'grantsave' });
+    state.saveFailed = true;
+  }
+  state.saving = false; renderSaveState();
+}
+async function grantSave(){
+  try {
+    if (state.dirHandle && (await state.dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'){ state.canWrite = true; await save(); setStatus(state.dirty ? null : 'Saved.', 'info'); renderCurrent(); return; }
+  } catch (err){ /* said below */ }
+  setStatus('Saving is still off. You can download the data file instead and put it in your folder.', undefined, { label: 'Download data file', act: 'download' });
+}
+function downloadData(){
+  downloadFile(DATA_FILE, JSON.stringify(state.data, null, 2), 'application/json', state.dirHandle && state.canWrite ? undefined : ` Move it into ${state.folderName || 'your homeroom folder'}, replacing the old one.`);
+}
+
+/* ---------------- Moving between screens ----------------
+   Each student page is a browser history entry (the address never changes), so the browser's Back button goes back a
+   screen instead of leaving the page. */
+let navSeq = 0;
+const NAV_LOAD = String(Date.now() + Math.random());
+const navSnap = () => ({ load: NAV_LOAD, seq: navSeq, tab: state.tab, student: state.student, via: state.studentTab || null });
+function navReplace(){ try { history.replaceState(navSnap(), ''); } catch (e){ /* not available in every frame */ } }
+function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e){ /* not available in every frame */ } }
+const navCanGoBack = () => !!(history.state && history.state.seq > 0 && history.state.load === NAV_LOAD);
+function openStudent(key){
+  navReplace();
+  state.studentTab = state.tab === 'students' ? null : state.tab; state.tab = 'students'; state.student = key; state.ovSel = null; state.ov1 = null; state.logMsg = null;
+  navPush(); render(); window.scrollTo(0, 0);
+  const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
+}
+function studentBack(){
+  const key = state.student;
+  if (navCanGoBack() && history.state.student === key){ history.back(); return; }
+  state.tab = state.studentTab || 'students'; state.student = null; render(); navReplace(); focusStudentLink(key);
+}
+const visible = sel => [...document.querySelectorAll(sel)].find(el => el.offsetParent !== null);
+function focusStudentLink(key){
+  const b = visible(`[data-openstudent="${CSS.escape(key)}"]`) || visible(`[data-ov1="${CSS.escape(key)}"]`);
+  if (b){ b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); }
+}
+function focusOvCell(sel){
+  const b = sel && $(`#tab-overview .ovb${sel}`); if (!b) return;
+  document.querySelectorAll('#tab-overview .ovb').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
+  b.focus({ preventScroll: true }); revealOvCell(b);
+}
+const cellSel = xk => `[data-ovcell="${CSS.escape(xk)}"]`, oneSel = key => `[data-ov1="${CSS.escape(key)}"]`;
+function revealOvCell(b){
+  const sc = b.closest('.ovblock'), nm = sc && sc.querySelector('th.ovname'), right = sc && sc.querySelector('th.ov1h'); if (!nm) return;
+  const r = b.getBoundingClientRect(), left = nm.getBoundingClientRect().right, end = b.closest('.ov1c') ? sc.getBoundingClientRect().right : right.getBoundingClientRect().left;
+  if (r.left < left) sc.scrollLeft -= left - r.left + 4; else if (r.right > end) sc.scrollLeft += r.right - end + 4;
+}
+function focusSelector(t){
+  for (const a of t.attributes) if (a.name.startsWith('data-')) return `${t.tagName.toLowerCase()}[${a.name}="${CSS.escape(a.value)}"]`;
+  return t.id ? `#${CSS.escape(t.id)}` : null;
+}
+// Close the Overview's open box in place (no redraw), so whatever was clicked keeps its focus.
+function closeOvPop(){
+  state.ovSel = null; state.ov1 = null;
+  const pop = $('#tab-overview .ovpop');
+  if (pop){ if (pop.contains(document.activeElement)) document.activeElement.blur(); pop.remove(); }   // blur saves a note being typed
+  document.querySelectorAll('#tab-overview .sel').forEach(td => { td.classList.remove('sel'); const b = td.querySelector('.ovb'); if (b) b.setAttribute('aria-expanded', 'false'); });
+}
+
+/* ---------------- Actions ---------------- */
+function logMeeting(form, where){
+  const key = form.dataset.logform || (form.querySelector('[data-logkey]') || {}).value || '', date = form.querySelector('[data-logdate]').value, note = form.querySelector('[data-lognote]').value.trim().slice(0, 300);
+  const say = (text, bad) => { state.logMsg = { where, text, bad }; const p = form.parentElement.querySelector('.logmsg'); if (p){ p.textContent = text; p.classList.toggle('bad', !!bad); } };
+  if (!key){ say('Choose a student first.', true); form.querySelector('[data-logkey]').focus(); return; }
+  if (!isDk(date) || date > todayDk()){ say('Choose a date, today or earlier.', true); form.querySelector('[data-logdate]').focus(); return; }
+  const s = state.data.students.find(x => x.key === key); if (!s) return;
+  state.data.meetings[key] = [...(state.data.meetings[key] || []), { id: uid(), date, note }];
+  state.logKey = form.dataset.logform ? state.logKey : key;
+  state.logMsg = { where, text: `Logged a 1-on-1 with ${s.name} on ${shortDate(date)}.` };
+  changed(); renderCurrent();
+}
+function addPeriodFromRow(li){
+  const [key, i] = li.dataset.period.split('|'), from = li.querySelector('[data-shfrom]').value, to = li.querySelector('[data-shto]').value, ps = [...shPeriods(key)];
+  const say = text => { state.logMsg = { where: 'sh', text, bad: true }; renderCurrent(); };
+  if (!isDk(from)) return say('Each “Starting” needs a date.');
+  if (to && (!isDk(to) || to <= from)) return say('“Done starting” has to be after “Starting”.');
+  ps[+i] = to ? { from, to } : { from };
+  state.data.studyHall[key] = normPeriods(ps); state.logMsg = null; changed(); renderCurrent();
+}
+
+/* ---------------- Events ---------------- */
+const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; };
+// Pressing anywhere outside the Overview's open box closes it in place. A press that starts in the box never closes it.
+document.addEventListener('pointerdown', e => {
+  if (!(state.ovSel || state.ov1) || state.tab !== 'overview' || e.target.closest('.ovpop, .ovb')) return;
+  closeOvPop();
+}, true);
+document.addEventListener('click', async e => {
+  document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
+  const t = e.target.closest('button'); if (!t) return;
+  if (e.detail > 1 && ['ovcell', 'ov1', 'logadd', 'addstudents'].some(k => t.dataset[k] !== undefined)) return;   // a double-click acts once
+  const sel = focusSelector(t);
+  await onClick(t);
+  // After a redraw, put keyboard focus back on the control that was clicked (or its replacement).
+  requestAnimationFrame(() => {
+    if (!sel || document.body.contains(t)) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    const el = visible(sel); if (el) el.focus({ preventScroll: true });
+  });
+});
+async function onClick(t){
+  const d = t.dataset, has = a => t.hasAttribute(a), D = state.data;
+  if (t.closest('#helpDlg') && !has('data-dlgclose')) $('#helpDlg').close();   // everything in Help takes you somewhere
+  if (has('data-help')) return openHelp();
+  if (has('data-dlgclose')){ t.closest('dialog').close(); return; }
+  if (has('data-demo')) return loadSample();
+  if (has('data-leavesample')) return leaveSample();
+  if (has('data-undo')) return undo(false);
+  if (has('data-redo')) return undo(true);
+  if (d.statusact){
+    const a = d.statusact; setStatus(null);
+    if (a === 'undo' || a === 'redo') return undo(a === 'redo');
+    if (a === 'grantsave') return grantSave();
+    if (a === 'download'){ downloadData(); state.dirty = false; renderSaveState(); if (state.tab === 'setup') renderSetup(); }
+    return;
+  }
+  if (has('data-closestatus')){ setStatus(null); const b = $(`nav.tabs [data-tab="${state.tab}"]`); if (b) b.focus({ preventScroll: true }); return; }
+  if (d.tab){ state.tab = d.tab; state.student = null; state.ovSel = null; state.ov1 = null; state.logMsg = null; render(); navReplace(); return; }
+  if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
+  if (t.id === 'pick' || has('data-pick')) return pickFolder();
+  if (t.id === 'reopen' || has('data-reopen')) return reopen();
+  if (t.id === 'refresh' || has('data-refresh')) return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
+  if (t.id === 'dlData'){ downloadData(); if (!state.canWrite){ state.dirty = false; renderSaveState(); renderSetup(); } return; }
+  if (t.id === 'grantSave') return grantSave();
+  if (has('data-menucancel')){ const m = t.closest('details.menu'); closeMenu(m); m.querySelector('summary').focus(); return; }
+  if (has('data-clearsearch')){ state.query = ''; renderCurrent(); const s0 = visible(`#tab-${state.tab} [data-search]`); if (s0) s0.focus(); return; }
+  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovScroll = null; renderCurrent(); return; }
+  if (d.show){ state.ovShow = d.show; state.ovSel = null; state.ov1 = null; renderOverview(); return; }
+  if (has('data-printlist')) return window.print();
+  if (has('data-exportcsv')) return exportCSV();
+  // Unmatched Zoom names
+  if (has('data-link')){ const row = t.closest('[data-rk]'), v = row.querySelector('select').value;
+    if (!v){ row.querySelector('select').focus(); return; } D.aliases[row.dataset.rk] = v; changed(); renderCurrent();
+    setStatus(`Linked “${row.querySelector('b').textContent}” to ${(state.lastAnalysis.byKey.get(v) || {}).name || v}.`, 'info', { label: 'Undo', act: 'undo' }); return; }
+  if (has('data-ignore')){ const rk = t.closest('[data-rk]').dataset.rk; if (!D.ignored.includes(rk)) D.ignored.push(rk); changed(); renderCurrent(); return; }
+  if (d.unlink){ delete D.aliases[d.unlink]; changed(); renderSetup(); return; }
+  if (d.unignore){ D.ignored = D.ignored.filter(z => z !== d.unignore); changed(); renderSetup(); return; }
+  // The Overview's day editor and 1-on-1 box
+  if (d.ovcell !== undefined){ state.ov1 = null; state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(cellSel(d.ovcell)); return; }
+  if (d.ov1 !== undefined){ state.ovSel = null; state.logMsg = null; state.ov1 = state.ov1 === d.ov1 ? null : d.ov1; renderOverview(); focusOvCell(oneSel(d.ov1)); return; }
+  if (has('data-ovclose')){ const was = state.ovSel ? cellSel(state.ovSel) : state.ov1 ? oneSel(state.ov1) : null; state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return; }
+  if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
+  if (d.ovlet && state.ovSel){
+    const c = ovCell(state.ovSel); if (!c) return;
+    const now = !c.L; setOverride(state.ovSel, { L: now === c.autoL ? undefined : now }); renderOverview(); return;
+  }
+  if (has('data-ovreset') && state.ovSel){ setOverride(state.ovSel, { cat: undefined, L: undefined }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
+  if (d.ovopen) return openStudent(d.ovopen);
+  // 1-on-1s
+  if (has('data-logadd')){ const f = t.closest('[data-logform]'); return logMeeting(f, f.closest('.ovpop') ? 'pop' : state.tab === 'meetings' ? 'tab' : 'page'); }
+  if (d.mdel){
+    const [key, id] = d.mdel.split('|'), list = (D.meetings[key] || []).filter(m => m.id !== id);
+    if (list.length) D.meetings[key] = list; else delete D.meetings[key];
+    state.logMsg = null; changed(); renderCurrent(); setStatus('Deleted the meeting.', 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  // Students
+  if (d.openstudent) return openStudent(d.openstudent);
+  if (has('data-studentback')) return studentBack();
+  if (d.stepstudent){ state.student = d.stepstudent; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
+  // Study hall
+  if (d.shon || d.shoff){
+    const m = t.closest('details.menu'), v = m.querySelector('[data-shdate]').value, key = d.shon || d.shoff, s = state.lastAnalysis.byKey.get(key);
+    if (!isDk(v)){ m.querySelector('[data-shdate]').focus(); return; }
+    if (d.shon) shTurnOn(key, v); else shTurnOff(key, v);
+    renderCurrent(); const b = $(`#tab-${state.tab} [data-shmenu="${CSS.escape(key)}"] > summary`); if (b) b.focus();
+    setStatus(d.shon ? `${s.name} needs study hall starting ${shortDate(v)}.` : `${s.name} is done with study hall starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.shdel){
+    const [key, i] = d.shdel.split('|'), ps = shPeriods(key).filter((p, n) => n !== +i);
+    if (ps.length) D.studyHall[key] = ps; else delete D.studyHall[key];
+    state.logMsg = null; changed(); renderCurrent(); setStatus('Deleted those study hall dates.', 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.shadd){
+    const v = t.closest('.paddrow').querySelector('[data-shnew]').value;
+    if (!isDk(v)){ state.logMsg = { where: 'sh', text: 'Choose the first day they need study hall.', bad: true }; renderCurrent(); return; }
+    state.logMsg = null; shTurnOn(d.shadd, v); renderCurrent(); return;
+  }
+  // Setup: students
+  if (has('data-addstudents')){
+    const ta = $('#stuPaste'), from = $('#tab-setup [data-stufrom]').value;
+    if (!isDk(from)){ state.logMsg = { where: 'stu', text: 'Choose the date they’re on your list from.', bad: true }; renderSetup(); return; }
+    const r = addStudents(ta.value, from);
+    state.logMsg = { where: 'stu', bad: !r.added.length && !r.back.length, text: !ta.value.trim() ? 'Paste some names first.' : [r.added.length ? `Added ${plural(r.added.length, 'student')}.` : '',
+      r.back.length ? `Brought back ${listJoin(r.back)}.` : '', r.skipped.length ? `Already on your list: ${listJoin(r.skipped, 3)}.` : '', !r.added.length && !r.back.length && !r.skipped.length ? 'No names found.' : ''].filter(Boolean).join(' ') };
+    renderSetup(); if (r.added.length || r.back.length){ const n = $('#stuPaste'); if (n) n.value = ''; } $('#stuPaste').focus(); return;
+  }
+  if (d.stusave){
+    const m = t.closest('details.menu'), name = m.querySelector('[data-stuname]').value.replace(/\s+/g, ' ').trim().slice(0, 120), added = m.querySelector('[data-stuadded]').value;
+    const s = D.students.find(x => x.key === d.stusave), key = normKey(name), say = text => { m.querySelector('.menumsg').textContent = text; };
+    if (!s) return;
+    if (!key) return say('Type a name.');
+    if (key !== s.key && D.students.some(x => x.key === key)) return say('There’s already a student with that name.');
+    if (added && !isDk(added)) return say('Choose a date, or leave it empty.');
+    if (added && s.removed && added >= s.removed) return say(`That’s after they left (${monDay(s.removed)}).`);
+    if (key !== s.key){ renameKey(s.key, key); if (state.student === s.key) state.student = key; s.key = key; }
+    s.name = name; if (added) s.added = added; else delete s.added;
+    changed(); renderCurrent(); setStatus(`Saved ${name}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.sturemove){
+    const m = t.closest('details.menu'), v = m.querySelector('[data-sturmdate]').value, s = D.students.find(x => x.key === d.sturemove);
+    if (!s || !isDk(v)){ m.querySelector('[data-sturmdate]').focus(); return; }
+    s.removed = v; changed(); renderCurrent(); setStatus(`${s.name} isn’t in homeroom starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.stuback){ const s = D.students.find(x => x.key === d.stuback); if (!s) return; delete s.removed; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' }); return; }
+  if (d.studelete){
+    const k = d.studelete, s = D.students.find(x => x.key === k); if (!s) return;
+    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates and meetings you logged. To keep their earlier days instead, use “Not in homeroom starting”.`)) return;
+    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k];
+    for (const x of Object.keys(D.status)) if (x.split('|').slice(2).join('|') === k) delete D.status[x];
+    for (const z of Object.keys(D.aliases)) if (D.aliases[z] === k) delete D.aliases[z];
+    changed(); renderCurrent(); setStatus(`Deleted ${s.name}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+}
+document.addEventListener('input', e => {
+  const t = e.target, d = t.dataset || {};
+  if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
+});
+document.addEventListener('change', e => {
+  const t = e.target, d = t.dataset || {}, S = state.data.settings;
+  if (d.set){
+    // An empty or out-of-range box never saves 0: the old value comes back, or the value is held to the allowed range.
+    const [lo, hi] = NUM_SETTINGS[d.set];
+    if (t.value.trim() === '' || !Number.isFinite(+t.value)){ t.value = S[d.set]; return; }
+    const v = Math.min(hi, Math.max(lo, Math.round(+t.value)));
+    t.value = v; if (v !== S[d.set]){ S[d.set] = v; changed(); }
+    return;
+  }
+  if (d.settime){
+    const pair = { homeroomStart: 'homeroomEnd', homeroomEnd: 'homeroomStart', studyStart: 'studyEnd', studyEnd: 'studyStart' }[d.settime], isStart = /Start$/.test(d.settime), v = t.value.slice(0, 5);
+    if (!isHm(v) || (isStart ? v >= S[pair] : v <= S[pair])){ t.value = S[d.settime]; setStatus(isStart ? 'The start time has to be before the end time.' : 'The end time has to be after the start time.'); return; }
+    if (v !== S[d.settime]){ S[d.settime] = v; changed(); }
+    return;
+  }
+  if ('setday' in d){ S.homeroomDay = +t.value; changed(); return; }
+  if (d.studyday){ const w = +d.studyday; S.studyDays = t.checked ? [...new Set([...S.studyDays, w])].sort() : S.studyDays.filter(x => x !== w); changed(); return; }
+  if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
+  if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
+  if ('rfrom' in d || 'rto' in d){
+    const r = t.closest('.range');
+    let f = r.querySelector('[data-rfrom]').value, to = r.querySelector('[data-rto]').value;
+    // While a date is still being typed the browser can report year 0002; wait until it's a real date.
+    const ok = v => !v || (isDk(v) && v >= '1990' && v < '2200');
+    if (!ok(f) || !ok(to)) return;
+    if (f && to && f > to) [f, to] = [to, f];
+    state.range = f || to ? { preset: 'custom', from: f, to } : { preset: 'all', from: '', to: '' }; state.ovScroll = null; renderCurrent();
+    const box = visible(`.range [data-${'rfrom' in d ? 'rfrom' : 'rto'}]`); if (box) box.focus({ preventScroll: true });
+    return;
+  }
+  if ('shfrom' in d || 'shto' in d){ const li = t.closest('[data-period]'), sel = `[data-period="${CSS.escape(li.dataset.period)}"] [data-${'shfrom' in d ? 'shfrom' : 'shto'}]`; addPeriodFromRow(li); const n = visible(sel); if (n) n.focus(); return; }
+  if (d.ovnote){
+    const v = t.value.trim();
+    setOverride(d.ovnote, { note: v || undefined });
+    // Show or hide the note mark in place, so nothing redraws while you type or tab away.
+    const b = $(`#tab-overview .ovb[data-ovcell="${CSS.escape(d.ovnote)}"]`), c = ovCell(d.ovnote);
+    if (b && c){
+      const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn"></i>'); if (!v && has) b.querySelector('.ovn').remove();
+      const words = `${c.s.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`; b.setAttribute('aria-label', words); b.title = words;
+    }
+  }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target, d = t.dataset || {};
+  const hadMenu = !!document.querySelector('details.menu[open]');
+  const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable]'), dlg = document.querySelector('dialog[open]');
+  // Shortcuts that work anywhere except while typing (where Ctrl+Z undoes the typing): Undo and Redo, ? for Help, / to find a student.
+  if ((!typing || t.tagName === 'SELECT') && !dlg && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zy]$/i.test(e.key)){ e.preventDefault(); undo(e.key.toLowerCase() === 'y' || e.shiftKey); return; }   // a list box has no undo of its own
+  if (!typing && !dlg && !e.ctrlKey && !e.metaKey && !e.altKey){
+    if (e.key === '?'){ e.preventDefault(); openHelp(); return; }
+    if (e.key === '/'){ const s0 = visible(`#tab-${state.tab} [data-search]`); if (s0){ e.preventDefault(); s0.focus(); s0.select(); } return; }
+  }
+  // The tabs: the arrow keys move between them (and open them), Home and End go to the first and last.
+  if (t.getAttribute && t.getAttribute('role') === 'tab' && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)){
+    const tabs = [...document.querySelectorAll('nav.tabs [role=tab]')], i = tabs.indexOf(t);
+    const to = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    e.preventDefault(); to.click(); to.focus(); return;
+  }
+  if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
+  if (e.key === 'Escape' && (state.ovSel || state.ov1) && t.closest && t.closest('.ovpop')){
+    if (d.ovnote !== undefined) t.blur();   // saves the note first, so the redrawn day shows its note mark
+    const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return;
+  }
+  if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
+  if (e.key === 'Enter' && t.tagName === 'INPUT'){
+    // Enter in a small form presses its button.
+    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd]');
+    if (b){ e.preventDefault(); b.click(); return; }
+  }
+  if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
+    const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
+  });
+});
+// Arrow keys move around the Overview grid (one Tab stop for the whole grid); Enter opens a day, Escape closes it.
+function overviewKey(e, t){
+  const r = +t.dataset.r, c = +t.dataset.c, at = (rr, cc) => $(`#tab-overview .ovb[data-r="${rr}"][data-c="${cc}"]`);
+  const all = [...document.querySelectorAll('#tab-overview .ovb')];
+  let to = null;
+  if (e.key === 'Escape' && (state.ovSel || state.ov1)){ const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
+  if (e.key === 'ArrowRight') to = at(r, c + 1);
+  else if (e.key === 'ArrowLeft') to = at(r, c - 1);
+  else if (e.key === 'ArrowDown') to = at(r + 1, c);
+  else if (e.key === 'ArrowUp') to = at(r - 1, c);
+  else if (e.key === 'Home' || e.key === 'End'){
+    const pool = (e.ctrlKey ? all : all.filter(b => +b.dataset.r === r)).sort((x, y) => (+x.dataset.r - +y.dataset.r) || (+x.dataset.c - +y.dataset.c));
+    to = e.key === 'Home' ? pool[0] : pool[pool.length - 1];
+  }
+  else return;
+  e.preventDefault();
+  if (!to) return;
+  all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
+  to.focus({ preventScroll: true }); to.scrollIntoView({ block: 'nearest', inline: 'nearest' }); revealOvCell(to);
+}
+document.addEventListener('toggle', e => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains('menu')) return;
+  if ('rangemenu' in el.dataset) state.rangeMenu = el.open;
+  if (!el.open) return;
+  // A menu opens rightward unless that would run off the window; its first box gets focus.
+  const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
+  if (pop.getBoundingClientRect().right > Math.min(innerWidth, (document.querySelector('main') || document.body).getBoundingClientRect().right) - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
+  if (!('rangemenu' in el.dataset)){ const i = pop.querySelector('input'); if (i) i.focus(); }
+}, true);
+// Scrolling the grid sideways: remember where it is, and keep an open box beside its day.
+document.addEventListener('scroll', e => {
+  if (!e.target.classList || !e.target.classList.contains('ovblock') || state.ovPrintAll) return;
+  state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvPop();
+}, true);
+window.addEventListener('resize', () => placeOvPop());
+document.querySelectorAll('dialog.dlg').forEach(dl => dl.addEventListener('click', e => {
+  const r = dl.getBoundingClientRect();
+  if (e.target === dl && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dl.close();
+}));
+$('.skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus(); });
+window.addEventListener('popstate', e => {
+  const s = e.state || {}, leaving = state.student;
+  navSeq = s.seq || 0;
+  state.tab = s.tab || 'overview'; state.student = s.student || null; state.studentTab = s.via || null; state.ovSel = null; state.ov1 = null; state.logMsg = null;
+  render();
+  if (state.student){ const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
+  else if (leaving) focusStudentLink(leaving);
+});
+$('#folderInput').addEventListener('change', e => { if (e.target.files.length) loadFromInput(e.target.files); });
+window.addEventListener('beforeprint', () => {
+  // The Overview prints in landscape, every day shown, in blocks that fit the page.
+  if (state.tab === 'overview' && state.loaded){
+    let ps = $('#ovPage'); if (!ps){ ps = document.createElement('style'); ps.id = 'ovPage'; document.head.append(ps); }
+    ps.textContent = '@page{size:landscape;margin:.4in}';
+    document.body.classList.add('print-ov'); state.ovPrintAll = true; renderOverview();
+  }
+});
+window.addEventListener('afterprint', () => {
+  if (state.ovPrintAll){ state.ovPrintAll = false; renderOverview(); }
+  const ps = $('#ovPage'); if (ps) ps.remove();
+  document.body.classList.remove('print-ov');
+});
+window.addEventListener('beforeunload', e => { if (state.dirty && !state.demo && !(state.dirHandle && state.canWrite)){ e.preventDefault(); e.returnValue = ''; } });
+
+(async function init(){
+  render(); navReplace();
+  if (!HAS_FSA) return;
+  const h = await idbGet('dir');
+  if (!h) return;
+  state.savedHandle = h; render();   // the start screen now offers this folder
+  try { if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted'){ state.dirHandle = h; await loadFromHandle(); } } catch (e){ /* the start screen offers it */ }
+})();
+</script>
+</body>
+</html>
