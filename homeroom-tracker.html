@@ -373,7 +373,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .occlist li.none{display:block;color:var(--muted);min-height:0;padding:8px 0}
 .occlist .when{font-weight:600}
 .occlist .what{min-width:0;color:var(--muted);overflow-wrap:anywhere}
-.occlist .acts{display:flex;align-items:center;gap:12px;justify-content:flex-end}
+.occlist .acts{display:grid;grid-template-columns:auto 5.6em 2.6em;align-items:center;gap:12px;justify-items:start}
 .occlist li.st-canceled .when,.occlist li.st-canceled .tm{color:var(--muted);text-decoration:line-through}
 .chip.held{background:var(--ok-bg);color:var(--ok)}
 .chip.missed{background:var(--bad-bg);color:var(--bad)}
@@ -400,6 +400,10 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .markpanel{border-left:4px solid var(--late)}
 .markpanel .acts-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .schtxt{font-weight:600}
+.chip.moved{background:var(--grid);color:var(--ink)}
+.rsquick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rsquick .btn{font-weight:500}
+.occmenu .pop p.lead{margin:0;color:var(--ink);font-weight:600}
 /* Caught cheating: a flag and how many times, by the student's name */
 .cheattag{display:inline-block;font-size:var(--fs-xs);font-weight:700;color:var(--bad);background:var(--bad-bg);border-radius:5px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px;line-height:1.5}
 .ovname .cheattag{margin-left:4px;font-size:.66rem;padding:0 4px}
@@ -618,7 +622,8 @@ function defaultData(){
                      //   every `every` weeks starting on `from`, until the next entry's `from` (a stop entry ends it)
     oneMarks: {},    // { 'studentKey|YYYY-MM-DD': { st, to, at, note } } one scheduled 1-on-1 (by its scheduled date): held, missed
                      //   or canceled, and moved to another date (to) or time (at)
-    meetings: {},    // { studentKey: [{ id, date, time, st, note }] } extra 1-on-1s added by hand (st '' = not marked yet)
+    meetings: {},    // { studentKey: [{ id, date, time, st, note, makeup }] } extra 1-on-1s added by hand (st '' = not marked yet;
+                     //   makeup: the date of the missed meeting it makes up for)
     status: {},      // { 'YYYY-MM-DD|hr|studentKey': { cat, L, note } } a day set by hand (kind hr: homeroom, sh: study hall)
     aliases: {},     // { zoomNameKey: studentKey }
     ignored: [],     // Zoom names that aren't students
@@ -663,7 +668,7 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.meetings))) if (k && Array.isArray(v)){
     // A meeting from before 1-on-1s had schedules has no st: it was logged because it happened.
     const ms = v.map(obj).filter(m => isDk(m.date)).map(m => ({ id: String(m.id || uid()).slice(0, 40), date: m.date, time: isHm(m.time) ? m.time : '',
-      st: own(ONE_ST, m.st) ? m.st : m.st === '' ? '' : 'held', note: String(m.note || '').slice(0, 300) }));
+      st: own(ONE_ST, m.st) ? m.st : m.st === '' ? '' : 'held', note: String(m.note || '').slice(0, 300), ...(isDk(m.makeup) ? { makeup: m.makeup } : {}) }));
     if (ms.length) out.meetings[k] = ms;
   }
   for (const [k, v] of Object.entries(obj(d.status))){
@@ -996,7 +1001,9 @@ function meetingsOf(s, A = state.lastAnalysis){
       out.push({ key, id: dk, sched: dk, date: m.to || dk, time: m.at || e.time, baseTime: e.time, st: m.st || '', mark: !!m.st, note: m.note || '', moved: !!(m.to || m.at) });
     }
   });
-  for (const m of state.data.meetings[key] || []) out.push({ key, id: m.id, sched: null, date: m.date, time: m.time || '', st: m.st || '', mark: !!m.st, note: m.note || '', extra: true });
+  for (const m of state.data.meetings[key] || []) out.push({ key, id: m.id, sched: null, date: m.date, time: m.time || '', st: m.st || '', mark: !!m.st, note: m.note || '', extra: true, makeup: m.makeup || '' });
+  // A make-up and the missed meeting it's for point at each other.
+  for (const x of out) if (x.makeup){ const was = out.find(y => !y.extra && y.date === x.makeup) || out.find(y => y !== x && y.date === x.makeup); if (was){ was.madeUp = x; x.makeupFor = was; } }
   const G = settings().lateGrace * 60000;
   for (const z of (A && A.zoomMeet.get(key)) || []){
     let o = out.find(x => x.date === z.date && x.st !== 'canceled') || out.find(x => x.date === z.date);
@@ -1018,7 +1025,7 @@ function oneStats(s){
   const lastHeld = [...all].reverse().find(o => o.st === 'held' && o.date <= today);
   const lastDone = [...all].reverse().find(o => (o.st === 'held' || o.st === 'missed') && o.date <= today);
   const sched = schedCur(s.key), cur = isCurrent(s);
-  const status = !cur ? 'left' : toMark.length ? 'mark' : lastDone && lastDone.st === 'missed' ? 'missed' : !sched ? 'none' : 'ok';
+  const status = !cur ? 'left' : toMark.length ? 'mark' : lastDone && lastDone.st === 'missed' && !lastDone.madeUp ? 'missed' : !sched ? 'none' : 'ok';
   return { all, held, missed, late: shown.filter(o => o.st === 'held' && o.lateMin).length, canceled: n('canceled'), notMarked: shown.filter(o => o.state === 'unmarked').length, pct: pct(held, held + missed), toMark, next, lastHeld, lastDone, sched, status };
 }
 const occWhen = o => `${shortDate(o.date)}${o.time ? `, ${hmText(o.time)}` : ''}`;
@@ -1026,22 +1033,47 @@ const oneShort = o => o.status === 'left' ? 'Dropped' : o.status === 'mark' ? (o
   : o.status === 'missed' ? `Missed ${monDay(o.lastDone.date)}` : o.status === 'none' ? 'No schedule' : o.next ? `${dtf({ weekday: 'short' }).format(parseDk(o.next.date))} ${monDay(o.next.date)}` : 'None coming';
 const isDue = r => r.cur && ['mark', 'missed', 'none'].includes(r.one.status);
 // One meeting in a list: when, what's known, Held / Missed / Canceled (Held and Missed wait for the day), and Edit.
+// Weekdays only: the first school day after a date.
+const nextWeekday = dk => { let d = addDays(dk, 1); while (WEEKDAYS.indexOf(parseDk(d).getDay()) < 0) d = addDays(d, 1); return d; };
+// Other students' 1-on-1s at the same date and time (to warn about a clash when rescheduling).
+function clashes(key, date, time){
+  if (!time) return [];
+  return state.data.students.filter(s => s.key !== key && onList(s, date)).filter(s => meetingsOf(s).some(o => o.date === date && o.time === time && o.st !== 'canceled')).map(s => s.name);
+}
+// Reschedule one meeting (or, for a missed one, add a make-up): one-click dates, or any date and time.
+function rescheduleMenu(o, first){
+  const id = occId(o), today = todayDk(), makeup = o.st === 'missed';
+  if (o.zoomOnly || (makeup && o.madeUp) || o.st === 'held') return '<span class="rsph" aria-hidden="true"></span>';
+  const base = o.date > today ? o.date : today, d1 = nextWeekday(base), d2 = nextWeekday(d1);
+  let wk = addDays(o.date, 7); while (wk <= today) wk = addDays(wk, 7);
+  const picks = [...new Set([d1, d2, wk])].map(dk => `<button class="btn small ghost" data-rsquick="${dk}">${esc(shortDate(dk))}${dk === addDays(today, 1) ? ' (tomorrow)' : dk === wk ? ' (next week)' : ''}</button>`).join('');
+  const lead = makeup ? `Make up the missed ${shortDate(o.date)} meeting${first ? ` with ${first}` : ''}` : `Reschedule the ${occWhen(o)} meeting${first ? ` with ${first}` : ''}`;
+  return `<details class="menu occmenu"><summary class="linkish">${makeup ? 'Make-up' : 'Reschedule'}</summary><div class="pop" role="group" aria-label="${esc(lead)}">
+      <p class="lead">${esc(lead)}</p>
+      <div class="rsquick" role="group" aria-label="Move it to">${picks}</div>
+      <div class="row3"><label>Date <input type="date" data-occdate value="${makeup ? d1 : o.date}"></label><label>Time <input type="time" data-occtime value="${esc(o.time)}"></label></div>
+      <p class="muted">${makeup ? `${esc(shortDate(o.date))} stays marked missed, and the make-up is added as its own meeting.` : o.extra ? 'Moves this meeting.' : 'Only this meeting moves. To change the regular day or time, use Change schedule.'}</p>
+      <div class="actions"><button class="btn small" data-occmove="${esc(id)}">${makeup ? 'Add the make-up' : 'Move it'}</button><button class="btn small ghost" data-menucancel>Cancel</button>${
+        o.moved ? `<button class="linkish" data-occback="${esc(id)}">Back to ${esc(shortDate(o.sched))}, ${esc(hmText(o.baseTime))}</button>` : ''}</div>
+      <p class="menumsg" role="status"></p></div></details>`;
+}
+// One meeting in a list: when, what's known, Held / Missed / Canceled (Held and Missed wait for the day), Reschedule, Note.
 function occLi(o, name){
   const id = occId(o), past = o.date <= todayDk(), first = firstName(name || (state.data.students.find(x => x.key === o.key) || {}).name || '');
+  const from = o.moved ? (o.date !== o.sched ? `${shortDate(o.sched)}, ${hmText(o.baseTime)}` : hmText(o.baseTime)) : '';
   const what = [o.state === 'unmarked' ? '<span class="chip unmarked">Not marked</span>' : o.state === 'today' ? '<span class="chip today">Today</span>' : '',
+    o.moved ? `<span class="chip moved">Rescheduled</span> from ${esc(from)}` : '', o.makeupFor ? `<span class="chip moved">Make-up</span> for ${esc(shortDate(o.makeupFor.date))}` : '',
+    o.madeUp ? `Made up ${esc(shortDate(o.madeUp.date))}` : '',
     o.lateMin ? `<span class="chip unmarked">${o.lateMin} min late</span>` : '',
     o.zoom ? esc(`Zoom: joined ${fmt(o.zoom.at)}, ${o.zoom.minutes} min${o.zoom.with.length ? `, with ${listJoin(o.zoom.with)}` : ''}`) : '', o.zoomOnly ? 'Not on the schedule' : '',
-    o.moved ? esc(`Moved from ${o.date !== o.sched ? shortDate(o.sched) : hmText(o.baseTime)}`) : '', o.extra ? 'Extra meeting' : '', o.note ? `<span class="txt">${esc(o.note)}</span>` : ''].filter(Boolean).join(' · ');
+    o.extra && !o.makeupFor ? 'Extra meeting' : '', o.note ? `<span class="txt">${esc(o.note)}</span>` : ''].filter(Boolean).join(' · ');
   const seg = Object.entries(ONE_ST).map(([k, v]) => `<button class="v-${k}" data-occmark="${esc(id)}|${k}" aria-pressed="${o.st === k}"${k !== 'canceled' && !past ? ' disabled title="After the meeting"' : o.auto && k === 'held' ? ' title="Held: it’s in a Zoom report"' : ''}>${v}</button>`).join('');
-  const menu = `<details class="menu occmenu"><summary class="linkish">Edit</summary><div class="pop" role="group" aria-label="Change the ${esc(occWhen(o))} meeting${first ? ` with ${esc(first)}` : ''}">
-      <div class="row3">${o.zoomOnly ? '' : `<label>Date <input type="date" data-occdate value="${o.date}"></label><label>Time <input type="time" data-occtime value="${esc(o.time)}"></label>`}
-        <label class="grow">Note <input type="text" data-occnote value="${esc(o.note)}" maxlength="300"></label></div>
-      <p class="muted">${o.zoomOnly ? 'A meeting found in a Zoom report, on a day with no 1-on-1 on the schedule.' : o.extra ? 'An extra meeting, added by hand.' : `Moving it keeps it as the ${esc(shortDate(o.sched))} meeting; the ones after it stay where they are.`}</p>
-      <div class="actions"><button class="btn small" data-occsave="${esc(id)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button>${
-        o.extra ? `<button class="linkish" data-occdel="${esc(id)}">Delete this meeting</button>` : o.moved ? `<button class="linkish" data-occback="${esc(id)}">Back to ${esc(shortDate(o.sched))}, ${esc(hmText(o.baseTime))}</button>` : ''}</div>
-      <p class="menumsg" role="status"></p></div></details>`;
+  const note = `<details class="menu occmenu"><summary class="linkish">Note</summary><div class="pop" role="group" aria-label="Note on the ${esc(occWhen(o))} meeting${first ? ` with ${esc(first)}` : ''}">
+      <label>Note <input type="text" data-occnote value="${esc(o.note)}" maxlength="300"></label>
+      <div class="actions"><button class="btn small" data-occnotesave="${esc(id)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button>${
+        o.extra ? `<button class="linkish" data-occdel="${esc(id)}">Delete this meeting</button>` : ''}</div></div></details>`;
   return `<li class="st-${o.state}" data-occ="${esc(id)}">${name !== undefined ? `<span><button class="name-btn" data-openstudent="${esc(o.key)}">${esc(name)}</button></span>` : ''}<span class="when">${esc(shortDate(o.date))}</span><span class="tm">${esc(hmText(o.time))}</span>
-    <span class="what">${what}</span><span class="acts noprint"><span class="markseg" role="group" aria-label="${esc(occWhen(o))}: mark it">${seg}</span>${menu}</span></li>`;
+    <span class="what">${what}</span><span class="acts noprint"><span class="markseg" role="group" aria-label="${esc(occWhen(o))}: mark it">${seg}</span>${rescheduleMenu(o, first)}${note}</span></li>`;
 }
 // The schedule form: the first meeting (its weekday is the meeting day), the time, and how often.
 function schedMenu(s, label){
@@ -1492,7 +1524,7 @@ function renderMeetings(){
       <td>${o.lastHeld ? esc(shortDate(o.lastHeld.date)) : '<span class="zero">—</span>'}</td>
       <td class="noprint">${schedMenu(s)}</td></tr>`).join('')}
     </tbody></table></div>`;
-  h += `<div class="panel logpanel noprint" style="margin-top:16px"><h2>Add a meeting</h2><p class="small muted">An extra 1-on-1 off the schedule, like a phone call or a talk after class. To move a scheduled one, use <b>Edit</b> on it instead.</p>
+  h += `<div class="panel logpanel noprint" style="margin-top:16px"><h2>Add a meeting</h2><p class="small muted">An extra 1-on-1 off the schedule, like a phone call or a talk after class. To move a scheduled one, use <b>Reschedule</b> on it instead.</p>
     ${logForm('')}${logMsgHTML('tab')}</div>`;
   // Every meeting in the dates shown, newest first.
   const past = all.flatMap(x => x.o.all.filter(o => o.date <= today && inRange(o.date) && o.state !== 'unmarked').map(o => ({ o, name: x.s.name })))
@@ -1788,7 +1820,7 @@ function helpHTML(){
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
       <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. A ⚑ by a name means the student was caught cheating, and how many times; the cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
-      <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Edit</b>, or add an extra one.</li>
+      <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
     <h3>How attendance is worked out</h3>
@@ -1810,7 +1842,7 @@ function helpHTML(){
       <dt>A student dropped, or joined late in the year.</dt><dd>On the student’s page, click <b>Dropped from homeroom?</b> (or use <b>Drop…</b> on the Setup tab) with the first day they weren’t in homeroom. Set the date they joined with <b>Edit</b> on the Setup tab. Their other days stay as they are.</dd>
       <dt>I let a student go early.</dt><dd>On the Overview, click the day and tick <b>Dismissed early</b>. Leaving before the end then isn’t counted as leaving early.</dd>
       <dt>There was no homeroom or study hall one day.</dt><dd>On the Overview, click the date at the top of its column and choose <b>Delete this day</b>. It comes off every tab and isn’t counted for anyone. Bring it back from the Setup tab.</dd>
-      <dt>A 1-on-1 got moved to another day.</dt><dd>Click <b>Edit</b> on that meeting and change its date or time. The rest of the schedule stays put. If the regular day or time changes for good, use <b>Change schedule</b> instead.</dd>
+      <dt>A 1-on-1 got moved to another day.</dt><dd>Click <b>Reschedule</b> on that meeting and pick a day, or type a date and time. Only that meeting moves, and it shows as <b>Rescheduled</b>. For a meeting the student missed, click <b>Make-up</b>: it stays missed, and the make-up is added as its own meeting. If the regular day or time changes for good, use <b>Change schedule</b> instead.</dd>
       <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download my data</b> after making changes and put the file in your folder.</dd>
       <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
   </div>`;
@@ -2230,17 +2262,28 @@ async function onClick(t){
     for (const o of list) occPatch(occId(o), { st: 'held' });
     changed(); renderCurrent(); setStatus(`Marked ${plural(list.length, 'meeting')} as held.`, 'info', { label: 'Undo', act: 'undo' }); return;
   }
-  if (d.occsave){
-    const m = t.closest('details.menu'), o = occFind(d.occsave); if (!o) return;
-    const date = o.zoomOnly ? o.date : m.querySelector('[data-occdate]').value, time = o.zoomOnly ? o.time : m.querySelector('[data-occtime]').value.slice(0, 5), note = m.querySelector('[data-occnote]').value.trim().slice(0, 300);
-    const say = text => { m.querySelector('.menumsg').textContent = text; };
+  if (d.rsquick){ const m = t.closest('details.menu'), i = m && m.querySelector('[data-occdate]'); if (i){ i.value = d.rsquick; i.focus(); } return; }
+  if (d.occmove){
+    const m = t.closest('details.menu'), o = occFind(d.occmove); if (!o) return;
+    const date = m.querySelector('[data-occdate]').value, time = m.querySelector('[data-occtime]').value.slice(0, 5), say = text => { m.querySelector('.menumsg').textContent = text; };
     if (!isDk(date)) return say('Choose a date.');
     if (time && !isHm(time)) return say('Choose a time, or leave it empty.');
-    const later = date > todayDk(), st = later && o.st !== 'canceled' ? undefined : o.st || undefined;   // a meeting moved ahead isn't held or missed yet
-    if (o.zoomOnly) occPatch(d.occsave, { note: note || undefined });
-    else if (o.extra) occPatch(d.occsave, { date, time: time || '', note, st: o.mark ? st || '' : '' });
-    else occPatch(d.occsave, { to: date === o.sched ? undefined : date, at: !time || time === o.baseTime ? undefined : time, note: note || undefined, st: o.mark ? st : undefined });
-    changed(); renderCurrent(); setStatus(date !== o.date || time !== o.time ? `Moved the meeting to ${shortDate(date)}${time ? `, ${hmText(time)}` : ''}.` : 'Saved the meeting.', 'info', { label: 'Undo', act: 'undo' }); return;
+    const s = D.students.find(x => x.key === o.key), when = `${shortDate(date)}${time ? `, ${hmText(time)}` : ''}`, clash = clashes(o.key, date, time);
+    const also = clash.length ? ` Heads up: ${listJoin(clash)} ${clash.length > 1 ? 'also meet' : 'also meets'} then.` : '';
+    if (o.st === 'missed'){
+      D.meetings[o.key] = [...(D.meetings[o.key] || []), { id: uid(), date, time: time || '', st: date < todayDk() ? 'held' : '', note: '', makeup: o.date }];
+      changed(); renderCurrent(); setStatus(`Added a make-up for ${s ? firstName(s.name) : ''}’s missed ${shortDate(o.date)} meeting: ${when}.${also}`, 'info', { label: 'Undo', act: 'undo' }); return;
+    }
+    if (date === o.date && time === o.time) return say('That’s when it already is.');
+    const st = date > todayDk() && o.st !== 'canceled' ? undefined : o.st || undefined;   // a meeting moved ahead isn't held or missed yet
+    if (o.extra) occPatch(d.occmove, { date, time: time || '', st: o.mark ? st || '' : '' });
+    else occPatch(d.occmove, { to: date === o.sched ? undefined : date, at: !time || time === o.baseTime ? undefined : time, st: o.mark ? st : undefined });
+    changed(); renderCurrent(); setStatus(`Rescheduled ${s ? firstName(s.name) : ''}’s ${shortDate(o.date)} meeting to ${when}.${also}`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.occnotesave){
+    const m = t.closest('details.menu'), o = occFind(d.occnotesave); if (!o) return;
+    const note = m.querySelector('[data-occnote]').value.trim().slice(0, 300);
+    occPatch(d.occnotesave, o.extra ? { note } : { note: note || undefined }); changed(); renderCurrent(); return;
   }
   if (d.occback){ occPatch(d.occback, { to: undefined, at: undefined }); changed(); renderCurrent(); setStatus('Put the meeting back on its scheduled day and time.', 'info', { label: 'Undo', act: 'undo' }); return; }
   if (d.occdel){
@@ -2401,7 +2444,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
   if (e.key === 'Enter' && t.tagName === 'INPUT'){
     // Enter in a small form presses its button.
-    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period], [data-chform]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occsave],[data-schsave],[data-chadd],[data-chsave]');
+    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period], [data-chform]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occmove],[data-occnotesave],[data-schsave],[data-chadd],[data-chsave]');
     if (b){ e.preventDefault(); b.click(); return; }
   }
   if (e.key === 'Escape' && state.ovMark && state.tab === 'overview' && !hadMenu && !typing && !dlg){ state.ovMark = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
