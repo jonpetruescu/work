@@ -391,6 +391,18 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .markpanel{border-left:4px solid var(--late)}
 .markpanel .acts-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .schtxt{font-weight:600}
+/* Caught cheating: a flag and how many times, by the student's name */
+.cheattag{display:inline-block;font-size:var(--fs-xs);font-weight:700;color:var(--bad);background:var(--bad-bg);border-radius:5px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px;line-height:1.5}
+.ovname .cheattag{margin-left:4px;font-size:.66rem;padding:0 4px}
+.ovt th.ovname .nmrow{display:flex;align-items:baseline;min-width:0}
+.ovt th.ovname .nmrow .name-btn{flex:0 1 auto;min-width:0}
+.fu{list-style:none;margin:0;padding:0}
+.fu li{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm)}
+.fu .when{font-weight:600;min-width:4.6em}
+.fu .txt{flex:1;min-width:8em;color:var(--muted);overflow-wrap:anywhere}
+.fuform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.fuform input,.fuform select{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 7px;font-size:var(--fs-sm)}
+.fuform input[data-chnote]{flex:1;min-width:14em}
 /* The box for a whole day, opened from its date at the top of the grid */
 .ovdh{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;border-radius:3px}
 .ovdh:hover{background:var(--paper)}
@@ -533,6 +545,9 @@ const CAT = { present: 'Present', absent: 'Absent', excused: 'Excused' };
 const CELL = { present: 'Present', absent: 'Absent', excused: 'Excused', none: 'Not required', extra: 'Came, not required',
   missing: 'No Zoom report yet', later: 'Not yet' };
 const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
+// Kinds of cheating for the cheating log, in the order the list shows them (the same as the intervention tracker's).
+const CHEAT_TYPES = { ai: 'Used AI (like ChatGPT)', app: 'Answer app or website (like Photomath)', copy: 'Copied another student', share: 'Shared answers',
+  notes: 'Phone or notes during a test or quiz', someone: 'Someone else did the work', other: 'Other' };
 const ONE_ST = { held: 'Held', missed: 'Missed', canceled: 'Canceled' };
 const EVERY = { 1: 'Every week', 2: 'Every other week', 3: 'Every 3 weeks', 4: 'Every 4 weeks' };
 const ONE_AHEAD = 28;   // scheduled 1-on-1s are listed up to four weeks ahead
@@ -598,6 +613,7 @@ function defaultData(){
     status: {},      // { 'YYYY-MM-DD|hr|studentKey': { cat, L, note } } a day set by hand (kind hr: homeroom, sh: study hall)
     aliases: {},     // { zoomNameKey: studentKey }
     ignored: [],     // Zoom names that aren't students
+    cheating: {},    // { studentKey: [{ id, date, type, note }] } times a student was caught cheating (type: a CHEAT_TYPES key)
     deletedDays: {} };   // { 'YYYY-MM-DD': { date } } dates taken off every tab: no homeroom or study hall, that time in Zoom set aside
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], oneOnOneMin: [1, 60] };
@@ -621,7 +637,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {} }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
@@ -651,6 +667,10 @@ function withDefaults(d){
     if (Object.keys(o).length) out.status[`${dk}|${kind}|${key}`] = o;
   }
   for (const [k, v] of Object.entries(obj(d.aliases))) if (k && typeof v === 'string' && v) out.aliases[k] = v;
+  for (const [k, v] of Object.entries(obj(d.cheating))) if (k && Array.isArray(v)){
+    const xs = v.map(obj).filter(x => isDk(x.date)).map(x => ({ id: String(x.id || uid()).slice(0, 40), date: x.date, type: own(CHEAT_TYPES, x.type) ? x.type : 'other', note: String(x.note || '').slice(0, 300) }));
+    if (xs.length) out.cheating[k] = xs;
+  }
   for (const [k, v] of Object.entries(obj(d.oneSched))) if (k && Array.isArray(v)){
     const es = v.map(obj).filter(e => isDk(e.from) && (e.stop === true || isHm(e.time)))
       .map(e => e.stop === true ? { from: e.from, stop: true } : { from: e.from, time: e.time, every: [1, 2, 3, 4].includes(Number(e.every)) ? Number(e.every) : 2 })
@@ -675,7 +695,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -1096,7 +1116,7 @@ function renderOverview(){
     const head = idx.map(n => { const d = days[n], g = A.classes.get(`${d.dk}|${d.kind}`);
       const tip = `${KIND[d.kind]}, ${longDate(d.dk)}, ${winText(d.kind)}. ${g ? `Zoom report: ${[...g.files].join(', ')}` : d.dk > today ? 'Not yet.' : 'No Zoom report yet.'}`;
       return `<th scope="col" data-dk="${d.dk}" class="${wkStart[n] ? 'wk' : ''}${d.dk === today ? ' today' : ''}${state.ovDay === d.dk ? ' dsel' : ''}" title="${esc(tip)}"><button class="ovdh" data-ovdh="${d.dk}" tabindex="-1" aria-label="${esc(KIND[d.kind])}, ${esc(longDate(d.dk))}: check or delete this day" aria-expanded="${state.ovDay === d.dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(d.dk)).slice(0, 2))}</span>${parseDk(d.dk).getDate()}<span class="ovkind ${d.kind}">${d.kind.toUpperCase()}</span></button></th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="nmrow"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${cheatTag(r.key)}</span>${
       r.removed ? `<span class="ovleft">${r.removed > today ? 'leaving' : 'dropped'} ${esc(monDay(r.removed))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
       const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
@@ -1252,6 +1272,41 @@ function pinMonths(sc){
   for (const th of sc.querySelectorAll('th.ovmo')){ const sp = th.firstElementChild; sp.style.visibility = th.getBoundingClientRect().right - left < sp.offsetWidth + 8 ? 'hidden' : ''; }
 }
 
+/* ---------------- Cheating log ----------------
+   Each time a student was caught cheating: its date, kind and a note. Kept only in the folder's data file, flagged by the
+   student's name (⚑ and how many times), and never printed: the log and the flag are left off every printout. */
+const cheatOf = key => [...(state.data.cheating[key] || [])].sort((a, b) => b.date.localeCompare(a.date));
+const cheatType = x => CHEAT_TYPES[x.type] || 'Other';
+const cheatTag = key => { const xs = cheatOf(key); if (!xs.length) return '';
+  const said = `Caught cheating ${plural(xs.length, 'time')}. Last: ${monDay(xs[0].date)}, ${cheatType(xs[0])}`;
+  return `<span class="cheattag noprint" title="${esc(said)}" aria-label="${esc(said)}">⚑ ${xs.length}</span>`; };
+const chInputs = x => `<input type="date" data-chdate value="${esc(x.date)}" aria-label="Date">
+  <select data-chtype aria-label="Kind">${Object.entries(CHEAT_TYPES).map(([k, l]) => `<option value="${k}"${x.type === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+  <input type="text" data-chnote maxlength="300" placeholder="What happened (optional)" value="${esc(x.note)}" aria-label="What happened">`;
+const chLine = x => `<span class="when">${esc(monDay(x.date))}</span><b>${esc(cheatType(x))}</b><span class="txt">${esc(x.note)}</span>`;
+const readCheat = form => { const t = form.querySelector('[data-chtype]').value;
+  return { date: form.querySelector('[data-chdate]').value, type: own(CHEAT_TYPES, t) ? t : 'other', note: form.querySelector('[data-chnote]').value.replace(/\s+/g, ' ').trim().slice(0, 300) }; };
+// One student's log, on their page: each time (Edit, Delete) and a form to log another.
+function cheatSection(key){
+  const all = cheatOf(key);
+  return `<section class="rsec noprint" data-chsection data-chkey="${esc(key)}"><h3>Cheating log</h3>
+    ${all.length ? `<ul class="fu">${all.map(x => state.chEdit === x.id
+      ? `<li class="fuform" data-chform data-chkey="${esc(key)}" data-chid="${esc(x.id)}">${chInputs(x)}<button class="btn small" data-chsave="${esc(x.id)}">Save</button><button class="btn small ghost" data-chcancel>Cancel</button></li>`
+      : `<li>${chLine(x)}<button class="linkish" data-chedit="${esc(x.id)}">Edit</button><button class="linkish" data-chdel="${esc(x.id)}">Delete</button></li>`).join('')}</ul>`
+      : '<p class="small muted">Nothing logged.</p>'}
+    <div class="fuform" data-chform data-chkey="${esc(key)}">${chInputs({ date: todayDk(), type: 'ai', note: '' })}<button class="btn small" data-chadd>Log it</button></div>
+    <p class="small muted" style="margin:8px 0 0">Kept only in your folder’s data file, and never printed.</p></section>`;
+}
+// The whole class's log, on the Students tab: log a time for any student, and every time logged, newest first.
+function cheatPanel(A){
+  const log = A.students.flatMap(s => cheatOf(s.key).map(x => ({ ...x, key: s.key, name: s.name }))).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  const n = new Set(log.map(x => x.key)).size, opts = roster().filter(isCurrent).map(s => `<option value="${esc(s.key)}">${esc(s.name)}</option>`).join('');
+  return `<div class="panel noprint" style="margin-top:16px"><h2>Cheating log</h2>
+    <p class="small muted" style="margin:4px 0 0">${log.length ? `${plural(log.length, 'time')} for ${plural(n, 'student')}. Change or delete one on the student’s page.` : 'Nothing logged yet.'} Kept only in your folder’s data file, and never printed.</p>
+    <div class="fuform" data-chform><select data-chstudent aria-label="Student"><option value="">Student…</option>${opts}</select>${chInputs({ date: todayDk(), type: 'ai', note: '' })}<button class="btn small" data-chadd>Log it</button></div>
+    ${log.length ? `<ul class="fu" style="margin-top:10px">${log.map(x => `<li><span class="when">${esc(monDay(x.date))}</span><button class="name-btn" data-openstudent="${esc(x.key)}">${esc(x.name)}</button><b>${esc(cheatType(x))}</b><span class="txt">${esc(x.note)}</span></li>`).join('')}</ul>` : ''}</div>`;
+}
+
 /* ---------------- Students tab ---------------- */
 function meter(v){
   if (v === null) return '<span class="zero">—</span>';
@@ -1291,7 +1346,7 @@ function renderStudents(){
   if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
   for (const r of list){
     const need = needsSH(r.key, today) ? openPeriod(r.key) : null;
-    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${r.removed && !r.cur ? `<span class="chip left">Dropped ${esc(monDay(r.removed))}</span>` : ''}</span></td>
+    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${cheatTag(r.key)}${r.removed && !r.cur ? `<span class="chip left">Dropped ${esc(monDay(r.removed))}</span>` : ''}</span></td>
       <td>${meter(r.hr.pct)}<span class="sub">${esc(attText(r.hr, 'day') || 'No days counted yet')}</span></td>
       <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Needs study hall since ${esc(monDay(need.from))}</span>` : ''}</td>
       <td>${r.one.pct !== null || r.one.canceled ? `${meter(r.one.pct)}<span class="sub">${esc(oneText(r.one))}</span>` : '<span class="zero">—</span>'} ${oneChip(r.one)}</td>
@@ -1299,17 +1354,18 @@ function renderStudents(){
   }
   h += `</tbody></table></div>
     <p class="small muted" style="margin-top:10px">Homeroom: days present out of the homeroom days counted. Study hall: days present out of the days each student needed study hall. Excused days and days with no Zoom report aren’t counted. 1-on-1s: meetings held out of those held or missed in these dates; canceled ones aren’t counted.</p>`;
+  h += cheatPanel(A);
   el.innerHTML = h;
 }
 function exportCSV(){
   const A = state.lastAnalysis || analyze(), { period, all } = studentList(A), today = todayDk();
   const rows = [['Student', 'Homeroom days present', 'Homeroom days counted', 'Homeroom %', 'Homeroom excused', 'Homeroom late or left early', 'Homeroom dismissed early',
     'Study hall days present', 'Study hall days required', 'Study hall %', 'Study hall excused', 'Study hall dismissed early', 'Needs study hall now', 'Needs study hall since',
-    '1-on-1 schedule', '1-on-1s held', '1-on-1s missed', '1-on-1s canceled', '1-on-1s not marked', '1-on-1 %', 'Last 1-on-1 held', 'Next 1-on-1', 'On the list since', 'Dropped starting', 'Dates']];
+    '1-on-1 schedule', '1-on-1s held', '1-on-1s missed', '1-on-1s canceled', '1-on-1s not marked', '1-on-1 %', 'Last 1-on-1 held', 'Next 1-on-1', 'On the list since', 'Dropped starting', 'Times caught cheating', 'Last time caught', 'Kind', 'Dates']];
   for (const r of [...all].sort((a, b) => a.name.localeCompare(b.name))){
     const p = needsSH(r.key, today) ? openPeriod(r.key) : null;
     rows.push([r.name, r.hr.att, r.hr.n, r.hr.pct ?? '', r.hr.exc, r.hr.L, r.hr.fin, r.sh.att, r.sh.n, r.sh.pct ?? '', r.sh.exc, r.sh.fin, p ? 'Yes' : 'No', p ? p.from : '',
-      r.one.sched ? schedText(r.one.sched) : '', r.one.held, r.one.missed, r.one.canceled, r.one.notMarked, r.one.pct ?? '', r.one.lastHeld ? r.one.lastHeld.date : '', r.one.next ? `${r.one.next.date}${r.one.next.time ? ' ' + r.one.next.time : ''}` : '', r.added || '', r.removed || '', fmtPeriod(period)]);
+      r.one.sched ? schedText(r.one.sched) : '', r.one.held, r.one.missed, r.one.canceled, r.one.notMarked, r.one.pct ?? '', r.one.lastHeld ? r.one.lastHeld.date : '', r.one.next ? `${r.one.next.date}${r.one.next.time ? ' ' + r.one.next.time : ''}` : '', r.added || '', r.removed || '', ...(c => [c.length || '', c[0] ? c[0].date : '', c[0] ? cheatType(c[0]) : ''])(cheatOf(r.key)), fmtPeriod(period)]);
   }
   downloadFile(`homeroom-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
@@ -1337,7 +1393,7 @@ function renderStudentPage(A, el){
       <button class="linkish noprint" data-stuback="${esc(s.key)}">Undo</button></p>` : '';
   const tile = (label, value, sub, cls = '') => `<div class="tile${cls}"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div><div class="s">${esc(sub)}</div></div>`;
   h += `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow printonly">Homeroom attendance</div>
-    <div class="rname"><h2 tabindex="-1">${esc(r.name)}</h2>${links}</div>${dropLine}
+    <div class="rname"><h2 tabindex="-1">${esc(r.name)}${cheatTag(r.key)}</h2>${links}</div>${dropLine}
     <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${settings().teacherName ? ` · ${esc(settings().teacherName)}` : ''}</span></p>
     <div class="rtiles">${tile('Homeroom', r.hr.pct === null ? '—' : `${r.hr.pct}%`, attText(r.hr, 'day') || 'No days counted yet')}
       ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'required day') || 'Not required in these dates')}
@@ -1356,7 +1412,7 @@ function renderStudentPage(A, el){
   const notes = Object.entries(state.data.status).filter(([k, v]) => v.note && k.split('|').slice(2).join('|') === r.key).map(([k, v]) => ({ dk: k.slice(0, 10), kind: k.split('|')[1], note: v.note }))
     .sort((a, b) => b.dk.localeCompare(a.dk));
   h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
-    : '<p class="small muted">No notes yet. To add one, click a day on the Overview.</p>'}</section></article>`;
+    : '<p class="small muted">No notes yet. To add one, click a day on the Overview.</p>'}</section>${cheatSection(r.key)}</article>`;
   el.innerHTML = h;
 }
 function dayStrip(cells, label, empty = 'No days in these dates.'){
@@ -1551,6 +1607,7 @@ function renameKey(oldK, newK){
   for (const k of Object.keys(D.status)){ const [dk, kind, ...rest] = k.split('|'); if (rest.join('|') === oldK){ const nk = `${dk}|${kind}|${newK}`; if (!D.status[nk]) D.status[nk] = D.status[k]; delete D.status[k]; } }
   if (D.studyHall[oldK]){ D.studyHall[newK] = normPeriods([...(D.studyHall[newK] || []), ...D.studyHall[oldK]]); delete D.studyHall[oldK]; }
   if (D.meetings[oldK]){ D.meetings[newK] = [...(D.meetings[newK] || []), ...D.meetings[oldK]]; delete D.meetings[oldK]; }
+  if (D.cheating[oldK]){ D.cheating[newK] = [...(D.cheating[newK] || []), ...D.cheating[oldK]]; delete D.cheating[oldK]; }
   if (D.oneSched[oldK]){ if (!D.oneSched[newK]) D.oneSched[newK] = D.oneSched[oldK]; delete D.oneSched[oldK]; }
   for (const k of Object.keys(D.oneMarks)){ const i = k.lastIndexOf('|'); if (k.slice(0, i) === oldK){ const nk = `${newK}|${k.slice(i + 1)}`; if (!D.oneMarks[nk]) D.oneMarks[nk] = D.oneMarks[k]; delete D.oneMarks[k]; } }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
@@ -1676,6 +1733,7 @@ function sampleFolder(){
   const club = back(2);   // five students: not a 1-on-1
   file(`zoom-chess-club-${mdY(club)}.csv`, club, [[teacher, 15 * 60 + 28, 16 * 60 + 18], ...['Amara Okafor', 'Ben Whitfield', 'Dev Patel', 'Elif Demir', 'Hugo Martins'].map(n => [n, 15 * 60 + 30, 16 * 60 + 15])]);
   const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [], oneSched, oneMarks,
+    cheating: { 'ben whitfield': [{ id: 'ch1', date: back(6), type: 'ai', note: 'Essay answer pasted from ChatGPT' }], 'isabel cruz': [{ id: 'ch2', date: back(15), type: 'copy', note: 'Same answers as another student on the quiz' }, { id: 'ch3', date: back(3), type: 'app', note: '' }] },
     meetings: { 'grace lin': [{ id: 'sample1', date: back(4), time: '12:15', st: 'held', note: 'Talked at lunch about her science project' }] },
     status: { [`${mons[3]}|hr|dev patel`]: { cat: 'excused', note: 'Doctor’s appointment' }, [`${mons[1]}|hr|ben whitfield`]: { note: 'Wi‑Fi trouble at home' } } };
   return { files, dataText: JSON.stringify(data) };
@@ -1703,7 +1761,7 @@ function helpHTML(){
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
-      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Click a name for the student’s page, where you can change the dates they need study hall, see their meetings and notes, and print it.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. A ⚑ by a name means the student was caught cheating, and how many times; the cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Edit</b>, or add an extra one.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
@@ -1902,7 +1960,7 @@ function undo(redo){
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
   if (!state.loaded || !from.length) return;
   to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
-  Object.assign(state, { ovSel: null, ov1: null, ovDay: null, dropEdit: null, logMsg: null });
+  Object.assign(state, { ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, logMsg: null });
   if (state.student && !state.data.students.some(s => s.key === state.student)) state.student = null;
   state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
   render();
@@ -1943,7 +2001,7 @@ function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e
 const navCanGoBack = () => !!(history.state && history.state.seq > 0 && history.state.load === NAV_LOAD);
 function openStudent(key){
   navReplace();
-  state.studentTab = state.tab === 'students' ? null : state.tab; state.tab = 'students'; state.student = key; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.logMsg = null;
+  state.studentTab = state.tab === 'students' ? null : state.tab; state.tab = 'students'; state.student = key; state.chEdit = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.logMsg = null;
   navPush(); render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
 }
@@ -2106,6 +2164,28 @@ async function onClick(t){
     const left = [...document.querySelectorAll('[data-undelday]')], f = left[Math.min(Math.max(i, 0), left.length - 1)]; if (f) f.focus(); return;
   }
   // 1-on-1s
+  // The cheating log: logged on a student's page, or on the Students tab (pick the student there).
+  if (has('data-chadd')){
+    const form = t.closest('[data-chform]'), pick = form.querySelector('[data-chstudent]'), key = form.dataset.chkey || (pick && pick.value), x = readCheat(form);
+    if (!key){ pick.focus(); setStatus('Pick the student first.', 'info'); return; }
+    if (!isDk(x.date)){ form.querySelector('[data-chdate]').focus(); return; }
+    (D.cheating[key] = D.cheating[key] || []).push({ id: uid(), ...x });
+    const s = D.students.find(y => y.key === key);
+    changed(); renderCurrent(); setStatus(`Logged for ${s ? s.name : key}: ${cheatType(x).toLowerCase()}, ${monDay(x.date)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.chedit){ state.chEdit = d.chedit; renderCurrent(); const i = visible('[data-chid] [data-chnote]'); if (i) i.focus(); return; }
+  if (d.chsave){
+    const form = t.closest('[data-chform]'), x = readCheat(form), it = (D.cheating[form.dataset.chkey] || []).find(y => y.id === d.chsave);
+    if (it && isDk(x.date)){ Object.assign(it, x); changed(); }
+    state.chEdit = null; renderCurrent(); return;
+  }
+  if (has('data-chcancel')){ state.chEdit = null; renderCurrent(); return; }
+  if (d.chdel){
+    const key = t.closest('[data-chsection]').dataset.chkey;
+    D.cheating[key] = (D.cheating[key] || []).filter(y => y.id !== d.chdel);
+    if (!D.cheating[key].length) delete D.cheating[key];
+    changed(); renderCurrent(); setStatus('Deleted from the cheating log.', 'info', { label: 'Undo', act: 'undo' }); return;
+  }
   // 1-on-1s: mark, move, delete; schedules
   if (d.occmark){
     const i = d.occmark.lastIndexOf('|'), id = d.occmark.slice(0, i), v = d.occmark.slice(i + 1), o = occFind(id); if (!o) return;
@@ -2152,7 +2232,7 @@ async function onClick(t){
   // Students
   if (d.openstudent) return openStudent(d.openstudent);
   if (has('data-studentback')) return studentBack();
-  if (d.stepstudent){ state.student = d.stepstudent; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
+  if (d.stepstudent){ state.student = d.stepstudent; state.chEdit = null; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
   // Study hall
   if (d.shon || d.shoff){
     const m = t.closest('details.menu'), v = m.querySelector('[data-shdate]').value, key = d.shon || d.shoff, s = state.lastAnalysis.byKey.get(key);
@@ -2207,8 +2287,8 @@ async function onClick(t){
   if (d.stuback){ const s = D.students.find(x => x.key === d.stuback); if (!s) return; delete s.removed; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' }); return; }
   if (d.studelete){
     const k = d.studelete, s = D.students.find(x => x.key === k); if (!s) return;
-    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates and 1-on-1s. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
-    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.oneSched[k];
+    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates, 1-on-1s and cheating log. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
+    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.oneSched[k]; delete D.cheating[k];
     for (const x of Object.keys(D.oneMarks)) if (x.slice(0, x.lastIndexOf('|')) === k) delete D.oneMarks[x];
     for (const x of Object.keys(D.status)) if (x.split('|').slice(2).join('|') === k) delete D.status[x];
     for (const z of Object.keys(D.aliases)) if (D.aliases[z] === k) delete D.aliases[z];
@@ -2288,7 +2368,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
   if (e.key === 'Enter' && t.tagName === 'INPUT'){
     // Enter in a small form presses its button.
-    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occsave],[data-schsave]');
+    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period], [data-chform]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occsave],[data-schsave],[data-chadd],[data-chsave]');
     if (b){ e.preventDefault(); b.click(); return; }
   }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
