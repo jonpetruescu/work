@@ -1665,7 +1665,8 @@ function dateInName(name, year){
   let m, num = null, month = null;
   if ((m = name.match(/(?:^|\D)(20\d\d)([-_])(\d{1,2})\2(\d{1,2})(?!\d)/))) num = real(+m[1], +m[3], +m[4]);
   else if ((m = name.match(/(?:^|\D)(\d{1,2})([-_])(\d{1,2})\2(20\d\d)(?!\d)/))) num = real(+m[4], +m[1], +m[3]);
-  else if ((m = name.match(/(?:^|\D)(\d{1,2})([-_])(\d{1,2})\2([23]\d)(?!\d)/))) num = real(2000 + +m[4], +m[1], +m[3]);   // 11-16-26
+  // 11-16-26: only when the year ends the run of numbers (so "Week-10-10-26-26" is Oct 26) and is within a year of the file's.
+  else if ((m = name.match(/(?:^|\D)(\d{1,2})([-_])(\d{1,2})\2([23]\d)(?![-_]?\d)/)) && Math.abs(2000 + +m[4] - year) <= 1) num = real(2000 + +m[4], +m[1], +m[3]);
   if ((m = name.toLowerCase().match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)[ _-]?(\d{1,2})(?!\d)/))) month = real(year, mon.indexOf(m[1]) + 1, +m[2]);
   return { num, month };
 }
@@ -1802,7 +1803,7 @@ async function sheetFile(name, file){
   let sheet;
   try { sheet = await readXlsx(file); }
   catch (e){ sheet = { error: e && e.message === 'no-unzip' ? 'This browser can’t open .xlsx files. Open it in Excel or Google Sheets and save it as a CSV with the same name.'
-    : 'This spreadsheet couldn’t be opened. Open it in Excel or Google Sheets and save it as a CSV with the same name.' }; }
+    : 'This spreadsheet couldn’t be opened. If it’s a DeltaMath export, open it in Excel or Google Sheets and save it as a CSV with the same name.' }; }
   return { name, text: '', sheet, modified: file.lastModified };
 }
 
@@ -1830,7 +1831,7 @@ function parseDeltaMath(name, rows, created, modified){
     const scores = new Map(); aCols.forEach((i, k) => { const v = num(r[i]); if (v !== null) scores.set(titles[k], v); });
     if (!aCols.length){ const v = num(r[col(/^complete$/)]); if (v !== null) scores.set('Complete', v); }   // no assignment columns: how much is complete
     const wd = cls >= 0 ? sectionWeekday(r[cls]) : null; if (wd) wds.set(wd, (wds.get(wd) || 0) + 1);
-    out.push({ name: nm, email: mail ? ln : email >= 0 ? r[email] || '' : '', scores });
+    out.push({ name: nm, email: mail ? ln : email >= 0 ? r[email] || '' : '', scores, wd });
   }
   if (!out.length) return { error: 'This looks like a DeltaMath export, but no student rows were found in it.' };
   const wd = [...wds].sort((a, b) => b[1] - a[1])[0]?.[0] || null, back = dk => { if (!wd) return dk; while (DAYS[parseDk(dk).getDay()] !== wd) dk = addDays(dk, -1); return dk; };
@@ -1839,7 +1840,13 @@ function parseDeltaMath(name, rows, created, modified){
   const [dk, dated] = nd.num ? [nd.num, 'the file name'] : exp ? [back(exp), how('the day it was exported')] : nd.month ? [nd.month, 'the file name']
     : modified ? [back(dkOf(new Date(modified))), how('the day the file was saved')] : [];
   if (!dk) return { error: 'This DeltaMath export has no date. Put the class date in the file name, like deltamath-11-16-2026.xlsx.' };
-  return { deltamath: true, dk, dated, assignments: titles, rows: out };
+  // One export can hold several groups (a class name per row, like "Monday" and "Wednesday"): each counts for its own weekday
+  // in that week, and not for a day after the export was made.
+  const made = exp || nd.num || (modified ? dkOf(new Date(modified)) : dk), groups = new Map();
+  for (const r of out){ const g = r.wd || wd; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(r); }
+  const parts = [...groups].map(([g, rows]) => g === wd ? { dk, dated, rows } : { dk: addDays(weekKey(dk), (DAYS.indexOf(g) + 6) % 7), dated: 'the class day in the class name', rows })
+    .filter(p => p.dk === dk || p.dk <= made);
+  return { deltamath: true, dk, dated, assignments: titles, rows: out, parts };
 }
 
 // A gradebook export (a CSV with "grades" and the date in its name): each student's current grade.
@@ -1876,7 +1883,7 @@ function parsedFile(f){
   if (!f.parsed){
     const form = () => parseFormativeFile(f.name, f.text, f.modified);
     let p = /\bcomplete\b/i.test(String(f.text).slice(0, 3000)) ? parseDeltaMath(f.name, parseCSV(String(f.text).replace(/^\ufeff/, '')), '', f.modified) : null;
-    if (!p) p = /formative/i.test(f.name) ? form() : /grade/i.test(f.name) ? parseGradesFile(f.name, f.text, f.modified) : null;
+    if (!p || (p.error && !p.deltamath)) p = (/formative/i.test(f.name) ? form() : /grade/i.test(f.name) ? parseGradesFile(f.name, f.text, f.modified) : null) || p;
     if (!p || (p.error && !p.deltamath)){ const z = parseZoomFile(f.name, f.text); p = !z.error ? z : p || form() || z; }
     f.parsed = p;
   }
@@ -1931,7 +1938,7 @@ function analyze(){
     const z = parsedFile(f);
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
     if (z.skip) continue;
-    if (z.deltamath){ dms.push({ name: f.name, ...z }); continue; }
+    if (z.deltamath){ for (const part of z.parts || [z]) dms.push({ name: f.name, ...z, ...part }); continue; }
     if (z.formative){ for (const part of z.parts || [z]) forms.push({ name: f.name, ...z, ...part }); continue; }
     if (z.grades){ gradeFiles.push({ name: f.name, ...z }); continue; }
     for (const r of z.rows){
@@ -1976,19 +1983,21 @@ function analyze(){
   // work on a day is how far each score went up since the last earlier export that listed them on it, out of what they had
   // left on it then (all 100% the first time it shows up). Files from one day count together, with each student's best score.
   // A day where no one did any work (an export made before class, or the same one again) isn't counted.
-  const dmByDk = new Map(), dmDays = new Map(), last = new Map();
+  const dmByDk = new Map(), dmDays = new Map(), last = new Map(), dmUnmatched = new Map(), dmSkipped = new Set();
   for (const D of dms){
-    if (state.data.deletedDays[D.dk]) continue;
     if (!dmDays.has(D.dk)) dmDays.set(D.dk, { files: [], dated: new Set(), byKey: new Map(), unmatched: new Map() });
     const g = dmDays.get(D.dk), match = matchFor(D.dk);
-    g.files.push(D.name); g.dated.add(D.dated);
+    if (!g.files.includes(D.name)) g.files.push(D.name);
+    g.dated.add(D.dated);
     for (const r of D.rows){
-      const m = match(r.name, r.email);
-      if (!m){ const rk = normKey(r.name); if (rk && !ignored.has(rk)) g.unmatched.set(rk, { rk, raw: r.name, email: r.email }); continue; }
-      if (deleted.has(m.key)) continue;
-      const sc = g.byKey.get(m.key) || new Map();
+      // A first name with an email (DeltaMath's Last held the email) keeps the email in its name, so two students with the
+      // same first name stay apart. A name that matches no one keeps its own scores ("?name"), so linking it changes only its days.
+      const raw = r.email && !r.name.includes(' ') ? `${r.name} (${r.email})` : r.name, m = match(raw, r.email), rk = normKey(raw);
+      if (m ? deleted.has(m.key) : !rk || ignored.has(rk)) continue;
+      if (!m) g.unmatched.set(rk, { rk, raw, email: r.email });
+      const key = m ? m.key : `?${rk}`, sc = g.byKey.get(key) || new Map();
       for (const [t, v] of r.scores) sc.set(t, Math.max(sc.get(t) ?? 0, v));
-      g.byKey.set(m.key, sc);
+      g.byKey.set(key, sc);
     }
   }
   for (const [dk, g] of [...dmDays].sort((a, b) => a[0].localeCompare(b[0]))){
@@ -1997,11 +2006,15 @@ function analyze(){
       const parts = [...sc].map(([title, score]) => { const p = last.get(`${title}|${key}`), before = p ? p.score : 0;
         return { title, score, gain: Math.max(0, score - before), left: Math.max(0, 100 - before), since: p ? p.dk : null }; });
       const work = parts.reduce((a, p) => a + p.gain, 0), left = parts.reduce((a, p) => a + p.left, 0);
-      byKey.set(key, { work, left, parts }); any = any || work > 0;
+      if (key[0] !== '?') byKey.set(key, { work, left, parts });
+      any = any || work > 0;
     }
+    const before = [...last.values()].some(x => x.dk < dk);
     for (const [key, sc] of g.byKey) for (const [title, score] of sc) last.set(`${title}|${key}`, { dk, score });
-    if (any) dmByDk.set(dk, { dk, files: g.files, dated: g.dated, byKey, unmatched: g.unmatched });
-    else for (const name of g.files) fileErrors.push({ name, error: `No one has DeltaMath work in it${[...last.values()].some(x => x.dk < dk) ? ' since the export before it' : ' yet'}, so it isn’t counted for ${shortDate(dk)}.` });
+    if (state.data.deletedDays[dk]) continue;   // a deleted day isn't a class day, but its scores are still where the next export starts from
+    for (const u of g.unmatched.values()) dmUnmatched.set(u.rk, u);
+    if (any) dmByDk.set(dk, { dk, files: g.files, dated: g.dated, byKey });
+    else { dmSkipped.add(dk); for (const name of g.files) fileErrors.push({ name, error: `No one has DeltaMath work in it${before ? ' since the export before it' : ' yet'}, so it isn’t counted for ${shortDate(dk)}.` }); }
   }
   // Grades: each student's grade from the newest grades file that lists them (newest by the date in its name).
   const grades = new Map(), gradeUnmatched = new Map();
@@ -2014,7 +2027,7 @@ function analyze(){
       if (!deleted.has(m.key) && !grades.has(m.key)) grades.set(m.key, { grade: r.grade, file: G.name, dk: G.dk });
     }
   }
-  return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk, dmByDk,
+  return { sched, versions, schedFor, weekSched, roster, nameOf, days, dayByDk: new Map(days.map(d => [d.dk, d])), fileErrors, formByDk, dmByDk, dmUnmatched, dmSkipped,
     grades, gradeUnmatched, gradeFiles };
 }
 
@@ -2622,7 +2635,11 @@ function dmOf(A, key, dk){
 const dmWork = d => { const n = plural(d.parts.length, 'assignment');
   return !d.left ? `all ${d.parts.length > 1 ? `${n} were` : 'of it was'} already complete` : !d.work ? `no work that day on ${n}`
     : `completed ${Math.max(1, Math.round(d.share * 100))}% of ${d.again ? `what was left on ${n}` : n}`; };
-const dmEach = d => d.parts.map(p => `${p.title}: ${p.score}%${p.since ? p.gain ? ` (up ${p.gain} since ${shortDate(p.since)})` : ` (no change since ${shortDate(p.since)})` : ''}`);
+const dmEach = d => { const line = p => `${p.title}: ${p.score}%${p.since ? p.gain ? ` (up ${p.gain} since ${shortDate(p.since)})` : ` (no change since ${shortDate(p.since)})` : ''}`;
+  const same = d.parts.filter(p => p.since && !p.gain);   // two or more that didn't change are one line, so the ones with work show
+  return same.length < 2 ? d.parts.map(line) : [...d.parts.filter(p => !same.includes(p)).map(line), `${plural(same.length, 'more assignment')}: no change since the last export`]; };
+// Why DeltaMath doesn't count for a student who was in Zoom that day.
+const dmWhy = x => x.suppReqMin > 0 ? 'not in Zoom during the support hour' : 'not on the schedule for the support hour';
 // IEP and 504 plans. Kept only in the folder's data file: never sent to the Google Sheet or put in a message to a family. They
 // show on the Reports tab, and on a student's printed report or copied summary only when "IEP/504 and accommodations" is checked.
 const PLAN_NAME = { iep: 'IEP', '504': '504 plan' };
@@ -2730,7 +2747,7 @@ function cellState(A, key, dk, recs){
       base = share === null ? 'engaged' : share === 0 ? 'away' : share < eng ? 'idle' : 'engaged';
       // Late is an L even on a day they finished work; leaving that day isn't, since they were let go.
       auto.L = hasFlag(rec, 'late') || (!hasFlag(rec, 'fin') && ['early', 'soft'].some(k => hasFlag(rec, k)));
-      fact = f || dOn ? '' : A.dmByDk.size ? 'No Formative or DeltaMath that day' : 'No Formative that day';
+      fact = f || dOn ? '' : A.dmByDk.has(dk) ? `No Formative that day; DeltaMath not counted (${dmWhy(rec)})` : A.dmByDk.size ? 'No Formative or DeltaMath that day' : 'No Formative that day';
     }
   } else base = state.data.noClass[dk] ? 'noclass' : dk < todayDk() ? 'missing' : 'later';
   const cat = ov.cat in OV_CAT ? ov.cat : base;
@@ -2762,8 +2779,9 @@ function ovStats(cells){
   const today = todayDk(); let n = 0, att = 0, eng = 0, exc = 0, L = 0;
   for (const c of cells){
     if (!dayCounts(c, today)) continue;
+    if (c.L) L++;   // every L the grid shows on a day that counts
     if (c.cat === 'excused'){ exc++; continue; }
-    n++; if (c.cat !== 'absent'){ att++; if (c.L) L++; } if (c.cat === 'engaged') eng++;
+    n++; if (c.cat !== 'absent') att++; if (c.cat === 'engaged') eng++;
   }
   return { n, att, eng, exc, L, abs: n - att, engPct: pct(eng, n), attPct: pct(att, n) };
 }
@@ -2772,7 +2790,7 @@ const ovShowOn = () => { const S = state.ovShow; return S.who !== 'all' || S.und
 function ovPct(r){
   const S = state.ovShow; if (!r.st || (!S.under && S.order === 'name')) return '';
   const a = S.order === 'attended', v = a ? r.st.attPct : r.st.engPct;
-  return `<span class="ovpct" title="${esc(r.st.n ? `${a ? 'Attended' : 'Engaged on'} ${a ? r.st.att : r.st.eng} of ${plural(r.st.n, 'class day')}` : 'No class days in these dates')}">${v === null ? '–' : `${v}%`}</span>`;
+  return `<span class="ovpct" title="${esc(r.st.n ? `${a ? 'Attended' : 'Engaged on'} ${a ? r.st.att : r.st.eng} of ${plural(r.st.n, 'class day')}` : r.st.exc ? `All ${plural(r.st.exc, 'class day')} excused` : 'No class days in these dates')}">${v === null ? '–' : `${v}%`}</span>`;
 }
 function ovShowMenu(){
   const S = state.ovShow, who = WHO.find(w => w[0] === S.who) || WHO[0], ord = OV_ORDER.find(o => o[0] === S.order) || OV_ORDER[0];
@@ -2823,7 +2841,7 @@ function renderOverview(){
   const unm = new Map(); for (const g of A.formByDk.values()) for (const u of g.unmatched.values()) unm.set(u.rk, u);
   if (unm.size) h += `<div class="notice"><b>Unmatched Formative names.</b> Link each to a student once.
       ${linkRows([...unm.values()].map(u => ({ ...u, facts: u.email })))}</div>`;
-  const dun = new Map(); for (const g of A.dmByDk.values()) for (const u of g.unmatched.values()) if (!unm.has(u.rk)) dun.set(u.rk, u);
+  const dun = new Map([...A.dmUnmatched].filter(([rk]) => !unm.has(rk)));
   if (dun.size) h += `<div class="notice"><b>Unmatched DeltaMath names.</b> Link each to a student once.
       ${linkRows([...dun.values()].map(u => ({ ...u, facts: u.email })))}</div>`;
   if (dates.length && rows.length) h += `<p class="printonly ovprint">Attendance, ${esc(fmtPeriod({ from: dates[0], to: dates[dates.length - 1] }))} · ${plural(rows.length, 'student')}${
@@ -2876,7 +2894,9 @@ function renderOverview(){
   };
   h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}
     ${selCell ? ovEditor(A, selCell, rows.find(r => r.key === selCell.key).name) : ''}${state.ovDay ? ovDayBox(A, state.ovDay) : ''}</div>`;
+  const oldFacts = $('#tab-overview .ovpop .ovfacts'), factsTop = oldFacts && oldFacts.closest('.ovpop').dataset.ovpop === state.ovSel ? oldFacts.scrollTop : 0;
   el.innerHTML = h;
+  if (factsTop){ const nf = $('#tab-overview .ovpop .ovfacts'); if (nf) nf.scrollTop = factsTop; }   // a change in the editor keeps the facts where they were
   // Back to where the grid was scrolled (the newest days the first time, or after the dates change), or to a day asked for.
   const sc = $('#tab-overview .ovblock');
   if (sc && !state.ovPrintAll){
@@ -2959,9 +2979,10 @@ function ovEditor(A, c, name){
   const formLine = !form ? 'Formative: no export for this day' : !f.inFile ? `Formative: not in the export${f.total || dated ? ` (${[f.total ? plural(f.total, f.unit) : '', dated].filter(Boolean).join(', ')})` : ''}`
     : f.parts.length > 1 ? `Formative, ${f.parts.length} together: ${fAnswered(f)}${dated ? ` (${dated})` : ''}`
     : `Formative: ${f.total ? `${fAnswered(f)}${score ? `, ${score}` : ''}` : score || 'no score'}${dated ? ` (${dated})` : ''}`;
-  const dmg = A.dmByDk.get(c.dk), dmDated = dmg ? [...dmg.dated].filter(x => x !== 'the file name') : [];
-  const dmLine = !A.dmByDk.size ? '' : !dmg ? 'DeltaMath: no export for this day' : !c.d ? `DeltaMath: not in the export${c.dOn ? ', counted as no work' : ''}`
-    : `DeltaMath: ${dmWork(c.d)}${s && !s.isAbsent && !c.dOn ? ' (not counted: not in the support hour)' : ''}${dmDated.length ? ` (date from ${dmDated.join(' and ')})` : ''}`;
+  const dmg = A.dmByDk.get(c.dk), dd = c.d || (dmg && dmOf(A, c.key, c.dk)), dmDated = dmg ? [...dmg.dated].filter(x => x !== 'the file name') : [];
+  const dmLine = !A.dmByDk.size ? '' : !dmg ? (A.dmSkipped.has(c.dk) ? 'DeltaMath: no one has work in this day’s export, so it isn’t counted' : 'DeltaMath: no export for this day')
+    : !dd ? `DeltaMath: not in the export${c.dOn ? ', counted as no work' : ''}`
+    : `DeltaMath: ${dmWork(dd)}${!s ? ' (not counted: no Zoom report)' : !s.isAbsent && !c.dOn ? ` (not counted: ${dmWhy(s)})` : ''}${dmDated.length ? ` (date from ${dmDated.join(' and ')})` : ''}`;
   const autoName = OV_CAT[c.base] || OV_STATE[c.base], day = A.dayByDk.get(c.dk), others = c.fx && day ? day.unmatched.map(u => `“${u.raw}”`) : [];
   const clash = others.length ? `Unmatched Zoom names that day: ${others.join(', ')}.` : '';
   const canFin = s ? s.canFinish || c.fin : !!c.plan;
@@ -2970,7 +2991,7 @@ function ovEditor(A, c, name){
   // "Finished work" is always there, hidden on days it doesn't apply, so the editor is the same size on every day.
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b>${supTags(c.key)}<span class="muted">${esc(longDate(c.dk))}${state.data.extraDays[c.dk] ? ` · day you added, ${esc(addedLabel(A, c.dk))}` : ''}</span><button class="linkish ovx" data-ovclose aria-label="Close">Close</button></div>
-    <p class="small ovfacts${A.dmByDk.size ? ' dm' : ''}">${esc(zoom)}<br>${esc(formLine)}${f ? fEach(f).map(x => `<br>· ${esc(x)}`).join('') : ''}${dmLine ? `<br>${esc(dmLine)}` : ''}${c.d ? dmEach(c.d).map(x => `<br>· ${esc(x)}`).join('') : ''}${clash ? `<br>${esc(clash)}` : ''}</p>
+    <p class="small ovfacts${A.dmByDk.size ? ' dm' : ''}">${esc(zoom)}<br>${esc(formLine)}${f ? fEach(f).map(x => `<br>· ${esc(x)}`).join('') : ''}${dmLine ? `<br>${esc(dmLine)}` : ''}${dd ? dmEach(dd).map(x => `<br>· ${esc(x)}`).join('') : ''}${clash ? `<br>${esc(clash)}` : ''}</p>
     <div class="ovcols"><div class="ovgrp"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.ov.cat}">Automatic: ${esc(autoName)}</button>${cats}</div>
       <div class="ovgrp"><span class="small muted">Letters</span>${lets}
         <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Message sent home</label>
@@ -2993,16 +3014,16 @@ function zoomMinutes(s){
 }
 // The box for one whole day (opened from its date at the top of the grid): what's known about the day, and Delete.
 function ovDayBox(A, dk){
-  const day = A.dayByDk.get(dk), form = A.formByDk.get(dk), xd = state.data.extraDays[dk], nc = state.data.noClass[dk];
+  const day = A.dayByDk.get(dk), form = A.formByDk.get(dk), dmg = A.dmByDk.get(dk), xd = state.data.extraDays[dk], nc = state.data.noClass[dk];
   const n = new Set((A.schedFor(dk).days[DAYS[parseDk(dk).getDay()]] || []).flatMap(sec => sec.students.map(normKey))).size;
   const facts = [xd ? `A day you added: ${addedLabel(A, dk)}.` : n ? `${plural(n, 'student')} on the schedule.` : 'No one on the schedule.',
     day ? `Zoom report: ${[...day.files].join(', ')}.` : 'No Zoom report.', form ? `Formative: ${plural(form.files.length, 'export')}.` : '',
-    nc ? `Marked no class (${NOCLASS_REASONS[nc.reason] || 'Other'}).` : ''].filter(Boolean);
-  const onlyAdded = xd && !day && !form && !nc;
+    dmg ? `DeltaMath: ${plural(dmg.files.length, 'export')}.` : '', nc ? `Marked no class (${NOCLASS_REASONS[nc.reason] || 'Other'}).` : ''].filter(Boolean);
+  const onlyAdded = xd && !day && !form && !dmg && !nc;
   return `<div class="ovdpop" role="dialog" aria-label="${esc(longDate(dk))}" data-ovdpop="${dk}">
     <div class="ovpop-h"><b>${esc(longDate(dk))}</b><button class="linkish ovx" data-ovdayclose>Close</button></div>
     <p class="small">${facts.map(esc).join('<br>')}</p>
-    <p class="small muted">${onlyAdded ? 'Deleting it removes the day you added.' : `Deleting the day takes it off every tab: it isn’t counted as a class day${day || form ? ', and its files are set aside' : ''}. Marks and notes on it are kept, and you can bring it back on the Schedule tab.`}</p>
+    <p class="small muted">${onlyAdded ? 'Deleting it removes the day you added.' : `Deleting the day takes it off every tab: it isn’t counted as a class day${day || form || dmg ? ', and its files are set aside' : ''}. Marks and notes on it are kept, and you can bring it back on the Schedule tab.`}</p>
     <div class="actions"><button class="btn small" data-ovdelday="${dk}">Delete this day</button><button class="btn small ghost" data-ovdayclose>Cancel</button></div></div>`;
 }
 function placeOvDay(){
@@ -3413,7 +3434,7 @@ function rptOutput(A){
   const marked = A.roster.some(r => R.who === 'all' || R.who === 'none' || whoOk(r.key, R.who));
   if (!marked) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'rfep' ? 'RFEP' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
   if (!D.dates.length) return h + `<div class="notice info">No class days in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
-  if (!T.students || !T.n) return h + `<p class="muted">No class days for ${esc(rptWhoName(R.who).toLowerCase())} in these dates.</p>`;
+  if (!T.students || !T.n) return h + `<p class="muted">${T.exc ? `All ${plural(T.exc, 'class day')} for ${esc(rptWhoName(R.who).toLowerCase())} in these dates are excused.` : `No class days for ${esc(rptWhoName(R.who).toLowerCase())} in these dates.`}</p>`;
   h += `<p class="listinfo">${esc(rptWhoName(R.who))} · ${plural(T.students, 'student')} · ${plural(T.dates.size, 'class day')}${T.zoomDates.size < T.dates.size ? ` (${T.zoomDates.size} with a Zoom report)` : ''} · ${esc(fmtPeriod(D.period))}</p>`;
   // The headline numbers, each with the same number for all students when this is a smaller group.
   const tile = (label, value, detail, cmp) => `<div class="rtile"><div class="rt-l">${label}</div><div class="rt-v">${value}</div><div class="rt-d">${detail}</div>${all && cmp !== null ? `<div class="rt-c">All students: ${cmp}</div>` : ''}</div>`;
@@ -3433,7 +3454,7 @@ function rptOutput(A){
   const ctot = cs.reduce((a, [k]) => a + T.col[k], 0), acTot = all ? cs.reduce((a, [k]) => a + all.col[k], 0) : 0;
   cards += card('How class days went', 'Each class day’s color on the Overview, colors you picked by hand included.', vizRows(cs.map(([k, name]) => [k, name, T.col[k], `c-${k}`, all && acTot ? Math.round(all.col[k] / acTot * 100) : undefined]), ctot, 'days', !!all)
     + vizTable(['Color', 'Class days', 'Share'], cs.map(([k, name]) => [name, T.col[k], `${ctot ? Math.round(T.col[k] / ctot * 100) : 0}%`])));
-  const ms = [['in', 'In Zoom', 's-in'], ['before', 'Before joining (late)', 's-before'], ['out', 'Out of Zoom mid-class', 's-out'], ['after', 'After leaving early', 's-after'], ['absent', 'Absent days', 's-absent']];
+  const ms = [['in', 'In Zoom', 's-in'], ['before', 'Before joining (late)', 's-before'], ['out', 'Out of Zoom mid-class', 's-out'], ['after', 'After leaving early', 's-after'], ['absent', 'Absent in Zoom', 's-absent']];
   const mtot = ms.reduce((a, [k]) => a + T.min[k], 0), amTot = all ? ms.reduce((a, [k]) => a + all.min[k], 0) : 0;
   cards += card('Where scheduled minutes went', 'Every scheduled minute on the days with a Zoom report. Finished-work time and excused days aren’t counted.',
     vizRows(ms.map(([k, name, sw]) => [k, name, T.min[k], sw, all && amTot ? Math.round(all.min[k] / amTot * 100) : undefined]), mtot, 'min', !!all)
@@ -3464,12 +3485,13 @@ function rptCSV(){
   const A = state.lastAnalysis || analyze(), T = rptSum(rptData(A).rows), R = state.rpt;
   const rows = [['Week of', 'Class days', 'Days attended', 'Days attended %', 'Engaged days', 'Engaged days %', 'Minutes received', 'Minutes scheduled', 'Minutes received %'],
     ...[...T.weeks.values()].sort((a, b) => a.key.localeCompare(b.key)).map(o => [o.key, o.n, o.att, pct(o.att, o.n) ?? '', o.eng, pct(o.eng, o.n) ?? '', o.req ? o.pres : '', o.req || '', pct(o.pres, o.req) ?? '']),
-    ['All weeks', T.n, T.att, T.rate ?? '', T.eng, T.engRate ?? '', T.pres, T.req, T.dose ?? '']];
+    ['All weeks', T.n, T.att, T.rate ?? '', T.eng, T.engRate ?? '', T.req ? T.pres : '', T.req || '', T.dose ?? '']];
   downloadFile(`attendance-summary_${R.who}_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
 function renderRpt(){
   const el = $('#tab-rpt'), A = analyze(); state.lastAnalysis = A;
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  if (!A.roster.length){ el.innerHTML = setupCard(A); return; }
   const R = state.rpt;
   el.innerHTML = `<div class="toolbar">${rangeBar()}${droppedToggle(A)}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv title="The week-by-week numbers for this group">Download CSV</button><button class="btn small ghost" data-rptprint>Print</button></span></div>
     <div class="panel rptpick noprint"><div class="rptrow"><span class="rptlab">Students</span>
@@ -3890,7 +3912,7 @@ function dayDetail(ctx){
       ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
-    ${(() => { const g = ctx.A.dmByDk.get(d.dk), x = g && dmOf(ctx.A, ctx.key, d.dk); return g ? `<p class="small dd-min">DeltaMath: ${!x ? `not in the export${!s.isAbsent && s.suppMin > 0 ? ', counted as no work' : ''}` : `${esc(dmWork(x))}${!s.isAbsent && !(s.suppMin > 0) ? ' (not counted: not in the support hour)' : ''}${dmEach(x).map(y => `<br>· ${esc(y)}`).join('')}`}</p>` : ''; })()}
+    ${(() => { const g = ctx.A.dmByDk.get(d.dk), x = g && dmOf(ctx.A, ctx.key, d.dk); return g ? `<p class="small dd-min">DeltaMath: ${!x ? `not in the export${!s.isAbsent && s.suppMin > 0 ? ', counted as no work' : ''}` : `${esc(dmWork(x))}${!s.isAbsent && !(s.suppMin > 0) ? ` (not counted: ${dmWhy(s)})` : ''}${dmEach(x).map(y => `<br>· ${esc(y)}`).join('')}`}</p>` : ''; })()}
     ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${!f.inFile ? 'not in the export' : f.parts.length > 1 ? `${f.parts.length} together, ${fAnswered(f, true)}${fEach(f).map(x => `<br>· ${esc(x)}`).join('')}` : f.total ? `${fAnswered(f, true)}${f.pct !== null ? `, score ${f.pct}%` : ''}` : f.pct !== null ? `score ${f.pct}%` : 'no score'}</p>` : ''; })()}
     <div class="ddact">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
       ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
@@ -4804,7 +4826,7 @@ function renderSettings(){
         Formative’s results export works as it downloads: each row counts for the class day in its section’s name (like “Intervention: Monday”), and how much a student answered is their possible points out of the most any student has.
         Two Formatives on the same day (like a lesson and a self-paced mini lesson) count together, each in its own file.</p>
       <p class="small muted" style="margin:0 0 12px">DeltaMath: save its grades export (.xlsx, as it downloads) in the folder with the class date in its name, like <b>Week-13-Monday-11-16-26.xlsx</b>.
-        It counts for students in Zoom during the support hour; one who isn’t in the export counts as doing no work. Each assignment is out of 100% complete: a student’s share is how much of that day’s assignments they completed (when an assignment was in an earlier export too, how much of what they had left on it).
+        It counts for students on the schedule for the support hour who were in Zoom for it; one who isn’t in the export counts as doing no work. Each assignment is out of 100% complete: a student’s share is how much of that day’s assignments they completed (when an assignment was in an earlier export too, how much of what they had left on it).
         On a day with both, Formative and DeltaMath count the same.</p>
       <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they did at least', '% of the questions (or of the assignments)', 1, 100)}</div>
       <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered (or worked):</p>
