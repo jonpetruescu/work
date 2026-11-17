@@ -771,7 +771,10 @@ function parseZoomFile(name, text){
     out.push({ name: nm, email: emailIdx >= 0 ? (r[emailIdx] || '').trim() : '', join, leave });
   }
   if (!out.length) return { error: 'No participant rows with join and leave times were found in this file.' };
-  return { rows: out };
+  // Exported with the meeting's details, the file starts with a row like "Meeting ID, Topic, Start Time, …" and its values.
+  let topic = '';
+  for (let i = 0; i < hi - 1 && !topic; i++){ const ti = rows[i].findIndex(c => /^topic$/i.test(c.trim())); if (ti >= 0) topic = (rows[i + 1][ti] || '').trim(); }
+  return { rows: out, topic };
 }
 function parsedFile(f){ return f.parsed || (f.parsed = parseZoomFile(f.name, f.text)); }
 
@@ -808,6 +811,17 @@ function buildMatcher(roster, aliases){
     }
     return null;
   };
+}
+
+// The student a meeting's name is about ("1-on-1 with Ben Whitfield", "zoom-1on1-ben-10-29-2026.csv"): their first and last
+// name, or else a first name only one student has. Null when it names no one, or more than one student.
+function namedIn(title, students){
+  const t = ' ' + normKey(String(title || '').replace(/\.csv$/i, '')).replace(/\b\d+\b/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const has = w => !!w && t.includes(' ' + w + ' '), toks = st => st.key.split(' ');
+  const full = students.filter(st => toks(st).length > 1 && has(toks(st)[0]) && has(toks(st)[toks(st).length - 1]));
+  if (full.length) return full.length === 1 ? full[0] : null;
+  const firsts = students.filter(st => has(toks(st)[0]));
+  return firsts.length === 1 && students.filter(x => toks(x)[0] === toks(firsts[0])[0]).length === 1 ? firsts[0] : null;
 }
 
 /* ---------------- Attendance math ---------------- */
@@ -858,7 +872,7 @@ function analyze(){
       const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
       for (const kind of kinds.length ? kinds : [null]){
         const id = kind ? `${dk}|${kind}` : `${f.name}|${dk}`, bag = kind ? classes : others;
-        if (!bag.has(id)) bag.set(id, { id, dk, kind, files: new Set(), win: kind ? [at(W[kind][0]), at(W[kind][1])] : null, byKey: new Map(), unmatched: new Map(), start: a });
+        if (!bag.has(id)) bag.set(id, { id, dk, kind, files: new Set(), win: kind ? [at(W[kind][0]), at(W[kind][1])] : null, byKey: new Map(), unmatched: new Map(), start: a, title: z.topic || f.name });
         const g = bag.get(id); g.files.add(f.name); g.start = Math.min(g.start, a);
         if (skip) continue;   // the teacher's own rows still show the class met
         if (m){
@@ -880,18 +894,28 @@ function analyze(){
         lateMin: late ? mins(first - A0) : 0, earlyMin: early ? mins(B0 - last) : 0, names: [...e.names] });
     }
   }
-  // 1-on-1s from Zoom: one per student per date (two reports the same day count once, with the longer time).
+  // 1-on-1s from Zoom. A meeting whose name names a student is that student's 1-on-1: held when they were in it at least
+  // the minimum minutes, a no-show when they weren't (the meeting happened; they didn't come). A meeting that names no one
+  // counts for each student in it when it has 3 students or fewer. One per student per date and kind (two reports the
+  // same day count once, with the longer time).
   const zoomMeet = new Map(), unmatched = [];
+  const addMeet = (key, g, x) => {
+    const list = zoomMeet.get(key) || [], same = list.find(y => y.date === g.dk && !!y.noShow === !!x.noShow);
+    if (same){ same.minutes = Math.max(same.minutes, x.minutes); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...x.with])]; }
+    else list.push({ id: `z-${g.dk}`, date: g.dk, files: [...g.files], source: 'zoom', ...x });
+    zoomMeet.set(key, list);
+  };
   for (const g of others.values()){
-    const keys = [...g.byKey.keys()];
-    if (keys.length >= 1 && keys.length <= MAX_GROUP) for (const e of g.byKey.values()){
-      const merged = mergeIntervals(e.intervals), m = mins(sumIv(merged));
-      if (m < S.oneOnOneMin) continue;
-      const list = zoomMeet.get(e.key) || [], same = list.find(x => x.date === g.dk);
-      const others2 = keys.filter(k => k !== e.key).map(k => (byKey.get(k) || {}).name || k);
-      if (same){ same.minutes = Math.max(same.minutes, m); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...others2])]; }
-      else list.push({ id: `z-${g.dk}`, date: g.dk, minutes: m, at: merged[0][0], files: [...g.files], with: others2, source: 'zoom' });
-      zoomMeet.set(e.key, list);
+    const keys = [...g.byKey.keys()], named = namedIn(g.title, students);
+    const time = e => { const merged = mergeIntervals(e.intervals); return { m: mins(sumIv(merged)), at: merged[0][0] }; };
+    if (named){
+      const e = g.byKey.get(named.key), t = e && time(e);
+      if (t && t.m >= S.oneOnOneMin) addMeet(named.key, g, { minutes: t.m, at: t.at, with: [], named: true });
+      else if (onList(named, g.dk)) addMeet(named.key, g, { minutes: t ? t.m : 0, at: g.start, with: [], named: true, noShow: true });
+    }
+    else if (keys.length >= 1 && keys.length <= MAX_GROUP) for (const e of g.byKey.values()){
+      const t = time(e); if (t.m < S.oneOnOneMin) continue;
+      addMeet(e.key, g, { minutes: t.m, at: t.at, with: keys.filter(k => k !== e.key).map(k => (byKey.get(k) || {}).name || k) });
     }
     // Names nobody knows, from a meeting small enough to be a 1-on-1 (a staff meeting's names aren't listed)
     if (keys.length + g.unmatched.size <= MAX_GROUP) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, meeting at ${fmt(g.start)}` });
@@ -986,7 +1010,7 @@ function schedCur(key){
 const schedText = e => e ? `${EVERY[e.every]}, ${wdName(e.from)}s at ${hmText(e.time)}` : 'No schedule';
 const occId = o => `${o.key}|${o.extra ? 'x' : 's'}|${o.id}`;   // a Zoom-only meeting is kept by its date, like a scheduled one
 // What a meeting is now: its mark (yours, or held from Zoom), or else whether it's still to come, today, or past and not marked yet.
-function occ(o){ const today = todayDk(); o.st = o.st || (o.zoom ? 'held' : ''); o.auto = !o.mark && !!o.zoom; o.state = o.st || (o.date > today ? 'later' : o.date === today ? 'today' : 'unmarked'); return o; }
+function occ(o){ const today = todayDk(); o.st = o.st || (o.zoom ? (o.zoom.noShow ? 'missed' : 'held') : ''); o.auto = !o.mark && !!o.zoom; o.state = o.st || (o.date > today ? 'later' : o.date === today ? 'today' : 'unmarked'); return o; }
 const atMs = (dk, hm) => { const d = parseDk(dk); d.setMinutes(hmMin(hm)); return d.getTime(); };
 // Every 1-on-1 for a student, oldest first: each one on their schedule (to four weeks ahead), each extra one, and each
 // Zoom meeting on a day with none of those (found in Zoom, not on the schedule). A Zoom meeting goes with the meeting that day.
@@ -1004,15 +1028,30 @@ function meetingsOf(s, A = state.lastAnalysis){
   for (const m of state.data.meetings[key] || []) out.push({ key, id: m.id, sched: null, date: m.date, time: m.time || '', st: m.st || '', mark: !!m.st, note: m.note || '', extra: true, makeup: m.makeup || '' });
   // A make-up and the missed meeting it's for point at each other.
   for (const x of out) if (x.makeup){ const was = out.find(y => !y.extra && y.date === x.makeup) || out.find(y => y !== x && y.date === x.makeup); if (was){ was.madeUp = x; x.makeupFor = was; } }
-  const G = settings().lateGrace * 60000;
-  for (const z of (A && A.zoomMeet.get(key)) || []){
-    let o = out.find(x => x.date === z.date && x.st !== 'canceled') || out.find(x => x.date === z.date);
+  const G = settings().lateGrace * 60000, zs = [...((A && A.zoomMeet.get(key)) || [])].sort((a, b) => a.at - b.at), left = [];
+  const late = (o, z) => { if (!z.noShow && o.time && z.at > atMs(o.date, o.time) + G) o.lateMin = mins(z.at - atMs(o.date, o.time)); };
+  // The same day: the meeting that day goes with it.
+  for (const z of zs){
+    const o = out.find(x => x.date === z.date && !x.zoom && x.st !== 'canceled') || out.find(x => x.date === z.date && !x.zoom);
+    if (o){ o.zoom = z; late(o, z); } else left.push(z);
+  }
+  // Another day the same week, when the student was in it: the make-up for that week's no-show, or else that week's
+  // meeting moved to that day (when it hasn't happened, isn't marked, and has no report of its own).
+  for (const z of left){
+    let o = null;
+    if (!z.noShow){
+      const wk = weekKey(z.date), pool = out.filter(x => !x.extra && weekKey(x.date) === wk && x.st !== 'canceled');
+      const ns = pool.find(x => x.zoom && x.zoom.noShow && !x.mark && !x.madeUp);
+      const open = pool.find(x => !x.zoom && !x.mark && !x.madeUp);
+      if (ns){ const m = state.data.oneMarks[`${key}|${z.date}`] || {};
+        o = { key, id: z.date, sched: null, date: z.date, time: hmOf(z.at), st: m.st || '', mark: !!m.st, note: m.note || '', zoomOnly: true, makeupFor: ns }; ns.madeUp = o; out.push(o); }
+      else if (open){ open.autoFrom = { date: open.date, time: open.time }; open.date = z.date; open.time = hmOf(z.at); open.moved = true; o = open; }
+    }
     if (!o){   // found in Zoom only: its mark and note are kept like a scheduled meeting's, by its date
       const m = state.data.oneMarks[`${key}|${z.date}`] || {};
       o = { key, id: z.date, sched: null, date: z.date, time: hmOf(z.at), st: m.st || '', mark: !!m.st, note: m.note || '', zoomOnly: true }; out.push(o);
     }
     o.zoom = z;
-    if (o.time && !o.zoomOnly && z.at > atMs(o.date, o.time) + G) o.lateMin = mins(z.at - atMs(o.date, o.time));
   }
   out.forEach(occ);
   return out.sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
@@ -1020,13 +1059,14 @@ function meetingsOf(s, A = state.lastAnalysis){
 // Counts in the dates shown (up to today), and what needs you: meetings to mark, a missed last meeting, or no schedule.
 function oneStats(s){
   const all = meetingsOf(s), today = todayDk(), shown = all.filter(o => inRange(o.date) && o.date <= today);
-  const n = st => shown.filter(o => o.st === st).length, held = n('held'), missed = n('missed');
+  const n = st => shown.filter(o => o.st === st).length, held = n('held'), missed = shown.filter(o => o.st === 'missed' && !o.madeUp).length;
+  const noShows = shown.filter(o => o.zoom && o.zoom.noShow && o.st === 'missed').length;
   const toMark = all.filter(o => o.state === 'unmarked'), next = all.find(o => (o.state === 'later' || o.state === 'today'));
   const lastHeld = [...all].reverse().find(o => o.st === 'held' && o.date <= today);
   const lastDone = [...all].reverse().find(o => (o.st === 'held' || o.st === 'missed') && o.date <= today);
   const sched = schedCur(s.key), cur = isCurrent(s);
   const status = !cur ? 'left' : toMark.length ? 'mark' : lastDone && lastDone.st === 'missed' && !lastDone.madeUp ? 'missed' : !sched ? 'none' : 'ok';
-  return { all, held, missed, late: shown.filter(o => o.st === 'held' && o.lateMin).length, canceled: n('canceled'), notMarked: shown.filter(o => o.state === 'unmarked').length, pct: pct(held, held + missed), toMark, next, lastHeld, lastDone, sched, status };
+  return { all, held, missed, noShows, late: shown.filter(o => o.st === 'held' && o.lateMin).length, canceled: n('canceled'), notMarked: shown.filter(o => o.state === 'unmarked').length, pct: pct(held, held + missed), toMark, next, lastHeld, lastDone, sched, status };
 }
 const occWhen = o => `${shortDate(o.date)}${o.time ? `, ${hmText(o.time)}` : ''}`;
 const oneShort = o => o.status === 'left' ? 'Dropped' : o.status === 'mark' ? (o.toMark.length > 1 ? `${o.toMark.length} to mark` : `Mark ${monDay(o.toMark[0].date)}`)
@@ -1043,7 +1083,7 @@ function clashes(key, date, time){
 // Reschedule one meeting (or, for a missed one, add a make-up): one-click dates, or any date and time.
 function rescheduleMenu(o, first){
   const id = occId(o), today = todayDk(), makeup = o.st === 'missed';
-  if (o.zoomOnly || (makeup && o.madeUp) || o.st === 'held') return '<span class="rsph" aria-hidden="true"></span>';
+  if (o.zoomOnly || o.autoFrom || (makeup && o.madeUp) || o.st === 'held') return '<span class="rsph" aria-hidden="true"></span>';
   const base = o.date > today ? o.date : today, d1 = nextWeekday(base), d2 = nextWeekday(d1);
   let wk = addDays(o.date, 7); while (wk <= today) wk = addDays(wk, 7);
   const picks = [...new Set([d1, d2, wk])].map(dk => `<button class="btn small ghost" data-rsquick="${dk}">${esc(shortDate(dk))}${dk === addDays(today, 1) ? ' (tomorrow)' : dk === wk ? ' (next week)' : ''}</button>`).join('');
@@ -1060,14 +1100,15 @@ function rescheduleMenu(o, first){
 // One meeting in a list: when, what's known, Held / Missed / Canceled (Held and Missed wait for the day), Reschedule, Note.
 function occLi(o, name){
   const id = occId(o), past = o.date <= todayDk(), first = firstName(name || (state.data.students.find(x => x.key === o.key) || {}).name || '');
-  const from = o.moved ? (o.date !== o.sched ? `${shortDate(o.sched)}, ${hmText(o.baseTime)}` : hmText(o.baseTime)) : '';
+  const from = o.autoFrom ? `${shortDate(o.autoFrom.date)}, ${hmText(o.autoFrom.time)}` : o.moved ? (o.date !== o.sched ? `${shortDate(o.sched)}, ${hmText(o.baseTime)}` : hmText(o.baseTime)) : '';
   const what = [o.state === 'unmarked' ? '<span class="chip unmarked">Not marked</span>' : o.state === 'today' ? '<span class="chip today">Today</span>' : '',
-    o.moved ? `<span class="chip moved">Rescheduled</span> from ${esc(from)}` : '', o.makeupFor ? `<span class="chip moved">Make-up</span> for ${esc(shortDate(o.makeupFor.date))}` : '',
+    o.moved ? `<span class="chip moved">Rescheduled</span> from ${esc(from)}${o.autoFrom ? ' (found in Zoom)' : ''}` : '', o.makeupFor ? `<span class="chip moved">Make-up</span> for ${esc(shortDate(o.makeupFor.date))}` : '',
     o.madeUp ? `Made up ${esc(shortDate(o.madeUp.date))}` : '',
     o.lateMin ? `<span class="chip unmarked">${o.lateMin} min late</span>` : '',
-    o.zoom ? esc(`Zoom: joined ${fmt(o.zoom.at)}, ${o.zoom.minutes} min${o.zoom.with.length ? `, with ${listJoin(o.zoom.with)}` : ''}`) : '', o.zoomOnly ? 'Not on the schedule' : '',
+    o.zoom ? (o.zoom.noShow ? `<span class="chip missed">No-show</span> ${esc(`Zoom: meeting at ${fmt(o.zoom.at)}, ${o.zoom.minutes ? `in it only ${o.zoom.minutes} min` : 'didn’t join'}`)}`
+      : esc(`Zoom: joined ${fmt(o.zoom.at)}, ${o.zoom.minutes} min${o.zoom.with.length ? `, with ${listJoin(o.zoom.with)}` : ''}`)) : '', o.zoomOnly && !o.makeupFor ? 'Not on the schedule' : '',
     o.extra && !o.makeupFor ? 'Extra meeting' : '', o.note ? `<span class="txt">${esc(o.note)}</span>` : ''].filter(Boolean).join(' · ');
-  const seg = Object.entries(ONE_ST).map(([k, v]) => `<button class="v-${k}" data-occmark="${esc(id)}|${k}" aria-pressed="${o.st === k}"${k !== 'canceled' && !past ? ' disabled title="After the meeting"' : o.auto && k === 'held' ? ' title="Held: it’s in a Zoom report"' : ''}>${v}</button>`).join('');
+  const seg = Object.entries(ONE_ST).map(([k, v]) => `<button class="v-${k}" data-occmark="${esc(id)}|${k}" aria-pressed="${o.st === k}"${k !== 'canceled' && !past ? ' disabled title="After the meeting"' : o.auto && k === o.st ? ` title="${o.st === 'held' ? 'Held: it’s in a Zoom report' : 'Missed: the meeting is in a Zoom report, and the student didn’t join'}"` : ''}>${v}</button>`).join('');
   const note = `<details class="menu occmenu"><summary class="linkish">Note</summary><div class="pop" role="group" aria-label="Note on the ${esc(occWhen(o))} meeting${first ? ` with ${esc(first)}` : ''}">
       <label>Note <input type="text" data-occnote value="${esc(o.note)}" maxlength="300"></label>
       <div class="actions"><button class="btn small" data-occnotesave="${esc(id)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button>${
@@ -1384,7 +1425,7 @@ function studentList(A){
   return { period, days, all, list: all.filter(r => !q || normKey(r.name).includes(q)) };
 }
 const attText = (st, what) => st.n ? `${st.att} of ${plural(st.n, what)}${st.exc ? ` · ${st.exc} excused` : ''}` : st.exc ? `${plural(st.exc, what)}, all excused` : '';
-const oneText = o => [o.held || o.missed ? `${o.held} held of ${o.held + o.missed}` : '', o.canceled ? `${o.canceled} canceled` : ''].filter(Boolean).join(' · ');
+const oneText = o => [o.held || o.missed ? `${o.held} held of ${o.held + o.missed}` : '', o.noShows ? plural(o.noShows, 'no-show') : '', o.canceled ? `${o.canceled} canceled` : ''].filter(Boolean).join(' · ');
 function oneChip(o){ return o.status === 'mark' ? `<span class="chip unmarked">${esc(o.toMark.length > 1 ? `${o.toMark.length} to mark` : 'To mark')}</span>` : o.status === 'missed' ? '<span class="chip due">Missed last</span>' : ''; }
 function renderStudents(){
   const el = $('#tab-students');
@@ -1532,7 +1573,7 @@ function renderMeetings(){
   h += `<h2 class="subhead">Meetings in these dates ${sub(plural(past.length, 'meeting'))}</h2>`;
   h += past.length ? `<div class="panel"><ul class="occlist named">${past.map(x => occLi(x.o, x.name)).join('')}</ul></div>`
     : `<p class="muted">No 1-on-1s in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</p>`;
-  h += `<p class="small muted" style="margin-top:10px">Held in these dates: meetings held out of those held or missed. Canceled meetings aren’t counted. A meeting in a Zoom report (outside homeroom and study hall, ${MAX_GROUP} students or fewer, at least ${plural(settings().oneOnOneMin, 'minute')}) is held by itself, and shows how late the student joined.</p>`;
+  h += `<p class="small muted" style="margin-top:10px">Held in these dates: meetings held out of those held or missed. Canceled meetings, and a missed meeting that was made up, aren’t counted. With the student’s name in the Zoom meeting’s name, its report marks the meeting held (showing how late they joined) or a no-show; a meeting with them on another day that week is the make-up, or the meeting moved.</p>`;
   el.innerHTML = h;
 }
 
@@ -1624,7 +1665,7 @@ function renderSetup(){
       <div class="panel"><h2>1-on-1s</h2>
         <p class="small" style="margin:0 0 10px">Each student has a standing 1-on-1, like every other Wednesday at 3:30. Set it on the <button class="linkish" data-goto="meetings">1-on-1s</button> tab. Every meeting on it is listed, so one that didn’t happen still shows up for you to mark.</p>
         <div class="set">${setRow('s-min', 'oneOnOneMin', 'A Zoom report marks it held when the student is in it at least', 'min')}</div>
-        <p class="small muted" style="margin:10px 0 0">A Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer counts. Joining more than the late minutes above after the meeting’s time shows as late.</p></div></div>
+        <p class="small muted" style="margin:10px 0 0">Put the student’s name in the Zoom meeting’s name (or the report’s file name): a meeting they never joined is then a no-show, and one with them on another day that week is the make-up. A meeting that names no one counts when it has ${MAX_GROUP} students or fewer. Joining more than the late minutes above after the meeting’s time shows as late.</p></div></div>
     <div class="panel"><h2>Zoom names</h2>
       <div class="settext"><label for="s-teacher">Your name in Zoom (never counted as a student)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Jordan Rivera"></div>
       <h3 class="psub">Linked</h3>
@@ -1723,7 +1764,8 @@ function sampleFolder(){
   const zt = (dk, m) => { const [y, mo, d] = dk.split('-'), h = Math.floor(m / 60); return `${mo}/${d}/${y} ${pad(h % 12 || 12)}:${pad(m % 60)}:00 ${h >= 12 ? 'PM' : 'AM'}`; };
   const mdY = dk => { const [y, m, d] = dk.split('-'); return `${m}-${d}-${y}`; };
   const files = [], listed = (n, dk) => onList(students.find(s => s.name === n), dk);
-  const file = (name, dk, rows) => files.push({ name, modified: Date.now(), text: 'Name (Original Name),User Email,Join Time,Leave Time,Duration (Minutes),Guest,In Waiting Room\n'
+  const file = (name, dk, rows, topic) => files.push({ name, modified: Date.now(), text: (topic ? `Meeting ID,Topic,Start Time,End Time,User Email,Duration (Minutes),Participants\n812 3456 7890,${csvCell(topic)},${zt(dk, rows[0][1])},${zt(dk, rows[0][2])},,${rows[0][2] - rows[0][1]},${rows.length}\n\n` : '')
+    + 'Name (Original Name),User Email,Join Time,Leave Time,Duration (Minutes),Guest,In Waiting Room\n'
     + rows.map(([n, a, b]) => [csvCell(n), '', zt(dk, a), zt(dk, b), b - a, 'No', 'No'].join(',')).join('\n') + '\n' });
   // Homeroom, Mondays 8:30–9:00. Ben is late twice, Dev misses two (one excused), Elif leaves early once,
   // Grace joins from her phone, and Hugo's first Monday is on a family iPad (a name to link).
@@ -1764,12 +1806,14 @@ function sampleFolder(){
     file(`zoom-study-hall-${mdY(dk)}.csv`, dk, rows);
     j++;
   }
-  // 1-on-1s: each student's standing meeting. Most have a Zoom report (held by itself; Ben and Elif join late once).
-  // Ben missed one, Dev's was canceled, Carmen's first one moved to Friday, Grace's was a phone call, the latest ones with
-  // Hugo and Isabel have no report yet (to mark), and Jonah has no schedule yet.
+  // 1-on-1s: each student's standing meeting, in Zoom meetings named for the student. Most were held (Ben and Elif join
+  // late once). Ben didn't show up for his first one (the meeting's report has only the teacher) and met the next day
+  // instead; Amara's second one happened a day later than scheduled; Dev's was canceled; Carmen's first one was moved to
+  // Friday by hand; Grace's was a phone call; the latest ones with Hugo and Isabel have no report yet (to mark); and Jonah
+  // has no schedule yet. Carmen's reports name her only in the meeting's topic, not in the file name.
   const sched = { 'Amara Okafor': [2, '15:30', 2], 'Ben Whitfield': [3, '15:30', 2], 'Carmen Reyes': [9, '16:00', 2], 'Dev Patel': [0, '15:30', 2],
     'Elif Demir': [4, '10:00', 1], 'Felix Wagner': [1, '15:30', 2], 'Grace Lin': [10, '16:00', 2], 'Hugo Martins': [7, '16:00', 2], 'Isabel Cruz': [11, '15:30', 2] };
-  const special = { 'Ben Whitfield': { 0: { mark: { st: 'missed', note: 'Didn’t join; no answer at home' }, zoom: false }, 1: { late: 9 } },
+  const special = { 'Ben Whitfield': { 0: { noShow: 1 }, 1: { late: 9 } }, 'Amara Okafor': { 1: { metOn: 1 } },
     'Dev Patel': { 1: { mark: { st: 'canceled', note: 'Doctor’s appointment' }, zoom: false } },
     'Carmen Reyes': { 0: { move: [2, '15:00'] } }, 'Elif Demir': { 1: { late: 6 } },
     'Grace Lin': { 0: { mark: { st: 'held', note: 'Phone call (her Zoom wasn’t working)' }, zoom: false } } };
@@ -1782,9 +1826,11 @@ function sampleFolder(){
       if (x.move){ mark.to = addDays(dk, x.move[0]); mark.at = x.move[1]; }
       if (Object.keys(mark).length) oneMarks[`${k}|${dk}`] = mark;
       if (x.zoom === false || (['Hugo Martins', 'Isabel Cruz'].includes(n) && dk >= addDays(today, -12))) continue;
-      const day = mark.to || dk, t = hmMin(mark.at || time) + (x.late ?? int(0, 2));
+      const day = addDays(mark.to || dk, x.metOn || 0), t = hmMin(mark.at || time) + (x.late ?? int(0, 2));
       if (day >= today) continue;
-      file(`zoom-1on1-${k.split(' ')[0]}-${mdY(day)}.csv`, day, [[teacher, t - 3, t + 22], [n, t, t + 15 + int(0, 6)]]);
+      const meet = (d, rows) => n === 'Carmen Reyes' ? file(`zoom-meeting-${mdY(d)}.csv`, d, rows, `1:1 ${n}`) : file(`1on1 ${n} ${mdY(d)}.csv`, d, rows);
+      if (x.noShow){ meet(day, [[teacher, t - 2, t + 15]]); meet(addDays(day, x.noShow), [[teacher, 15 * 60 - 3, 15 * 60 + 22], [n, 15 * 60 + 1, 15 * 60 + 18]]); continue; }
+      meet(day, [[teacher, t - 3, t + 22], [n, t, t + 15 + int(0, 6)]]);
     }
   }
   const back = n => { const dk = addDays(today, -n), w = parseDk(dk).getDay(); return w === 6 ? addDays(dk, -1) : w === 0 ? addDays(dk, -2) : dk; };
@@ -1829,7 +1875,7 @@ function helpHTML(){
       <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
       <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
       <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
-      <li><b>1-on-1s</b> come from each student’s schedule. Every meeting on it is listed. A Zoom report for it (outside homeroom and study hall, ${MAX_GROUP} students or fewer, at least ${plural(S.oneOnOneMin, 'minute')}) marks it held and shows if the student was late; otherwise mark it held, missed or canceled yourself. A missed or unmarked meeting shows in red in the Overview’s last column. Canceled meetings aren’t counted</li></ul>
+      <li><b>1-on-1s</b> come from each student’s schedule. Every meeting on it is listed. Put the student’s name in the Zoom meeting’s name (like “1-on-1 Ben Whitfield”), or in the report’s file name. Then the report marks it held and shows if they were late, or marks it a <b>no-show</b> when they never joined. A meeting with them on another day that week counts as the make-up (after a no-show) or as the meeting moved. Without a report, mark it held, missed or canceled yourself. A missed or unmarked meeting shows in red in the Overview’s last column. Canceled meetings aren’t counted</li></ul>
     <h3>Colors and marks</h3>
     <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
       <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
@@ -2254,7 +2300,7 @@ async function onClick(t){
   // 1-on-1s: mark, move, delete; schedules
   if (d.occmark){
     const i = d.occmark.lastIndexOf('|'), id = d.occmark.slice(0, i), v = d.occmark.slice(i + 1), o = occFind(id); if (!o) return;
-    if (o.auto && v === 'held') return;   // already held: it's in a Zoom report
+    if (o.auto && v === o.st) return;   // already so: it comes from the Zoom report
     occPatch(id, { st: o.mark && o.st === v ? undefined : v }); changed(); renderCurrent(); return;
   }
   if (has('data-markallheld')){
