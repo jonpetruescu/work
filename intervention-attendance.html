@@ -2922,22 +2922,24 @@ function ovKey(A, rows){
       <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 6))}</div>
       <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(7, 9))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(9))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(6, 7))}</div></div>`;
   }
+  // The student tags, short, at the end of the last row, so marking a class's first IEP or ML student never adds a line to
+  // the key. Each says what it is on hover; clicking one in the grid shows the student's supports.
+  const tagKey = [rows.some(r => planOf(r.key)) ? '<span class="plantag" title="IEP">IEP</span> <span class="plantag" title="504 plan">504</span>' : '',
+    rows.some(r => mlOf(r.key) && !isRfep(mlOf(r.key))) ? '<span class="plantag mltag" title="Multilingual learner, with ELD level">ML</span>' : '',
+    rows.some(r => isRfep(mlOf(r.key))) ? '<span class="plantag mltag" title="Reclassified fluent English proficient">RFEP</span>' : ''].filter(Boolean).join(' ').replace(/^(.+)$/, '<span class="ovkh2 noprint">Tags</span><span class="noprint">$1</span>');
   const form = A.formByDk.size, dm = A.dmByDk.size, more = Object.keys(state.data.extraDays).length ? '<span aria-hidden="true"><b class="ovxd">+</b> Day you added</span>' : '';
   return `<div class="ovkey">
     <div class="ovkrow" aria-hidden="true"><span class="ovkh">Colors</span>${Object.entries(OV_CAT).map(([k, v]) => `<span><i class="ovsw c-${k}"></i>${esc(v)}</span>`).join('')}<span><i class="ovsw c-noclass">–</i>No class</span></div>
     <div class="ovkrow" aria-hidden="true"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}
       <span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span>${
       rows.some(r => r.cells.some(c => c.early)) ? '<span><b class="ovfin">fin</b> Finished work, let go early</span>' : ''}${
-      rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}${
-      rows.some(r => planOf(r.key)) ? '<span class="noprint"><span class="plantag">IEP</span> <span class="plantag">504</span> IEP or 504 plan</span>' : ''}${
-      rows.some(r => mlOf(r.key) && !isRfep(mlOf(r.key))) ? '<span class="noprint"><span class="plantag mltag">ML</span> Multilingual learner, with ELD level</span>' : ''}${
-      rows.some(r => isRfep(mlOf(r.key))) ? '<span class="noprint"><span class="plantag mltag">RFEP</span> Reclassified fluent English proficient</span>' : ''}</div>
-    ${dm ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Activities</span>${form ? `<span><b class="ovfd">F</b> over a date: Formative (${plural(form, 'day')})</span>` : ''}<span><b class="ovdd">D</b> over a date: DeltaMath (${plural(dm, 'day')})</span>${
-      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> <b class="ovfa">D</b> in a day: did it, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
+      rows.some(r => r.cells.some(c => c.unsched)) ? '<span><i class="ovsw ovus-k"></i>Came, not scheduled</span>' : ''}</div>
+    ${dm ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Activities</span><span>${form ? '<b class="ovfd">F</b> ' : ''}<b class="ovdd">D</b> over a date: ${form ? 'Formative or DeltaMath that day' : 'DeltaMath that day'}</span>${
+      rows.some(r => r.cells.some(c => c.fx)) ? `<span>${form ? '<b class="ovfa">F</b> ' : ''}<b class="ovfa">D</b> in a day: did it, not in Zoom</span>` : ''}${more}${tagKey}<span class="ovkend noprint">Click a day to edit.</span></div>`
     : form ? `<div class="ovkrow" aria-hidden="true"><span class="ovkh">Formative</span><span><b class="ovfd">F</b> over a date: results that day (${plural(form, 'day')})</span>${
-      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered on Formative, not in Zoom</span>' : ''}${more}<span class="ovkend noprint">Click a day to change it.</span></div>`
-    : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None in the folder yet. Put the class date in each export’s file name, like formative-10-14-2026.csv.</span>
-      <button class="linkish" data-goto="settings">More in Settings</button>${more}<span class="ovkend" aria-hidden="true">Click a day to change it.</span></div>`}</div>`;
+      rows.some(r => r.cells.some(c => c.fx)) ? '<span><b class="ovfa">F</b> in a day: answered, not in Zoom</span>' : ''}${more}${tagKey}<span class="ovkend noprint">Click a day to edit.</span></div>`
+    : `<div class="ovkrow noprint"><span class="ovkh">Formative</span><span>None yet: name each one like formative-10-14-2026.csv.</span>
+      <button class="linkish" data-goto="settings">More in Settings</button>${more}${tagKey}<span class="ovkend" aria-hidden="true">Click a day to edit.</span></div>`}</div>`;
 }
 function applyBrush(xk, brush){
   const c = ovCell(xk);
