@@ -288,6 +288,16 @@ textarea.stupaste{min-height:190px}
 .ovkey b{color:var(--ink)}
 .ovkh{min-width:4.6em;color:var(--ink);font-weight:600}
 .ovkend{margin-left:auto}
+/* Quick mark: the key turns into the marks to pick from, in the same three rows, so the grid doesn't move */
+.ovkey.marking{border-left:4px solid var(--focus);padding-left:7px}
+.ovkey.marking .ovkrow{gap:2px 6px}
+.ovkey.marking .ovchip{width:auto}
+.ovkh2{margin-left:8px;color:var(--ink);font-weight:600}
+.ovkey .qmsg{color:var(--late);font-weight:600}
+.ovwrap.marking .ovb[data-ovcell]{cursor:copy}
+.ovwrap.marking .ovb[data-ovcell]:hover{box-shadow:inset 0 0 0 2px var(--focus)}
+.ovmarkbtn{min-width:9em}   /* fits "Done marking" too, so the button keeps its width */
+#tab-overview .toolbar .search{width:150px}   /* room for Quick mark and Print on the same line */
 .ovsw{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:2px;font-style:normal;font-size:var(--fs-xs);border:1px solid var(--line);position:relative}
 .ovsw.ovnote-k{background:linear-gradient(225deg,var(--ink) 0 4px,var(--surface) 4px)}
 .ovsw.c-extra::after{content:"";position:absolute;inset:1px;border:1.5px dashed var(--ink);border-radius:1px}
@@ -332,12 +342,12 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ov1c.left .ovb{color:var(--muted)}
 /* The day editor and the 1-on-1 box: every part is there on every day (one that doesn't apply is turned off, not
    left out), so the box is the same size on every day and when anything in it is pressed. */
-.ovpop{position:absolute;z-index:10;width:500px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:14px 16px;font-size:var(--fs-sm)}
+.ovpop{position:absolute;z-index:10;width:480px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:14px 16px;font-size:var(--fs-sm)}
 .ovpop-h{display:flex;flex-wrap:nowrap;align-items:baseline;gap:4px 10px;white-space:nowrap;min-width:0}
 .ovpop-h b{font-size:var(--fs-md)}
 .ovpop-h .muted{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ovx{margin-left:auto}
-.ovfacts{height:6.4em;overflow-y:auto;margin:6px 0 10px;overscroll-behavior:contain}
+.ovfacts{min-height:1.5em;margin:6px 0 10px}
 .ovcols{display:grid;grid-template-columns:230px 1fr;gap:0 20px}
 .ovgrp{display:flex;flex-direction:column}
 .ovchip,.ovlet{display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:5px;padding:0 6px;font-size:var(--fs-sm);cursor:pointer;color:var(--ink);width:100%;height:26px;justify-content:flex-start}
@@ -349,7 +359,6 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovlet[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .ovset{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:2px}
 .ovset.on{background:var(--focus)}
-.ovhint{margin:6px 6px 0;height:3em}
 .ovnoteb{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;margin:10px 0 6px}
 .ovnoteb input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:var(--fs-sm)}
 .ovpop-f{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}
@@ -695,7 +704,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -1076,7 +1085,7 @@ function renderOverview(){
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <div class="seg" role="group" aria-label="Show">${shows.map(([k, l, tip]) => `<button data-show="${k}" aria-pressed="${state.ovShow === k}" title="${esc(tip)}">${esc(l)}</button>`).join('')}</div>
-    <span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
+    <span class="tbend"><button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}" title="Pick a mark, then click days to apply it">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
   if (!A.nZoom) h += setupCard(A);
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files weren’t used:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   h += unmatchedNotice(A, period);
@@ -1127,7 +1136,7 @@ function renderOverview(){
     return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}<th class="ov1h" rowspan="2" scope="col">1-on-1</th></tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  h += `<div class="ovwrap">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}${state.ovDay ? ovDayBox(A, state.ovDay) : ''}</div>`;
+  h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}${state.ovDay ? ovDayBox(A, state.ovDay) : ''}</div>`;
   el.innerHTML = h;
   // Back to where the grid was scrolled (the newest days the first time, or after the dates change).
   const sc = $('#tab-overview .ovblock');
@@ -1156,44 +1165,44 @@ function unmatchedNotice(A, period){
         <select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div>`; }).join('')}</div>`;
 }
 // The key above the grid: always three rows, so the grid never moves.
+// Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key.
+const BRUSHES = [['present', '', CAT.present], ['absent', '', CAT.absent], ['excused', '', CAT.excused], ['L', 'L', 'Late or left early'], ['fin', '', 'Dismissed early'], ['auto', '', 'Automatic']];
 function ovKey(){
   const S = settings();
+  if (state.ovMark){
+    const brushes = list => list.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
+      sym ? `<b>${sym}</b>` : own(CAT, k) ? `<i class="ovsw c-${k}"></i>` : '<i class="ovsw"></i>'}${esc(label)}</button>`).join('');
+    const msg = state.ovMarkMsg ? `<span class="qmsg">${esc(state.ovMarkMsg)}</span>` : state.ovMarkN ? esc(plural(state.ovMarkN, 'change') + ' so far') : '';
+    return `<div class="ovkey marking" role="group" aria-label="Quick mark">
+      <div class="ovkrow"><span><b>Quick mark:</b> pick a mark, then click days. Click a day again to undo.</span><span class="ovkend" role="status">${msg}</span></div>
+      <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 3))}</div>
+      <div class="ovkrow"><span class="ovkh">Letter</span>${brushes(BRUSHES.slice(3, 4))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(4, 5))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(5))}</div></div>`;
+  }
   return `<div class="ovkey" aria-hidden="true">
     <div class="ovkrow"><span class="ovkh">Colors</span>${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
     <div class="ovkrow"><span class="ovkh">Marks</span><span><b>L</b> Late or left early</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a day to change it, or a date to delete it.</span></div>
     <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> The next one, or one to mark</span></div></div>`;
 }
-// What's known about one day, in plain words.
-function cellFacts(c){
-  const out = [], r = c.rec, g = c.g, today = todayDk(), first = firstName(c.s.name);
-  if (!c.listed) out.push(c.s.added && c.dk < c.s.added ? `Not on your list yet this day (on it from ${monDay(c.s.added)}).` : `Not on your list this day (dropped ${monDay(c.s.removed)}).`);
-  else if (c.kind === 'sh' && !c.req) out.push(`${first} doesn’t need study hall this day, so it isn’t counted.`);
-  if (!g) out.push(c.dk > today ? 'This day hasn’t happened yet.' : c.dk === today ? 'No Zoom report yet today.' : 'No Zoom report in the folder for this day.');
-  else if (!r) out.push('Zoom: not in the report.');
-  else if (!r.present) out.push(`Zoom: in the meeting less than a minute during ${KIND[c.kind].toLowerCase()}.`);
-  else {
-    out.push(`Zoom: joined ${fmt(r.first)}, left ${fmt(r.last)} (${r.min} min during ${KIND[c.kind].toLowerCase()}).`);
-    const ex = [r.late ? `joined ${r.lateMin} min late` : '', r.early ? `left ${r.earlyMin} min early` : ''].filter(Boolean).join(', ');
-    if (ex) out.push(cap(ex) + '.');
-  }
-  if (c.fin) out.push(`Dismissed early: leaving${c.rec && c.rec.early ? ` ${c.rec.earlyMin} min` : ''} before the end isn’t counted as leaving early.`);
-  if (r && r.names.some(n => normKey(n) !== c.key)) out.push(`Zoom name: ${r.names.map(n => `“${n}”`).join(', ')}.`);
-  if (g) out.push(`Report: ${[...g.files].join(', ')}`);
-  return out;
+// What Zoom shows for one day, in one short line (like the intervention tracker's day box).
+function zoomLine(c){
+  const r = c.rec, today = todayDk();
+  if (!c.listed) return c.s.added && c.dk < c.s.added ? `Not on your list yet (added ${monDay(c.s.added)}).` : `Dropped from homeroom ${monDay(c.s.removed)}.`;
+  const lead = c.kind === 'sh' && !c.req ? 'Doesn’t need study hall this day. ' : '';
+  if (!c.g) return lead + (c.dk > today ? 'This day hasn’t happened yet.' : c.dk === today ? 'No Zoom report yet.' : 'No Zoom report in the folder for this day.');
+  if (!r || !r.inZoom) return lead + 'Zoom: not in the report.';
+  const bits = [`${r.min} min`, r.late ? `late ${r.lateMin} min` : '', r.early ? `left ${r.earlyMin} min early${c.fin ? ' (dismissed)' : ''}` : ''].filter(Boolean);
+  return lead + `Zoom: ${r.present ? bits.join(' · ') : 'in less than a minute'}${r.present && !r.late && !r.early ? ' · the whole time' : ''}`;
 }
 // The editor for one day, next to its cell. The same size on every day.
 function ovEditor(A, c){
   const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean', canF = c.req && c.canFin && (!c.ov.cat || c.ov.cat === 'present');
   const cats = Object.entries(CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.req && c.ov.cat === k}"${dis}><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
-  const hint = !c.req ? 'Not required this day, so it isn’t counted. You can still add a note.'
-    : c.cat === 'excused' ? 'Excused days aren’t counted.' : c.cat === 'missing' ? 'Days with no Zoom report aren’t counted until there is one, or until you mark them.' : 'Counted in this student’s attendance.';
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(KIND[c.kind])}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))} · ${esc(winText(c.kind))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
-    <p class="small ovfacts">${cellFacts(c).map(esc).join('<br>')}</p>
-    <div class="ovcols"><div class="ovgrp" role="group" aria-label="Mark"><span class="small muted">Mark</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
-      <div class="ovgrp"><span class="small muted">Letter</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
-        <button class="ovlet" data-ovfin aria-pressed="${c.fin}"${canF ? '' : ' disabled'} title="${esc(canF ? 'Let go before the end: leaving isn’t counted as leaving early' : 'Can be marked on a day Zoom shows they left early')}"><span class="tbox" aria-hidden="true"></span>Dismissed early</button>
-        <p class="small muted ovhint">${esc(hint)}</p></div></div>
+    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
+    <p class="small ovfacts">${esc(zoomLine(c))}</p>
+    <div class="ovcols"><div class="ovgrp" role="group" aria-label="Color"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
+      <div class="ovgrp" role="group" aria-label="Letters"><span class="small muted">Letters</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
+        <button class="ovlet" data-ovfin aria-pressed="${c.fin}"${canF ? '' : ' disabled'} title="${esc(canF ? 'Let go before the end: leaving isn’t counted as leaving early' : 'Can be marked on a day Zoom shows they left early')}"><span class="tbox" aria-hidden="true"></span>Dismissed early</button></div></div>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" maxlength="300"></label>
     <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL || c.ov.fin ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button><button class="linkish" data-ovdelfrom="${c.dk}">Delete this day…</button></div></div>`;
 }
@@ -1256,6 +1265,23 @@ function placeOvDay(){
 function closeOvDay(focus){
   const was = state.ovDay; state.ovDay = null; renderOverview();
   const b = focus && was && $(`#tab-overview [data-ovdh="${was}"]`); if (b) b.focus({ preventScroll: true });
+}
+// One Quick mark click. Returns why nothing changed, or '' when it did.
+function applyBrush(xk, brush){
+  const c = ovCell(xk); if (!c) return 'That day can’t be changed.';
+  const who = firstName(c.s.name), day = monDay(c.dk);
+  if (!c.req) return `${who} isn’t expected ${day}, so it can’t be marked.`;
+  if (brush === 'auto'){ if (!c.ov.cat && typeof c.ov.L !== 'boolean' && !c.ov.fin) return `${who}, ${day} is already automatic.`; setOverride(xk, { cat: undefined, L: undefined, fin: undefined }); return ''; }
+  if (own(CAT, brush)){ setOverride(xk, { cat: c.ov.cat === brush ? undefined : brush }); return ''; }
+  if (brush === 'L'){
+    if (c.cat !== 'present') return `L goes on a day ${who} was present.`;
+    const now = !c.L; setOverride(xk, { L: now === c.autoL ? undefined : now }); return '';
+  }
+  if (brush === 'fin'){
+    if (!c.canFin || (c.ov.cat && c.ov.cat !== 'present')) return `Dismissed early goes on a day Zoom shows ${who} left early.`;
+    setOverride(xk, { fin: c.ov.fin ? undefined : true }); return '';
+  }
+  return '';
 }
 function setOverride(xk, patch){
   const o = { ...(state.data.status[xk] || {}), ...patch };
@@ -1745,7 +1771,7 @@ function loadSample(){
 }
 function leaveSample(){
   Object.assign(state, { demo: false, loaded: false, data: defaultData(), files: [], folderName: '', dirty: false, undo: [], redo: [], snap: null,
-    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ov1: null, ovDay: null, dropEdit: null, logMsg: null });
+    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ov1: null, ovDay: null, dropEdit: null, ovMark: null, logMsg: null });
   setStatus(null); render(); navReplace();
 }
 
@@ -1760,7 +1786,7 @@ function helpHTML(){
     ${zoomHelp()}
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
-    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
+    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
       <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. A ⚑ by a name means the student was caught cheating, and how many times; the cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Edit</b>, or add an extra one.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
@@ -1776,7 +1802,7 @@ function helpHTML(){
     <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
       <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
     <h3>Keyboard</h3>
-    <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid')}${kb(['Enter'], 'Open the day (or the 1-on-1s) you’re on')}${kb(['Esc'], 'Close it')}
+    <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid')}${kb(['Enter'], 'Open the day (or the 1-on-1s) you’re on')}${kb(['Esc'], 'Close it, or end Quick mark')}
       ${kb([MOD, 'Z'], 'Undo')}${kb([MOD, 'Y'], 'Redo')}${kb(['/'], 'Find a student')}${kb(['?'], 'This help')}</div>
     <h3>Common questions</h3>
     <dl class="faq"><dt>A student shows as absent, but they were there.</dt><dd>Zoom may know them by another name, like a parent’s name or “iPad.” Look for <b>Zoom names that don’t match a student</b> on the Overview and link the name. You only do this once.</dd>
@@ -1937,7 +1963,7 @@ function ingest(files, dataText, folderName, demo = false){
   state.files = files.sort((a, b) => a.name.localeCompare(b.name));
   if (same && !msg){ const fresh = state.files.filter(f => !had.has(f.name)); msg = fresh.length ? `Found ${plural(fresh.length, 'new file')}: ${listJoin(fresh.map(f => f.name), 3)}.` : 'Up to date. No new files in the folder.'; info = true; }
   state.demo = demo; if (demo){ state.dirHandle = null; state.canWrite = false; }   // the sample is never saved into a folder
-  if (!same){ state.undo = []; state.redo = []; state.student = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.dropEdit = null; state.ovScroll = null; state.logMsg = null; state.logKey = ''; }
+  if (!same){ state.undo = []; state.redo = []; state.student = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.dropEdit = null; state.ovMark = null; state.ovScroll = null; state.logMsg = null; state.logKey = ''; }
   state.snap = JSON.stringify(state.data); state.saveFailed = false;
   state.folderName = folderName; state.loaded = true; state.dirty = keep;
   state.status = null;
@@ -2115,7 +2141,7 @@ async function onClick(t){
     return;
   }
   if (has('data-closestatus')){ setStatus(null); const b = $(`nav.tabs [data-tab="${state.tab}"]`); if (b) b.focus({ preventScroll: true }); return; }
-  if (d.tab){ state.tab = d.tab; state.student = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.dropEdit = null; state.logMsg = null; render(); navReplace(); return; }
+  if (d.tab){ state.tab = d.tab; state.student = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.dropEdit = null; state.ovMark = null; state.logMsg = null; render(); navReplace(); return; }
   if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
   if (t.id === 'pick' || has('data-pick')) return pickFolder();
   if (t.id === 'reopen' || has('data-reopen')) return reopen();
@@ -2136,6 +2162,13 @@ async function onClick(t){
   if (d.unlink){ delete D.aliases[d.unlink]; changed(); renderSetup(); return; }
   if (d.unignore){ D.ignored = D.ignored.filter(z => z !== d.unignore); changed(); renderSetup(); return; }
   // The Overview's day editor and 1-on-1 box
+  if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'present'; state.ovMarkN = 0; state.ovMarkMsg = ''; state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
+  if (d.ovbrush){ state.ovMark = d.ovbrush; state.ovMarkMsg = ''; renderOverview(); return; }
+  if (d.ovcell !== undefined && state.ovMark){
+    // Quick mark: a click applies the chosen mark right in the cell, without opening the editor.
+    const why = applyBrush(d.ovcell, state.ovMark); state.ovMarkMsg = why; if (!why) state.ovMarkN++;
+    renderOverview(); focusOvCell(cellSel(d.ovcell)); return;
+  }
   if (d.ovcell !== undefined){ state.ov1 = null; state.ovDay = null; state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(cellSel(d.ovcell)); return; }
   if (d.ov1 !== undefined){ state.ovSel = null; state.ovDay = null; state.logMsg = null; state.ov1 = state.ov1 === d.ov1 ? null : d.ov1; renderOverview(); focusOvCell(oneSel(d.ov1)); return; }
   if (has('data-ovclose')){ const was = state.ovSel ? cellSel(state.ovSel) : state.ov1 ? oneSel(state.ov1) : null; state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return; }
@@ -2371,6 +2404,7 @@ document.addEventListener('keydown', e => {
     const f = t.closest('[data-logform], details.menu, .paddrow, [data-period], [data-chform]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occsave],[data-schsave],[data-chadd],[data-chsave]');
     if (b){ e.preventDefault(); b.click(); return; }
   }
+  if (e.key === 'Escape' && state.ovMark && state.tab === 'overview' && !hadMenu && !typing && !dlg){ state.ovMark = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
     const inside = m.contains(document.activeElement); closeMenu(m); if (inside) m.querySelector('summary').focus();
   });
@@ -2380,6 +2414,7 @@ function overviewKey(e, t){
   const r = +t.dataset.r, c = +t.dataset.c, at = (rr, cc) => $(`#tab-overview .ovb[data-r="${rr}"][data-c="${cc}"]`);
   const all = [...document.querySelectorAll('#tab-overview .ovb')];
   let to = null;
+  if (e.key === 'Escape' && state.ovMark && !state.ovSel && !state.ov1){ state.ovMark = null; renderOverview(); focusOvCell(cellSel(t.dataset.ovcell || '')); e.preventDefault(); return; }
   if (e.key === 'Escape' && (state.ovSel || state.ov1)){ const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
   if (e.key === 'ArrowRight') to = at(r, c + 1);
   else if (e.key === 'ArrowLeft') to = at(r, c - 1);
