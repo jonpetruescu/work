@@ -1972,9 +1972,10 @@ function analyze(){
     t.parts.push({ title: set.title, answered: e.answered, total: set.questions, unit: set.unit, pct: e.pct === null ? null : Math.round(e.pct), some: e.some && !e.answered, inFile: true });
     g.byKey.set(k, t);
   }
-  // DeltaMath practice by class day. Its scores add up over time, so a student's work on a day is how far each assignment's
-  // score went up since the last earlier export that listed them on it (the whole score the first time it shows up). Files
-  // from one day count together, with each student's best score. A day where no one did any work isn't counted.
+  // DeltaMath practice by class day. Each assignment is out of 100% complete, and its score adds up over time, so a student's
+  // work on a day is how far each score went up since the last earlier export that listed them on it, out of what they had
+  // left on it then (all 100% the first time it shows up). Files from one day count together, with each student's best score.
+  // A day where no one did any work (an export made before class, or the same one again) isn't counted.
   const dmByDk = new Map(), dmDays = new Map(), last = new Map();
   for (const D of dms){
     if (state.data.deletedDays[D.dk]) continue;
@@ -1991,13 +1992,15 @@ function analyze(){
     }
   }
   for (const [dk, g] of [...dmDays].sort((a, b) => a[0].localeCompare(b[0]))){
-    const byKey = new Map(); let most = 0;
+    const byKey = new Map(); let any = false;
     for (const [key, sc] of g.byKey){
-      const parts = [...sc].map(([title, score]) => { const p = last.get(`${title}|${key}`); return { title, score, gain: Math.max(0, score - (p ? p.score : 0)), since: p ? p.dk : null }; });
-      const work = parts.reduce((a, p) => a + p.gain, 0); byKey.set(key, { work, parts }); most = Math.max(most, work);
+      const parts = [...sc].map(([title, score]) => { const p = last.get(`${title}|${key}`), before = p ? p.score : 0;
+        return { title, score, gain: Math.max(0, score - before), left: Math.max(0, 100 - before), since: p ? p.dk : null }; });
+      const work = parts.reduce((a, p) => a + p.gain, 0), left = parts.reduce((a, p) => a + p.left, 0);
+      byKey.set(key, { work, left, parts }); any = any || work > 0;
     }
     for (const [key, sc] of g.byKey) for (const [title, score] of sc) last.set(`${title}|${key}`, { dk, score });
-    if (most) dmByDk.set(dk, { dk, files: g.files, dated: g.dated, most, byKey, unmatched: g.unmatched });
+    if (any) dmByDk.set(dk, { dk, files: g.files, dated: g.dated, byKey, unmatched: g.unmatched });
     else for (const name of g.files) fileErrors.push({ name, error: `No one has DeltaMath work in it${[...last.values()].some(x => x.dk < dk) ? ' since the export before it' : ' yet'}, so it isn’t counted for ${shortDate(dk)}.` });
   }
   // Grades: each student's grade from the newest grades file that lists them (newest by the date in its name).
@@ -2608,14 +2611,17 @@ function formOf(A, key, dk){
 const fAnswered = (f, unit) => f.some ? 'answered some (no points yet)' : `answered ${f.answered} of ${f.unit === 'point' ? plural(f.total, 'point') : unit ? plural(f.total, 'question') : f.total}`;
 // With two or more Formatives that day, each one on its own: "Week 11: answered 3 of 6 points, score 0%".
 const fEach = f => f.parts.length > 1 ? f.parts.map(p => `${p.title}: ${fAnswered(p, true)}${p.pct !== null ? `, score ${p.pct}%` : ''}`) : [];
-// A student's DeltaMath work on one class day, if a DeltaMath export that day lists them: their work (how far their scores
-// went up) out of the most any student did that day.
+// A student's DeltaMath work on one class day, if a DeltaMath export that day lists them: how much of what they had left on
+// that day's assignments they completed (all of it counts as done when nothing was left).
 function dmOf(A, key, dk){
   const g = A.dmByDk.get(dk), t = g && g.byKey.get(key); if (!t) return null;
-  return { work: t.work, most: g.most, share: Math.min(1, t.work / g.most), parts: t.parts, files: g.files };
+  return { work: t.work, left: t.left, share: t.left ? Math.min(1, t.work / t.left) : 1, parts: t.parts, files: g.files, again: t.parts.some(p => p.since) };
 }
-// "60% of the most work anyone did that day", and each assignment: "Slope from Points: 100% (up 40 since Mon, Nov 9)".
-const dmWork = d => !d.work ? 'no work that day' : d.share >= 1 ? 'the most work anyone did that day' : `${Math.max(1, Math.round(d.share * 100))}% of the most work anyone did that day`;
+// "completed 80% of 2 assignments" (or "of what was left on 3 assignments"), and each assignment: "Slope from Points: 100%
+// (up 40 since Mon, Nov 9)".
+const dmWork = d => { const n = plural(d.parts.length, 'assignment');
+  return !d.left ? `all ${d.parts.length > 1 ? `${n} were` : 'of it was'} already complete` : !d.work ? `no work that day on ${n}`
+    : `completed ${Math.max(1, Math.round(d.share * 100))}% of ${d.again ? `what was left on ${n}` : n}`; };
 const dmEach = d => d.parts.map(p => `${p.title}: ${p.score}%${p.since ? p.gain ? ` (up ${p.gain} since ${shortDate(p.since)})` : ` (no change since ${shortDate(p.since)})` : ''}`);
 // IEP and 504 plans. Kept only in the folder's data file: never sent to the Google Sheet or put in a message to a family. They
 // show on the Reports tab, and on a student's printed report or copied summary only when "IEP/504 and accommodations" is checked.
@@ -2716,10 +2722,11 @@ function cellState(A, key, dk, recs){
       const eng = state.data.settings.engagedPct / 100;
       // On a day with a Formative export, it counts for every student who was in Zoom, whatever their hours: answering none,
       // or not being in the export at all, means they likely weren't actually there.
-      // DeltaMath is support-hour practice, so it counts for students who were in Zoom during the support hour. With both,
+      // DeltaMath is support-hour practice, so on a day with an export it counts for students who were in Zoom during the support
+      // hour. Not being in the export means they didn't join the class on DeltaMath: no work, as with Formative. With both,
       // each counts the same: the share is the middle of the two.
-      dOn = !!d && rec.suppMin > 0;
-      const shares = [f ? f.share : null, dOn ? d.share : null].filter(v => v !== null), share = shares.length ? shares.reduce((a, b) => a + b, 0) / shares.length : null;
+      dOn = A.dmByDk.has(dk) && rec.suppMin > 0;
+      const shares = [f ? f.share : null, dOn ? (d ? d.share : 0) : null].filter(v => v !== null), share = shares.length ? shares.reduce((a, b) => a + b, 0) / shares.length : null;
       base = share === null ? 'engaged' : share === 0 ? 'away' : share < eng ? 'idle' : 'engaged';
       // Late is an L even on a day they finished work; leaving that day isn't, since they were let go.
       auto.L = hasFlag(rec, 'late') || (!hasFlag(rec, 'fin') && ['early', 'soft'].some(k => hasFlag(rec, k)));
@@ -2953,7 +2960,7 @@ function ovEditor(A, c, name){
     : f.parts.length > 1 ? `Formative, ${f.parts.length} together: ${fAnswered(f)}${dated ? ` (${dated})` : ''}`
     : `Formative: ${f.total ? `${fAnswered(f)}${score ? `, ${score}` : ''}` : score || 'no score'}${dated ? ` (${dated})` : ''}`;
   const dmg = A.dmByDk.get(c.dk), dmDated = dmg ? [...dmg.dated].filter(x => x !== 'the file name') : [];
-  const dmLine = !A.dmByDk.size ? '' : !dmg ? 'DeltaMath: no export for this day' : !c.d ? 'DeltaMath: not in the export'
+  const dmLine = !A.dmByDk.size ? '' : !dmg ? 'DeltaMath: no export for this day' : !c.d ? `DeltaMath: not in the export${c.dOn ? ', counted as no work' : ''}`
     : `DeltaMath: ${dmWork(c.d)}${s && !s.isAbsent && !c.dOn ? ' (not counted: not in the support hour)' : ''}${dmDated.length ? ` (date from ${dmDated.join(' and ')})` : ''}`;
   const autoName = OV_CAT[c.base] || OV_STATE[c.base], day = A.dayByDk.get(c.dk), others = c.fx && day ? day.unmatched.map(u => `“${u.raw}”`) : [];
   const clash = others.length ? `Unmatched Zoom names that day: ${others.join(', ')}.` : '';
@@ -3883,7 +3890,7 @@ function dayDetail(ctx){
       ${ev ? `<div class="ev" aria-hidden="true">${ev}</div>` : ''}</div>
     <p class="small dd-min">${esc(mline)}${extra}</p>
     ${s.zoomNames.length ? `<p class="small muted dd-min">In Zoom as ${esc(s.zoomNames.map(z => `“${z}”`).join(', '))}</p>` : ''}
-    ${(() => { const g = ctx.A.dmByDk.get(d.dk), x = g && dmOf(ctx.A, ctx.key, d.dk); return g ? `<p class="small dd-min">DeltaMath: ${!x ? 'not in the export' : `${esc(dmWork(x))}${!s.isAbsent && !(s.suppMin > 0) ? ' (not counted: not in the support hour)' : ''}${dmEach(x).map(y => `<br>· ${esc(y)}`).join('')}`}</p>` : ''; })()}
+    ${(() => { const g = ctx.A.dmByDk.get(d.dk), x = g && dmOf(ctx.A, ctx.key, d.dk); return g ? `<p class="small dd-min">DeltaMath: ${!x ? `not in the export${!s.isAbsent && s.suppMin > 0 ? ', counted as no work' : ''}` : `${esc(dmWork(x))}${!s.isAbsent && !(s.suppMin > 0) ? ' (not counted: not in the support hour)' : ''}${dmEach(x).map(y => `<br>· ${esc(y)}`).join('')}`}</p>` : ''; })()}
     ${(() => { const f = formOf(ctx.A, ctx.key, d.dk); return f ? `<p class="small dd-min">Formative: ${!f.inFile ? 'not in the export' : f.parts.length > 1 ? `${f.parts.length} together, ${fAnswered(f, true)}${fEach(f).map(x => `<br>· ${esc(x)}`).join('')}` : f.total ? `${fAnswered(f, true)}${f.pct !== null ? `, score ${f.pct}%` : ''}` : f.pct !== null ? `score ${f.pct}%` : 'no score'}</p>` : ''; })()}
     <div class="ddact">${s.canFinish || state.data.excused[s.xkey] ? tgl('data-excuse', s.xkey, state.data.excused[s.xkey], 'Finished work, let go early') : ''}
       ${s.isAbsent ? tgl('data-excabs', s.xkey, state.data.excusedAbsent[s.xkey], 'Excused absence') : ''}
@@ -4797,9 +4804,9 @@ function renderSettings(){
         Formative’s results export works as it downloads: each row counts for the class day in its section’s name (like “Intervention: Monday”), and how much a student answered is their possible points out of the most any student has.
         Two Formatives on the same day (like a lesson and a self-paced mini lesson) count together, each in its own file.</p>
       <p class="small muted" style="margin:0 0 12px">DeltaMath: save its grades export (.xlsx, as it downloads) in the folder with the class date in its name, like <b>Week-13-Monday-11-16-26.xlsx</b>.
-        It counts for students in Zoom during the support hour. A student’s work is how far their assignment scores went up since the last export that had them (all of it the first time), out of the most work anyone did that day.
+        It counts for students in Zoom during the support hour; one who isn’t in the export counts as doing no work. Each assignment is out of 100% complete: a student’s share is how much of that day’s assignments they completed (when an assignment was in an earlier export too, how much of what they had left on it).
         On a day with both, Formative and DeltaMath count the same.</p>
-      <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they did at least', '% of the questions (or the most work)', 1, 100)}</div>
+      <div class="set">${setRow('s-eng', 'engagedPct', 'Engaged if they did at least', '% of the questions (or of the assignments)', 1, 100)}</div>
       <p class="small" style="margin:12px 0 4px">On days with an export, a student who was in Zoom and answered (or worked):</p>
       <ul class="fswatch small">${[['engaged', 'at least that share'], ['idle', 'some, but less'], ['away', 'none, or isn’t in the export at all']].map(([k, w]) =>
         `<li><i class="ovsw c-${k}"></i>${esc(w)}: ${esc(OV_CAT[k])}</li>`).join('')}</ul>
