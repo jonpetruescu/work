@@ -813,7 +813,7 @@ function buildMatcher(roster, aliases){
   };
 }
 
-// The student a meeting's name is about ("1-on-1 with Ben Whitfield", "zoom-1on1-ben-10-29-2026.csv"): their first and last
+// The student a meeting's topic is about ("1-on-1 with Ben Whitfield"), when the report has its topic: their first and last
 // name, or else a first name only one student has. Null when it names no one, or more than one student.
 function namedIn(title, students){
   const t = ' ' + normKey(String(title || '').replace(/\.csv$/i, '')).replace(/\b\d+\b/g, ' ').replace(/\s+/g, ' ') + ' ';
@@ -872,8 +872,8 @@ function analyze(){
       const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
       for (const kind of kinds.length ? kinds : [null]){
         const id = kind ? `${dk}|${kind}` : `${f.name}|${dk}`, bag = kind ? classes : others;
-        if (!bag.has(id)) bag.set(id, { id, dk, kind, files: new Set(), win: kind ? [at(W[kind][0]), at(W[kind][1])] : null, byKey: new Map(), unmatched: new Map(), start: a, title: z.topic || f.name });
-        const g = bag.get(id); g.files.add(f.name); g.start = Math.min(g.start, a);
+        if (!bag.has(id)) bag.set(id, { id, dk, kind, files: new Set(), win: kind ? [at(W[kind][0]), at(W[kind][1])] : null, byKey: new Map(), unmatched: new Map(), start: a, end: b, title: z.topic || '' });
+        const g = bag.get(id); g.files.add(f.name); g.start = Math.min(g.start, a); g.end = Math.max(g.end, b);
         if (skip) continue;   // the teacher's own rows still show the class met
         if (m){
           if (!g.byKey.has(m.key)) g.byKey.set(m.key, { key: m.key, intervals: [], names: new Set() });
@@ -894,11 +894,15 @@ function analyze(){
         lateMin: late ? mins(first - A0) : 0, earlyMin: early ? mins(B0 - last) : 0, names: [...e.names] });
     }
   }
-  // 1-on-1s from Zoom. A meeting whose name names a student is that student's 1-on-1: held when they were in it at least
-  // the minimum minutes, a no-show when they weren't (the meeting happened; they didn't come). A meeting that names no one
-  // counts for each student in it when it has 3 students or fewer. One per student per date and kind (two reports the
-  // same day count once, with the longer time).
-  const zoomMeet = new Map(), unmatched = [];
+  // 1-on-1s from Zoom. A meeting is a student's 1-on-1 when it starts within half an hour of their scheduled time (or its
+  // topic names them): held when they were in it at least the minimum minutes, a no-show when they weren't. Every meeting
+  // with 3 students or fewer also counts for each student in it, so a 1-on-1 held another day or time is found too. One per
+  // student per date and kind (two reports the same day count once, with the longer time).
+  const slots = new Map(), NEAR = 30 * 60000;   // each date's scheduled 1-on-1s, where they are now (moved ones included)
+  for (const st of students) for (const o of meetingsOf(st, null)) if (!o.extra && o.time && o.st !== 'canceled'){
+    if (!slots.has(o.date)) slots.set(o.date, []); slots.get(o.date).push({ key: st.key, at: atMs(o.date, o.time) });
+  }
+  const zoomMeet = new Map(), unmatched = [], noShows = [];
   const addMeet = (key, g, x) => {
     const list = zoomMeet.get(key) || [], same = list.find(y => y.date === g.dk && !!y.noShow === !!x.noShow);
     if (same){ same.minutes = Math.max(same.minutes, x.minutes); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...x.with])]; }
@@ -908,17 +912,27 @@ function analyze(){
   for (const g of others.values()){
     const keys = [...g.byKey.keys()], named = namedIn(g.title, students);
     const time = e => { const merged = mergeIntervals(e.intervals); return { m: mins(sumIv(merged)), at: merged[0][0] }; };
-    if (named){
-      const e = g.byKey.get(named.key), t = e && time(e);
-      if (t && t.m >= S.oneOnOneMin) addMeet(named.key, g, { minutes: t.m, at: t.at, with: [], named: true });
-      else if (onList(named, g.dk)) addMeet(named.key, g, { minutes: t ? t.m : 0, at: g.start, with: [], named: true, noShow: true });
+    const small = keys.length <= MAX_GROUP && g.unmatched.size <= MAX_GROUP;   // not a staff meeting or a class
+    const expected = new Set(named ? [named.key] : small ? (slots.get(g.dk) || []).filter(x => Math.abs(g.start - x.at) <= NEAR).map(x => x.key) : []);
+    // A no-show only from a meeting no student was in (a meeting someone else was in was theirs), and only when the student
+    // wasn't in another meeting near their time either (checked once every report is read).
+    const anyone = keys.some(k => time(g.byKey.get(k)).m >= S.oneOnOneMin);
+    for (const k of expected){
+      const st = byKey.get(k), e = g.byKey.get(k), t = e && time(e);
+      if (t && t.m >= S.oneOnOneMin) addMeet(k, g, { minutes: t.m, at: t.at, with: keys.filter(x => x !== k).map(x => (byKey.get(x) || {}).name || x) });
+      else if (st && onList(st, g.dk) && !anyone) noShows.push({ k, g, m: t ? t.m : 0, slot: named ? g.start : (slots.get(g.dk) || []).find(x => x.key === k && Math.abs(g.start - x.at) <= NEAR).at });
     }
-    else if (keys.length >= 1 && keys.length <= MAX_GROUP) for (const e of g.byKey.values()){
+    if (!named && keys.length >= 1 && keys.length <= MAX_GROUP) for (const e of g.byKey.values()){
+      if (expected.has(e.key)) continue;
       const t = time(e); if (t.m < S.oneOnOneMin) continue;
       addMeet(e.key, g, { minutes: t.m, at: t.at, with: keys.filter(k => k !== e.key).map(k => (byKey.get(k) || {}).name || k) });
     }
     // Names nobody knows, from a meeting small enough to be a 1-on-1 (a staff meeting's names aren't listed)
     if (keys.length + g.unmatched.size <= MAX_GROUP) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, meeting at ${fmt(g.start)}` });
+  }
+  for (const x of noShows){
+    const met = (zoomMeet.get(x.k) || []).some(y => !y.noShow && y.date === x.g.dk && Math.abs(y.at - x.slot) <= NEAR);
+    if (!met) addMeet(x.k, x.g, { minutes: x.m, at: x.g.start, with: [], noShow: true });
   }
   for (const g of classes.values()) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, ${KIND[g.kind].toLowerCase()}` });
   const dks = [...classes.values()].map(g => g.dk).concat(Object.keys(D.status).map(k => k.slice(0, 10))).sort();
@@ -1573,7 +1587,7 @@ function renderMeetings(){
   h += `<h2 class="subhead">Meetings in these dates ${sub(plural(past.length, 'meeting'))}</h2>`;
   h += past.length ? `<div class="panel"><ul class="occlist named">${past.map(x => occLi(x.o, x.name)).join('')}</ul></div>`
     : `<p class="muted">No 1-on-1s in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</p>`;
-  h += `<p class="small muted" style="margin-top:10px">Held in these dates: meetings held out of those held or missed. Canceled meetings, and a missed meeting that was made up, aren’t counted. With the student’s name in the Zoom meeting’s name, its report marks the meeting held (showing how late they joined) or a no-show; a meeting with them on another day that week is the make-up, or the meeting moved.</p>`;
+  h += `<p class="small muted" style="margin-top:10px">Held in these dates: meetings held out of those held or missed. Canceled meetings, and a missed meeting that was made up, aren’t counted. A Zoom report within half an hour of a meeting’s time marks it held (showing how late the student joined) or a no-show; a meeting with them on another day that week is the make-up, or the meeting moved.</p>`;
   el.innerHTML = h;
 }
 
@@ -1665,7 +1679,7 @@ function renderSetup(){
       <div class="panel"><h2>1-on-1s</h2>
         <p class="small" style="margin:0 0 10px">Each student has a standing 1-on-1, like every other Wednesday at 3:30. Set it on the <button class="linkish" data-goto="meetings">1-on-1s</button> tab. Every meeting on it is listed, so one that didn’t happen still shows up for you to mark.</p>
         <div class="set">${setRow('s-min', 'oneOnOneMin', 'A Zoom report marks it held when the student is in it at least', 'min')}</div>
-        <p class="small muted" style="margin:10px 0 0">Put the student’s name in the Zoom meeting’s name (or the report’s file name): a meeting they never joined is then a no-show, and one with them on another day that week is the make-up. A meeting that names no one counts when it has ${MAX_GROUP} students or fewer. Joining more than the late minutes above after the meeting’s time shows as late.</p></div></div>
+        <p class="small muted" style="margin:10px 0 0">A Zoom meeting within half an hour of a student’s 1-on-1 time is their 1-on-1: if they never joined, it’s a no-show. A meeting with ${MAX_GROUP} students or fewer at another time counts for each student in it, so a meeting moved to another day that week is found too. Joining more than the late minutes above after the meeting’s time shows as late.</p></div></div>
     <div class="panel"><h2>Zoom names</h2>
       <div class="settext"><label for="s-teacher">Your name in Zoom (never counted as a student)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Jordan Rivera"></div>
       <h3 class="psub">Linked</h3>
@@ -1806,11 +1820,11 @@ function sampleFolder(){
     file(`zoom-study-hall-${mdY(dk)}.csv`, dk, rows);
     j++;
   }
-  // 1-on-1s: each student's standing meeting, in Zoom meetings named for the student. Most were held (Ben and Elif join
+  // 1-on-1s: each student's standing meeting, saved with Zoom's own file names (no student names). Most were held (Ben and Elif join
   // late once). Ben didn't show up for his first one (the meeting's report has only the teacher) and met the next day
   // instead; Amara's second one happened a day later than scheduled; Dev's was canceled; Carmen's first one was moved to
   // Friday by hand; Grace's was a phone call; the latest ones with Hugo and Isabel have no report yet (to mark); and Jonah
-  // has no schedule yet. Carmen's reports name her only in the meeting's topic, not in the file name.
+  // has no schedule yet.
   const sched = { 'Amara Okafor': [2, '15:30', 2], 'Ben Whitfield': [3, '15:30', 2], 'Carmen Reyes': [9, '16:00', 2], 'Dev Patel': [0, '15:30', 2],
     'Elif Demir': [4, '10:00', 1], 'Felix Wagner': [1, '15:30', 2], 'Grace Lin': [10, '16:00', 2], 'Hugo Martins': [7, '16:00', 2], 'Isabel Cruz': [11, '15:30', 2] };
   const special = { 'Ben Whitfield': { 0: { noShow: 1 }, 1: { late: 9 } }, 'Amara Okafor': { 1: { metOn: 1 } },
@@ -1828,7 +1842,7 @@ function sampleFolder(){
       if (x.zoom === false || (['Hugo Martins', 'Isabel Cruz'].includes(n) && dk >= addDays(today, -12))) continue;
       const day = addDays(mark.to || dk, x.metOn || 0), t = hmMin(mark.at || time) + (x.late ?? int(0, 2));
       if (day >= today) continue;
-      const meet = (d, rows) => n === 'Carmen Reyes' ? file(`zoom-meeting-${mdY(d)}.csv`, d, rows, `1:1 ${n}`) : file(`1on1 ${n} ${mdY(d)}.csv`, d, rows);
+      const meet = (d, rows) => file(`participants_8${pad(files.length)}${int(1000000, 9999999)}.csv`, d, rows);
       if (x.noShow){ meet(day, [[teacher, t - 2, t + 15]]); meet(addDays(day, x.noShow), [[teacher, 15 * 60 - 3, 15 * 60 + 22], [n, 15 * 60 + 1, 15 * 60 + 18]]); continue; }
       meet(day, [[teacher, t - 3, t + 22], [n, t, t + 15 + int(0, 6)]]);
     }
@@ -1875,7 +1889,7 @@ function helpHTML(){
       <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
       <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
       <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
-      <li><b>1-on-1s</b> come from each student’s schedule. Every meeting on it is listed. Put the student’s name in the Zoom meeting’s name (like “1-on-1 Ben Whitfield”), or in the report’s file name. Then the report marks it held and shows if they were late, or marks it a <b>no-show</b> when they never joined. A meeting with them on another day that week counts as the make-up (after a no-show) or as the meeting moved. Without a report, mark it held, missed or canceled yourself. A missed or unmarked meeting shows in red in the Overview’s last column. Canceled meetings aren’t counted</li></ul>
+      <li><b>1-on-1s</b> come from each student’s schedule. Every meeting on it is listed. A Zoom report that starts within half an hour of the meeting’s time is that meeting: it marks it held (and shows if the student was late), or a <b>no-show</b> when the student never joined. A meeting with them on another day or time that week counts as the make-up (after a no-show) or as the meeting moved. Without a report, mark it held, missed or canceled yourself. A missed or unmarked meeting shows in red in the Overview’s last column. Canceled meetings aren’t counted</li></ul>
     <h3>Colors and marks</h3>
     <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
       <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
