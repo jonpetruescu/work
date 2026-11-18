@@ -472,6 +472,41 @@ button.plantag:hover,button.plantag[aria-expanded="true"]{background:color-mix(i
 .planacclabel{display:grid;gap:4px;font-weight:600}
 .planform textarea{min-height:130px;font-weight:400}
 .planmsg{margin:0;min-height:1.4em;color:var(--bad)}
+.menu .item{background:none;border:0;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:var(--fs-md);color:var(--ink)}
+.menu .item:hover,.menu .item:focus-visible{background:var(--paper)}
+.menu .inc{border-top:1px solid var(--grid);margin-top:4px;padding:8px 10px 4px;font-size:var(--fs-sm);color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.inc label{display:inline-flex;gap:6px;align-items:center}
+.hist{width:100%;border-collapse:collapse;font-size:.84rem}
+.hist td,.hist th{padding:5px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+.hist th{font-size:.74rem;color:var(--muted);font-weight:600}
+.calwrap{max-width:760px}
+table.cal{border-collapse:separate;border-spacing:4px;width:100%;table-layout:fixed}
+table.cal th{font-size:.76rem;color:var(--muted);font-weight:600;text-align:center;padding:2px}
+table.cal th.wk{width:4.6em;text-align:left}
+table.cal td{height:50px;border-radius:6px;text-align:center;vertical-align:middle;position:relative;padding:0;font-size:.95rem;font-weight:700}
+.cal .dn{position:absolute;top:3px;left:5px;font-size:.64rem;font-weight:500}
+.cal .mn{display:block;font-size:.68rem;font-weight:500;margin-top:1px}
+
+.cal td.c-noclass{border:1px dashed var(--line);color:var(--muted)}
+.cal td.c-missing{border:1px dashed var(--late);color:var(--late)}
+.cal td.c-off{color:var(--faint)}
+.cal td.c-pending{border:1px solid var(--grid);color:var(--faint)}
+.cal td{color:var(--ov-ink)}
+.cal td.c-none,.cal td.c-later{color:var(--faint)}
+.cal .kd{display:block;font-size:.6rem;font-weight:600;letter-spacing:.04em;opacity:.8}
+.cal td .ovm{position:absolute;right:4px;bottom:3px;font-size:.66rem}
+.cal td button.calb{all:unset;position:absolute;inset:0;cursor:pointer;border-radius:6px}
+.cal td button.calb:hover{box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.cal td button.calb:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.cal tfoot td{height:auto;font-size:.76rem;font-weight:500;color:var(--muted);padding-top:4px}
+textarea.family{width:100%;min-height:240px;font-size:.92rem;line-height:1.5;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:10px 12px}
+.ruled{border-bottom:1px solid #999;height:26px}
+.notetext{white-space:pre-wrap;font-size:1rem;line-height:1.55;margin-top:14px}
+#printArea{display:none}
+.caption{font-size:var(--fs-xs);color:var(--muted);margin:4px 0 0}
+.fu .when{color:var(--muted);min-width:4.5em}
+.fuform input[type=text]{flex:1;min-width:200px}
+.repmenu .pop{left:auto;right:0;min-width:260px}
 .fu{list-style:none;margin:0;padding:0}
 .fu li{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm)}
 .fu .when{font-weight:600;min-width:4.6em}
@@ -538,6 +573,12 @@ main:focus{outline:none}
   header.top nav, .folder, .toolbar, .savebar, .helpbtn, .linkish, .noprint, .logform, .logmsg, .notice, #status, #banner, .skip, .ovpop, .ovdpop{display:none !important}
   .printonly{display:block}
   span.printonly{display:inline}
+  body.print-reports header.top, body.print-reports main{display:none !important}
+  body.print-reports #printArea{display:block}
+  .sreport{max-width:none}
+  .sreport + .sreport{break-before:page}
+  .rtiles, .calwrap, .hist tr, .fu li, .occlist li{break-inside:avoid}
+  .cal td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   header.top{display:none}
   h2.ptitle{display:block;font-size:var(--fs-lg);margin:0 0 4px}
   .ovt .ovleft{font-size:.5rem}
@@ -603,6 +644,8 @@ main:focus{outline:none}
   <section id="tab-setup" role="tabpanel" aria-labelledby="t-setup" hidden></section>
 </main>
 <dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
+<dialog class="dlg" id="copyDlg" aria-labelledby="copyTitle"></dialog>
+<section id="printArea" aria-hidden="true"></section>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
 <div id="tagPop" class="tagpop noprint" role="dialog" hidden></div>
 <script>
@@ -686,7 +729,7 @@ const daysText = ws => ws.length ? listJoin(ws.map(w => cap(DAYS[w]) + 's'), 5) 
 function defaultData(){
   return { version: 1,
     settings: { homeroomDay: 1, homeroomStart: '08:30', homeroomEnd: '09:00', studyDays: [2, 4], studyStart: '14:00', studyEnd: '15:00',
-      lateGrace: 5, leaveGrace: 5, oneOnOneMin: 5, teacherName: '' },
+      lateGrace: 5, leaveGrace: 5, oneOnOneMin: 5, teacherName: '', contactLine: '' },
     students: [],    // [{ key, name, added, removed }]: on the list from added, until the day before removed
     shDays: {},      // { studentKey: ['YYYY-MM-DD', …] } the study hall sessions a student is assigned to
     oneSched: {},    // { studentKey: [{ from, time, every } | { from, stop: true }] } the standing 1-on-1: on from's weekday at time,
@@ -718,6 +761,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
+  if (typeof set.contactLine === 'string') S.contactLine = set.contactLine.trim().slice(0, 200);
   const out = { version: 1, settings: S, students: [], shDays: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, noClass: {}, extraDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
@@ -794,7 +838,8 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, planEdit: null, ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, planEdit: null,
+  include: { table: true, log: true, notes: false, plan: false, cheat: false }, fuEdit: null, fuEditDraft: null, fuPrefill: null, familyDraft: {}, familyOpen: false, familyCopied: null, ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -1667,7 +1712,7 @@ function renderStudents(){
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student"><span class="grow"></span>
     <span class="tbend"><label class="sortby">Sort by <select data-sortby>${SORTS.map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-    <button class="btn small ghost" data-exportcsv>Download CSV</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
+    <button class="btn small ghost" data-exportcsv>Download CSV</button>${printMenu(all.length)}</span></div>`;
   const nHr = days.filter(d => d.kind === 'hr' && d.dk <= today).length, nSh = days.filter(d => d.kind === 'sh' && d.dk <= today).length;
   h += missingNotice(A, period);
   h += `<h2 class="printonly ptitle">Homeroom attendance: students</h2><p class="listinfo">${esc(fmtPeriod({ from: period.from, to: period.to }))} · ${plural(nHr, 'homeroom day')} and ${plural(nSh, 'study hall day')} so far · ${plural(all.length, 'student')}<span class="printonly">${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</span></p>`;
@@ -1701,54 +1746,277 @@ function exportCSV(){
 
 /* ---------------- One student's page ---------------- */
 function renderStudentPage(A, el){
-  const { period, days, list } = studentList(A), s = A.byKey.get(state.student), r = list.find(x => x.key === s.key) || rowFor(A, s, days);
-  const i = list.findIndex(x => x.key === r.key), prev = i > 0 ? list[i - 1] : null, next = i >= 0 && i < list.length - 1 ? list[i + 1] : null, none = '<span class="pnx"></span>';
-  const back = ({ overview: '← Overview', meetings: '← 1-on-1s', study: '← Study hall' })[state.studentTab] || '← All students', today = todayDk();
-  let h = `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
+  const { list } = studentList(A);
+  el.innerHTML = reportBar(A, list) + studentReportHTML(A, state.student, { include: state.include });
+}
+// One toolbar above the report: back, the students before and after this one in the list, the dates, and Print or share.
+function reportBar(A, list){
+  const i = list.findIndex(x => x.key === state.student), prev = i > 0 ? list[i - 1] : null, next = i >= 0 && i < list.length - 1 ? list[i + 1] : null, none = '<span class="pnx"></span>';
+  const back = ({ overview: '← Overview', meetings: '← 1-on-1s', study: '← Study hall' })[state.studentTab] || '← All students';
+  return `<div class="toolbar rbar"><button class="btn small ghost" data-studentback>${esc(back)}</button>
     ${i >= 0 && list.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
       <span>${i + 1} of ${list.length}</span>${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
-    ${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
-  const o = r.one, need = nextSH(r.key);
-  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need ? `Next study hall ${shortDate(need)}` : ''].filter(Boolean);
+    ${rangeBar()}<span class="grow"></span>
+    <details class="menu repmenu"><summary class="btn small ghost">Print or share…</summary><div class="pop" role="group" aria-label="Print or share">
+      <button class="item" data-printone>Print this report</button><button class="item" data-printfamily>Print family version</button>
+      <button class="item" data-copysummary>Copy summary</button>
+      <button class="item" data-exportstudent title="Saves a file with this student’s name to your Downloads folder.">Export CSV</button>
+      <div class="inc">Include:${includeBoxes()}</div></div></details></div>`;
+}
+function includeBoxes(){
+  const I = state.include;
+  return `<label><input type="checkbox" data-include="table"${I.table ? ' checked' : ''}> Day-by-day table</label>
+    <label><input type="checkbox" data-include="log"${I.log ? ' checked' : ''}> Follow-up log</label>
+    <label><input type="checkbox" data-include="notes"${I.notes ? ' checked' : ''}> My day notes</label>
+    <label><input type="checkbox" data-include="plan"${I.plan ? ' checked' : ''}> IEP/504, ML and supports</label>
+    <label><input type="checkbox" data-include="cheat"${I.cheat ? ' checked' : ''}> Cheating log</label>`;
+}
+function printMenu(total){
+  return `<details class="menu repmenu noprint"><summary class="btn small ghost">Print…</summary><div class="pop" role="group" aria-label="Print">
+    <button class="item" data-printlist>This list</button>
+    <button class="item" data-printreports="all">A report for every student (${total})</button>
+    <div class="inc">Include on reports:${includeBoxes()}</div></div></details>`;
+}
+// Everything about one student in the dates shown: what the report, the summary, the CSV and the note to the family use.
+function ctxFor(A, key){
+  const { period, days } = studentList(A), s = A.byKey.get(key), r = rowFor(A, s, days), today = todayDk();
+  return { A, key, s, r, name: s.name, first: firstName(s.name), period: { ...period, calcTo: period.to < today ? period.to : today }, days };
+}
+function currentCtx(){ return ctxFor(state.lastAnalysis || analyze(), state.student); }
+// The cells a report shows: homeroom days on the list, and study hall days the student was assigned (or came, or has a note).
+const reportCells = r => r.cells.filter(c => c.kind === 'hr' ? (c.listed || c.cat === 'extra' || c.note) : (c.req || c.cat === 'extra' || c.note));
+function studentReportHTML(A, key, o){
+  const ctx = ctxFor(A, key), { s, r, period } = ctx, today = todayDk(), I = o.include || state.include;
+  if (o.family) return familyReportHTML(ctx, o);
+  const one = r.one, need = nextSH(r.key);
+  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need && !o.print ? `Next study hall ${shortDate(need)}` : ''].filter(Boolean);
   // Dropped from homeroom: a line under the name saying so (with Undo). Until then, two quiet links at the right end of the
   // name row: "Dropped from homeroom?" opens a small menu to record it, and "Delete student" asks first.
-  const plan = planOf(r.key), acc = planAcc(plan), ml = mlOf(r.key), sup = planAcc({ acc: ml && ml.sup });
+  const showPlan = !o.print || I.plan, plan = planOf(r.key), acc = planAcc(plan), ml = mlOf(r.key), sup = planAcc({ acc: ml && ml.sup });
   const accList = xs => `<ul class="planacc">${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>`;
-  const planBox = plan || ml ? `<div class="planbox noprint">${
+  const planBox = showPlan && (plan || ml) ? `<div class="planbox">${
     plan ? `<div class="planrow"><span class="plantag" title="${esc(PLAN_NAME[plan.type])}">${planShort(r.key)}</span><div><b>Accommodations</b>${acc.length ? accList(acc) : ' <span class="muted">None entered.</span>'}</div></div>` : ''}${
     ml ? `<div class="planrow"><span class="plantag mltag">${esc(mlShort(r.key))}</span><div><b>${esc(mlWords(ml))}</b>${sup.length ? accList(sup) : ''}</div></div>` : ''}</div>` : '';
-  const links = `<span class="noprint dropbtns">${planMenu({ key: r.key, name: r.name })}${s.removed ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(s.key)}"${state.dropEdit === s.key ? ' open' : ''}>
+  const links = o.print ? '' : `<span class="noprint dropbtns">${planMenu({ key: r.key, name: r.name })}${s.removed ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(s.key)}"${state.dropEdit === s.key ? ' open' : ''}>
       <summary class="linkish">Dropped from homeroom?</summary><div class="pop dropform" role="group" aria-label="Dropped from homeroom">
         <div class="dropline"><span>Not in homeroom starting</span><input type="date" data-dropdate value="${esc(today)}" aria-label="First day not in homeroom">
           <button class="btn small" data-dropsave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
         <p>Later days aren’t expected or counted, and ${esc(firstName(s.name))} is taken off the 1-on-1 and study hall lists. Earlier days stay as they are.</p></div></details>`}
       <button class="linkish" data-studelete="${esc(s.key)}">Delete student</button></span>`;
   const dropLine = s.removed ? `<p class="dropnote">${s.removed > today ? 'Leaving' : 'Dropped from'} homeroom starting ${esc(shortDate(s.removed))}. Later days aren’t counted.
-      <button class="linkish noprint" data-stuback="${esc(s.key)}">Undo</button></p>` : '';
+      ${o.print ? '' : `<button class="linkish noprint" data-stuback="${esc(s.key)}">Undo</button>`}</p>` : '';
   const tile = (label, value, sub, cls = '') => `<div class="tile${cls}"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div><div class="s">${esc(sub)}</div></div>`;
-  h += `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow printonly">Homeroom attendance</div>
-    <div class="rname"><h2 tabindex="-1">${esc(r.name)}</h2>${cheatTag(r.key, 'noprint')}${links}</div>${dropLine}${planBox}
-    <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${settings().teacherName ? ` · ${esc(settings().teacherName)}` : ''}</span></p>
+  const S = settings();
+  let h = `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow${o.print ? '' : ' printonly'}">Homeroom attendance</div>
+    <div class="rname"><h2 tabindex="-1">${esc(r.name)}</h2>${o.print ? (I.cheat ? cheatTag(r.key) : '') : cheatTag(r.key, 'noprint')}${links}</div>${dropLine}${planBox}
+    <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="${o.print ? '' : 'printonly'}"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${S.teacherName ? ` · Prepared by ${esc(S.teacherName)}` : ''}</span></p>
     <div class="rtiles">${tile('Homeroom', r.hr.pct === null ? '—' : `${r.hr.pct}%`, attText(r.hr, 'day') || 'No days counted yet')}
-      ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'required day') || 'Not required in these dates')}
-      ${tile('1-on-1s', o.pct === null ? '—' : `${o.pct}%`, oneText(o) || 'None held or missed yet', o.status === 'mark' || o.status === 'missed' ? ' due' : '')}
-      ${tile('Next 1-on-1', o.next ? shortDate(o.next.date) : r.cur && !o.sched ? 'No schedule' : '—', o.next ? `${hmText(o.next.time)}${o.next.moved ? ' · moved' : ''}` : '', !o.sched && r.cur ? ' due' : '')}</div></header>`;
-  const hrCells = r.cells.filter(c => c.kind === 'hr' && (c.listed || c.cat === 'extra' || c.note));
-  const shCells = r.cells.filter(c => c.kind === 'sh' && (c.req || c.cat === 'extra' || c.note));
-  h += `<section class="rsec"><h3>Homeroom days <span class="small muted">${esc(daysText([settings().homeroomDay]))}, ${esc(winText('hr'))}</span></h3>${dayStrip(hrCells, 'Homeroom days')}</section>`;
-  h += `<section class="rsec"><h3>Study hall <span class="small muted">${esc(daysText(settings().studyDays))}${settings().studyDays.length ? ', ' + esc(winText('sh')) : ''}</span></h3>
-    ${dayStrip(shCells, 'Study hall days', 'No study hall days required in these dates.')}
-    <h3 class="psub">Study hall sessions for ${esc(firstName(r.name))}</h3>${sessionsEditor(r)}</section>`;
-  const ms = o.all.filter(x => inRange(x.date) || x.date > today || x.state === 'unmarked').reverse();
-  h += `<section class="rsec"><h3>1-on-1s</h3><p class="small ov1facts"><span class="schtxt">${esc(schedText(o.sched))}${o.sched && o.sched.later ? `, starting ${esc(monDay(o.sched.from))}` : ''}</span>${r.cur ? `<span class="noprint">${schedMenu(r)}</span>` : ''}</p>
-    <ul class="occlist">${ms.length ? ms.map(x => occLi(x)).join('') : `<li class="none">${o.sched ? 'No meetings in these dates.' : 'No schedule yet. Set one to list the meetings.'}</li>`}</ul>
-    <div class="noprint" style="margin-top:12px">${logForm(r.key, !r.cur)}${logMsgHTML('page')}</div></section>`;
-  const notes = Object.entries(state.data.status).filter(([k, v]) => v.note && k.split('|').slice(2).join('|') === r.key).map(([k, v]) => ({ dk: k.slice(0, 10), kind: k.split('|')[1], note: v.note }))
-    .sort((a, b) => b.dk.localeCompare(a.dk));
-  h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
-    : '<p class="small muted">No notes yet. To add one, click a day on the Overview.</p>'}</section>${cheatSection(r.key)}</article>`;
-  el.innerHTML = h;
+      ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'session') || 'None assigned in these dates')}
+      ${tile('1-on-1s', one.pct === null ? '—' : `${one.pct}%`, oneText(one) || 'None held or missed yet', one.status === 'mark' || one.status === 'missed' ? ' due' : '')}
+      ${tile('Next 1-on-1', one.next ? shortDate(one.next.date) : r.cur && !one.sched ? 'No schedule' : '—', one.next ? `${hmText(one.next.time)}${one.next.moved ? ' · moved' : ''}` : '', !one.sched && r.cur ? ' due' : '')}</div></header>`;
+  h += `<section class="rsec"><h3>Calendar <span class="small muted">Homeroom ${esc(daysText([S.homeroomDay]))}, ${esc(winText('hr'))}${S.studyDays.length ? ` · study hall ${esc(daysText(S.studyDays))}, ${esc(winText('sh'))}` : ''}</span></h3>${calendarHTML(ctx, o)}</section>`;
+  if (!o.print) h += `<section class="rsec"><h3>Study hall sessions for ${esc(ctx.first)}</h3>${sessionsEditor(r)}</section>`;
+  if (o.print && I.table) h += printDayTable(ctx, I);
+  const ms = one.all.filter(x => inRange(x.date) || x.date > today || x.state === 'unmarked').reverse();
+  h += `<section class="rsec"><h3>1-on-1s</h3><p class="small ov1facts"><span class="schtxt">${esc(schedText(one.sched))}${one.sched && one.sched.later ? `, starting ${esc(monDay(one.sched.from))}` : ''}</span>${r.cur && !o.print ? `<span class="noprint">${schedMenu(r)}</span>` : ''}</p>
+    <ul class="occlist">${ms.length ? ms.map(x => occLi(x)).join('') : `<li class="none">${one.sched ? 'No meetings in these dates.' : 'No schedule yet. Set one to list the meetings.'}</li>`}</ul>
+    ${o.print ? '' : `<div class="noprint" style="margin-top:12px">${logForm(r.key, !r.cur)}${logMsgHTML('page')}</div>`}</section>`;
+  if (!o.print || I.notes){
+    const notes = dayNotes(r.key).filter(n => !o.print || (n.dk >= period.from && n.dk <= period.to));
+    h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
+      : `<p class="small muted">No notes${o.print ? '' : ' yet. To add one, click a day on the Overview'}.</p>`}</section>`;
+  }
+  if (!o.print || I.log) h += followUpSection(ctx, o);
+  if (!o.print) h += cheatSection(r.key);
+  else if (I.cheat) h += `<section class="rsec"><h3>Cheating log</h3>${cheatOf(r.key).length ? `<ul class="fu">${cheatOf(r.key).map(x => `<li>${chLine(x)}</li>`).join('')}</ul>` : '<p class="small">Nothing logged.</p>'}</section>`;
+  if (!o.print) h += familySection(ctx);
+  return h + footerSection(ctx, o) + '</article>';
 }
+const dayNotes = key => Object.entries(state.data.status).filter(([k, v]) => v.note && k.split('|').slice(2).join('|') === key).map(([k, v]) => ({ dk: k.slice(0, 10), kind: k.split('|')[1], note: v.note }))
+  .sort((a, b) => b.dk.localeCompare(a.dk));
+// The calendar, after the intervention tracker's: a row for each week, a column for each weekday with homeroom or study hall.
+// Each day has its Overview color, its day of the month, HR or SH, its letters and ✓. On screen, a day opens on the Overview.
+function calendarHTML(ctx, o = {}){
+  const cells = reportCells(ctx.r), byDk = new Map();
+  for (const c of cells){ if (!byDk.has(c.dk)) byDk.set(c.dk, []); byDk.get(c.dk).push(c); }
+  const wds = [...new Set(ctx.days.map(d => parseDk(d.dk).getDay()))].sort((a, b) => a - b);
+  if (!wds.length) return '<p class="muted small">No homeroom or study hall days in these dates.</p>';
+  const weeks = [...new Set(ctx.days.map(d => weekKey(d.dk)))].sort(), kinds = new Set(), today = todayDk();
+  let body = '';
+  for (const wk of weeks){
+    body += `<tr><th class="wk" scope="row">${esc(monDay(wk))}</th>`;
+    for (const wd of wds){
+      const dk = addDays(wk, (wd + 6) % 7), cs = byDk.get(dk) || [], num = parseDk(dk).getDate();
+      const c = cs.find(x => x.kind === 'hr') || cs[0];
+      if (!c){ body += ctx.days.some(d => d.dk === dk) ? `<td class="c-off"><span class="dn" aria-hidden="true">${num}</span><span class="sr">${esc(shortDate(dk))}: not expected</span></td>` : '<td></td>'; continue; }
+      kinds.add(c.cat);
+      const lets = ['L', 'C'].filter(l => c[l]).join(''), sym = c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : lets;
+      const words = `${KIND[c.kind]}, ${shortDate(dk)}: ${cellWords(c)}${cs.length > 1 ? `; ${KIND[cs[1].kind]}: ${cellWords(cs[1])}` : ''}`;
+      body += `<td class="c-${c.cat}"><span class="dn" aria-hidden="true">${num}</span><span class="kd" aria-hidden="true">${c.kind.toUpperCase()}${cs.length > 1 ? '+SH' : ''}</span><span aria-hidden="true">${esc(sym)}</span>${c.msg ? '<b class="ovm" aria-hidden="true">✓</b>' : ''}${
+        o.print ? `<span class="sr">${esc(words)}</span>` : `<button class="calb" data-calday="${esc(c.xk)}" title="${esc(words)}" aria-label="${esc(words)}. Open on the Overview"></button>`}</td>`;
+    }
+    body += '</tr>';
+  }
+  const came = wds.map(wd => { const cs = cells.filter(c => parseDk(c.dk).getDay() === wd && c.req && c.dk <= today && (PRESENT.has(c.cat) || c.cat === 'absent'));
+    return cs.length ? `${cs.filter(c => PRESENT.has(c.cat)).length} of ${cs.length}` : '—'; });
+  return `<div class="calwrap" style="max-width:${wds.length * 104 + 90}px"><table class="cal"><caption class="sr">Calendar of homeroom and study hall days. Colors and letters show what happened each day.</caption>
+    <thead><tr><th class="wk"><span class="sr">Week of</span></th>${wds.map(w => `<th scope="col">${cap(DAYS[w]).slice(0, 3)}</th>`).join('')}</tr></thead>
+    <tbody>${body}</tbody><tfoot><tr><th scope="row">Came</th>${came.map(x => `<td>${esc(x)}</td>`).join('')}</tr></tfoot></table></div>
+    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : k === 'noclass' ? '–' : ''}</i>${esc(CELL[k])}</span>`).join('')}${
+      Object.entries(OV_LET).filter(([k]) => cells.some(c => c[k])).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}${cells.some(c => c.msg) ? '<span><b class="ovm">✓</b> Message sent home</span>' : ''}</div>
+    ${o.print ? '' : '<p class="caption noprint">Click a day to change it on the Overview.</p>'}`;
+}
+// Every day as a table, printed on request.
+function dayTableHTML(ctx, notes){
+  const rows = reportCells(ctx.r).filter(c => c.dk <= todayDk());
+  if (!rows.length) return '';
+  return `<table class="hist"><thead><tr><th>Date</th><th>Class</th><th>Status</th><th>Joined</th><th>Left</th><th>Minutes</th>${notes ? '<th>Note</th>' : ''}</tr></thead><tbody>
+    ${rows.map(c => { const r = c.rec;
+      return `<tr><td>${esc(shortDate(c.dk))}</td><td>${esc(KIND[c.kind])}</td><td>${esc(cap(cellWords({ ...c, hand: false, note: '' })))}</td><td>${r && r.first ? esc(fmt(r.first)) : '—'}</td><td>${r && r.last ? esc(fmt(r.last)) : '—'}</td><td>${r && r.inZoom ? r.min : '—'}</td>${notes ? `<td>${esc(c.note)}</td>` : ''}</tr>`; }).join('')}</tbody></table>`;
+}
+function printDayTable(ctx, I){
+  const t = dayTableHTML(ctx, I.notes);
+  return t ? `<section class="rsec"><h3>Every day</h3>${t}</section>` : '';
+}
+/* Follow-up log: what has been done about it */
+const fuHow = f => FU_HOW[f.how] || 'Other';
+const fuSorted = key => [...(state.data.followUps[key] || [])].sort((a, b) => b.date.localeCompare(a.date));
+const fuInputs = f => `<input type="date" data-fudate value="${esc(f.date)}" aria-label="Date">
+  <select data-fuhow aria-label="How">${Object.entries(FU_HOW).map(([k, l]) => `<option value="${k}"${f.how === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+  <input type="text" data-futext maxlength="300" placeholder="What happened" value="${esc(f.text)}" aria-label="What happened">`;
+const fuLine = (f, prefix = '') => `<li><span class="when">${esc(prefix + monDay(f.date))}</span><b>${esc(fuHow(f))}</b><span class="txt">${esc(f.text)}</span></li>`;
+function followUpSection(ctx, o){
+  const all = fuSorted(ctx.key);
+  if (o.print){
+    const inP = all.filter(f => f.date >= ctx.period.from && f.date <= ctx.period.to), earlier = all.find(f => f.date < ctx.period.from);
+    const items = [...inP.map(f => fuLine(f)), ...(earlier ? [fuLine(earlier, 'Earlier: ')] : [])];
+    return `<section class="rsec"><h3>Follow-up</h3>${items.length ? `<ul class="fu">${items.join('')}</ul>` : '<p class="small">No follow-ups logged.</p>'}</section>`;
+  }
+  const pre = state.fuPrefill && state.fuPrefill.key === ctx.key ? state.fuPrefill : { date: todayDk(), how: 'call', text: '' };
+  return `<section class="rsec" data-fusection><h3>Follow-up log</h3>
+    ${all.length ? `<ul class="fu">${all.map(f => state.fuEdit === f.id
+      ? `<li class="fuform" data-fuform data-fuid="${esc(f.id)}">${fuInputs(state.fuEditDraft && state.fuEditDraft.id === f.id ? state.fuEditDraft : f)}<button class="btn small" data-fusave="${esc(f.id)}">Save</button><button class="btn small ghost" data-fucancel>Cancel</button></li>`
+      : `<li><span class="when">${esc(monDay(f.date))}</span><b>${esc(fuHow(f))}</b><span class="txt">${esc(f.text)}</span>
+          <button class="linkish" data-fuedit="${esc(f.id)}">Edit</button><button class="linkish" data-fudel="${esc(f.id)}">Delete</button></li>`).join('')}</ul>`
+      : '<p class="small muted">No follow-ups logged yet.</p>'}
+    <div class="fuform" data-fuform>${fuInputs(pre)}<button class="btn small" data-fuadd>Add</button></div></section>`;
+}
+
+/* Note to the family: fixed, warm sentences with the student's numbers slotted in. Never notes, follow-ups or Zoom names. */
+const draftKey = ctx => ctx.key;   // one draft per student; it remembers which dates it was written for
+const monthDay = d => dtf({ month: 'long', day: 'numeric' }).format(asDate(d));
+const ofN = (x, n, w, ws) => `${x} of ${plural(n, w, ws)}`;
+// A short, warm note with the student's numbers. You edit it before sending; it never includes notes or follow-ups.
+function familyNote(ctx){
+  const { r, period, first: F } = ctx, S = settings(), hr = r.hr, sh = r.sh;
+  const L = [`Hello, ${F}’s family,`, '', `This is an update on ${F}’s attendance at homeroom from ${monthDay(period.from)} to ${monthDay(period.calcTo)}.`];
+  if (!hr.n) L.push('There were no homeroom days to count in this time.');
+  else if (hr.abs === 0) L.push(hr.n >= 3 ? `${F} came to all ${hr.n} homerooms. Thank you!` : hr.n === 2 ? `${F} came to both homerooms. Thank you!` : `${F} came to homeroom. Thank you!`);
+  else if (hr.att >= 1) L.push(`We were glad to see ${F} in homeroom. ${F} came to ${hr.att} of ${plural(hr.n, 'homeroom')}.`);
+  else L.push(`We miss ${F} in homeroom. ${F} is always welcome.`);
+  if (sh.n) L.push(sh.abs === 0 ? `${F} also came to ${sh.n === 1 ? 'the study hall session' : `all ${sh.n} study hall sessions`} ${F} was asked to attend.` : `${F} came to ${sh.att} of the ${plural(sh.n, 'study hall session')} ${F} was asked to attend.`);
+  L.push(`Homeroom meets on ${daysText([S.homeroomDay])}, ${winText('hr')}.`);
+  const nx = nextSH(r.key); if (nx) L.push(`${F}’s next study hall is ${longDate(nx)}, ${winText('sh')}.`);
+  L.push('', 'Thank you,');
+  if (S.teacherName) L.push(S.teacherName);
+  if (S.contactLine) L.push(S.contactLine);
+  return L.join('\n');
+}
+function familyText(ctx){
+  const d = state.familyDraft[draftKey(ctx)];
+  return d ? d.text : familyNote(ctx);
+}
+function familySection(ctx){
+  return `<section class="rsec noprint"><details data-familybox${state.familyOpen ? ' open' : ''}><summary><h3 style="display:inline">Write a note to the family</h3></summary>
+    ${(() => { const d = state.familyDraft[draftKey(ctx)];
+      return d && (d.from !== ctx.period.from || d.to !== ctx.period.to) && isDk(d.from) && isDk(d.to)
+        ? `<p class="small" style="color:var(--late)">You edited this note for ${esc(fmtPeriod(d))}. Click Start over to write it for these dates.</p>` : ''; })()}
+    <textarea class="family" rows="10" data-familydraft="${esc(draftKey(ctx))}" data-familyfrom="${esc(ctx.period.from)}" data-familyto="${esc(ctx.period.to)}" aria-label="Note to the family">${esc(familyText(ctx))}</textarea>
+    <div class="actions"><button class="btn small" data-copyfamily>Copy note</button><button class="btn small ghost" data-familyreset>Start over</button>
+      <button class="btn small ghost" data-printfamily>Print family version</button>
+      <button class="linkish" data-fulognote${state.familyCopied === ctx.key ? ' title="Adds “Sent attendance note” to the follow-up log"' : ' disabled title="Copy the note first"'}>Add to follow-up log</button></div>
+    <p class="small muted">Never includes your day notes or follow-up log. Read it before you send it.</p></details></section>`;
+}
+function familyReportHTML(ctx, o){
+  const { r, period } = ctx, tile = (label, value) => `<div class="tile"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div></div>`, boxes = [];
+  if (r.hr.n) boxes.push(tile('Came to homeroom', ofN(r.hr.att, r.hr.n, 'day')));
+  if (r.sh.n) boxes.push(tile('Came to study hall', ofN(r.sh.att, r.sh.n, 'session')));
+  return `<article class="sreport family"><header class="rhead"><div class="eyebrow">Homeroom</div>
+      <h2>Attendance update for ${esc(ctx.name)}</h2><p>${esc(monthDay(period.from))} – ${esc(monthDay(period.calcTo))}, ${parseDk(period.calcTo).getFullYear()}</p></header>
+    <div class="notetext" style="margin:0 0 16px">${esc(o.noteText ?? familyText(ctx))}</div>
+    ${boxes.length ? `<div class="rtiles">${boxes.join('')}</div>` : ''}
+    <section class="rsec"><h3>Calendar</h3>${calendarHTML(ctx, { print: true })}</section></article>`;
+}
+// How the numbers are counted, on paper only.
+function footerSection(ctx, o){
+  if (!o.print) return '';
+  const S = settings(), held = ctx.days.filter(d => ctx.A.classes.has(`${d.dk}|${d.kind}`)).map(d => d.dk);
+  const src = held.length ? `Source: Zoom participant reports for ${plural(new Set(held).size, 'day')}, ${monDay(held[0])} – ${monDay(held[held.length - 1])}. ` : '';
+  const def = `Present = in Zoom during homeroom or study hall; whether a student was engaging is marked by hand. Late = joined more than ${S.lateGrace} minutes after the start. Left early = left more than ${S.leaveGrace} minutes before the end. Excused absences and days without a Zoom report aren’t counted. Study hall counts only the sessions a student was assigned to.`;
+  return `<footer class="rsec small muted"><p style="margin:0">${esc(src + def)} <b>Confidential student information.</b></p>
+    <h3 style="margin-top:14px">Team notes</h3><div class="ruled"></div><div class="ruled"></div><div class="ruled"></div></footer>`;
+}
+/* Copy summary (plain text for an email or a form) and the one-student CSV */
+function teamSummary(ctx, inc){
+  const { r, period } = ctx, S = settings(), one = r.one;
+  const L = [`${ctx.name}: homeroom attendance`, fmtPeriod(period)];
+  const plan = planOf(ctx.key), ml = mlOf(ctx.key);
+  if (inc.plan && plan) L.push(`${PLAN_NAME[plan.type]}${planAcc(plan).length ? `. Accommodations: ${planAcc(plan).join('; ')}` : ''}`);
+  if (inc.plan && ml) L.push(`${mlWords(ml)}${planAcc({ acc: ml.sup }).length ? `. Supports: ${planAcc({ acc: ml.sup }).join('; ')}` : ''}`);
+  const ch = inc.cheat ? cheatOf(ctx.key) : [];
+  if (ch.length) L.push(`Caught cheating ${plural(ch.length, 'time')}: ${ch.map(x => `${monDay(x.date)}, ${cheatType(x).toLowerCase()}${x.note ? ` (${x.note})` : ''}`).join('; ')}`);
+  const line = (st, w) => st.n ? `${ofN(st.att, st.n, w)}${st.pct === null ? '' : ` (${st.pct}%)`}; present and engaged ${st.eng}${st.L ? `; late or left early ${st.L}` : ''}${st.exc ? `; plus ${st.exc} excused` : ''}` : 'none counted';
+  L.push('', `Homeroom: ${line(r.hr, 'day')}`, `Study hall: ${line(r.sh, 'assigned session')}`,
+    `1-on-1s: ${one.held + one.missed ? `${one.held} held of ${one.held + one.missed}` : 'none held or missed'}${one.noShows ? `, ${plural(one.noShows, 'no-show')}` : ''}${one.canceled ? `, ${one.canceled} canceled` : ''}${one.sched ? ` · ${schedText(one.sched)}` : ''}${one.next ? ` · next ${occWhen(one.next)}` : ''}`);
+  const cells = reportCells(r), nc = cells.filter(c => c.cat === 'noclass'), ms = cells.filter(c => c.cat === 'missing');
+  if (nc.length || ms.length) L.push(`${nc.length ? `No class: ${nc.map(c => `${monDay(c.dk)} (${(NOCLASS_REASONS[(state.data.noClass[c.dk] || {}).reason] || 'other').toLowerCase()})`).join(', ')}. ` : ''}${ms.length ? `No Zoom report yet: ${ms.map(c => monDay(c.dk)).join(', ')}.` : ''}`);
+  if (inc.log){
+    const fs = fuSorted(ctx.key).filter(f => f.date >= period.from && f.date <= period.to).reverse();
+    L.push('', 'Follow-up:'); if (!fs.length) L.push('- None logged.');
+    for (const f of fs) L.push(`- ${monDay(f.date)}, ${fuHow(f).toLowerCase()}: ${f.text}`);
+  }
+  if (inc.notes){
+    const ns = dayNotes(ctx.key).filter(n => n.dk >= period.from && n.dk <= period.to).reverse();
+    if (ns.length){ L.push('Notes:'); for (const n of ns) L.push(`- ${shortDate(n.dk)}, ${KIND[n.kind].toLowerCase()}: ${n.note}`); }
+  }
+  L.push('', `How this is counted: from Zoom participant reports. Late means joined more than ${S.lateGrace} minutes after the start. Left early means left more than ${S.leaveGrace} minutes before the end. Engagement is marked by hand. Excused absences don’t count against the student; study hall counts only assigned sessions.`);
+  return L.join('\n');
+}
+function exportStudent(ctx){
+  const notes = state.include.notes;
+  const rows = [['Date', 'Day', 'Class', 'Status', 'Late or left early', 'Camera off', 'Dismissed early', 'Message sent home', 'Joined', 'Left', 'Minutes in Zoom', ...(notes ? ['Note'] : [])]];
+  for (const c of reportCells(ctx.r).filter(c => c.dk <= todayDk())){ const r = c.rec;
+    rows.push([c.dk, cap(DAYS[parseDk(c.dk).getDay()]), KIND[c.kind], CELL[c.cat], c.L ? 'Yes' : '', c.C ? 'Yes' : '', c.fin ? 'Yes' : '', c.msg ? 'Yes' : '',
+      r && r.first ? fmt(r.first) : '', r && r.last ? fmt(r.last) : '', r && r.inZoom ? r.min : '', ...(notes ? [c.note] : [])]); }
+  downloadFile(`homeroom_${normKey(ctx.name).replace(/ /g, '-') || 'student'}_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+/* Printing: reports are built into #printArea, one student per page. */
+function printReports(keys, opts = {}){
+  const A = analyze(); state.lastAnalysis = A;
+  $('#printArea').innerHTML = keys.map(k => studentReportHTML(A, k, { print: true, family: !!opts.family, include: state.include, noteText: opts.noteText })).join('');
+  document.body.classList.add('print-reports');
+  window.print();
+}
+function readFollowUp(form, raw){
+  const text = form.querySelector('[data-futext]').value;
+  return { date: form.querySelector('[data-fudate]').value || todayDk(), how: form.querySelector('[data-fuhow]').value,
+    text: raw ? text : text.trim().slice(0, 300) };
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch (e){
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e2){} ta.remove(); return ok;
+  }
+}
+function showCopyBox(text){
+  const d = $('#copyDlg');
+  d.innerHTML = `<div class="dlg-head"><h2 id="copyTitle">Copy this text</h2><button class="btn small ghost" data-dlgclose>Close</button></div>
+    <div class="dlg-body"><p>This browser didn’t let the page copy it for you. The text below is selected: press <kbd>${MOD}</kbd> <kbd>C</kbd> to copy it, then click Close.</p>
+    <textarea readonly aria-label="Text to copy">${esc(text)}</textarea></div>`;
+  if (!d.open) d.showModal();
+  const ta = d.querySelector('textarea'); ta.focus(); ta.select();
+}
+
 function dayStrip(cells, label, empty = 'No days in these dates.'){
   if (!cells.length) return `<p class="small muted">${esc(empty)}</p>`;
   const kinds = new Set(cells.map(c => c.cat));
@@ -1901,6 +2169,7 @@ function renderSetup(){
         <p class="small muted" style="margin:10px 0 0">A Zoom meeting within half an hour of a student’s 1-on-1 time is their 1-on-1: if they never joined, it’s a no-show. A meeting with ${MAX_GROUP} students or fewer at another time counts for each student in it, so a meeting moved to another day that week is found too. Joining more than the late minutes above after the meeting’s time shows as late.</p></div></div>
     <div class="panel"><h2>Zoom names</h2>
       <div class="settext"><label for="s-teacher">Your name in Zoom (never counted as a student)</label><input id="s-teacher" type="text" maxlength="120" data-settext="teacherName" value="${esc(S.teacherName)}" placeholder="Jordan Rivera"></div>
+      <div class="settext" style="margin-top:10px"><label for="s-contact">Contact line, under your name on notes to families</label><input id="s-contact" type="text" maxlength="200" data-settext="contactLine" value="${esc(S.contactLine)}" placeholder="jrivera@school.org · (555) 012-3456"></div>
       <h3 class="psub">Linked</h3>
       ${Object.keys(state.data.aliases).length ? `<ul class="list">${Object.entries(state.data.aliases).map(([z, k]) => `<li><span>“${esc(z)}” is ${esc((A.byKey.get(k) || {}).name || k)}</span><button class="btn small ghost" data-unlink="${esc(z)}">Unlink</button></li>`).join('')}</ul>` : '<p class="small muted">None yet. Names that don’t match a student show on the Overview, where you can link them.</p>'}
       <h3 class="psub">Ignored</h3>
@@ -2104,7 +2373,7 @@ function helpHTML(){
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Students dropped from homeroom are hidden; tick <b>Show dropped</b> to see them. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
-      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, assign study hall sessions, see their meetings and notes, and print it.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can print a report or a family version, copy a summary, export a CSV, keep a follow-up log, write a note to the family, log cheating, assign study hall sessions, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
       <li><b>Study hall</b>: tick the study hall sessions each student should come to (like when they have a grade under 60%). Only those students are expected that day. You can also add a session on the student’s page.</li>
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
@@ -2542,6 +2811,53 @@ async function onClick(t){
     return;
   }
   if (has('data-plancancel')){ const m = t.closest('details'); if (m) closeMenu(m); renderCurrent(); planFocus(); return; }
+  // Student reports: print, copy, export (from the intervention tracker)
+  if (d.printreports){
+    const { all } = studentList(state.lastAnalysis || analyze());
+    const keys = [...all].sort((a, b) => a.name.localeCompare(b.name)).map(s => s.key);
+    if (keys.length) printReports(keys); return;
+  }
+  if (has('data-printone')) return printReports([state.student]);
+  if (has('data-printfamily')) return printReports([state.student], { family: true, noteText: familyText(currentCtx()) });
+  if (has('data-copysummary')){ const text = teamSummary(currentCtx(), state.include);
+    if (await copyText(text)) setStatus('Summary copied. Paste it into an email or a form.', 'info'); else showCopyBox(text); return; }
+  if (has('data-exportstudent')) return exportStudent(currentCtx());
+  if (d.calday){ const xk = d.calday; state.tab = 'overview'; state.student = null; state.ovSel = xk; state.ov1 = null; state.ovScroll = null; render(); navReplace(); focusOvCell(cellSel(xk)); return; }
+  if (has('data-fuadd')){
+    const form = t.closest('[data-fuform]'), f = readFollowUp(form);
+    if (!f.text){ form.querySelector('[data-futext]').focus(); return; }
+    (state.data.followUps[state.student] = state.data.followUps[state.student] || []).push({ id: uid(), ...f, date: isDk(f.date) ? f.date : todayDk() });
+    state.fuPrefill = null; changed(); renderStudents(); return;
+  }
+  if (d.fuedit){ state.fuEdit = d.fuedit; renderStudents(); const i = visible('[data-fuid] [data-futext]'); if (i) i.focus(); return; }
+  if (d.fusave){
+    const f = readFollowUp(t.closest('[data-fuform]')), x = (state.data.followUps[state.student] || []).find(y => y.id === d.fusave);
+    if (x && f.text){ Object.assign(x, f, { date: isDk(f.date) ? f.date : x.date }); changed(); }
+    state.fuEdit = null; state.fuEditDraft = null; renderStudents(); return;
+  }
+  if (has('data-fucancel')){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); return; }
+  if (d.fudel){
+    state.data.followUps[state.student] = (state.data.followUps[state.student] || []).filter(y => y.id !== d.fudel);
+    if (!state.data.followUps[state.student].length) delete state.data.followUps[state.student];
+    changed(); renderStudents(); setStatus('Follow-up deleted.', 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (has('data-copyfamily')){
+    const ta = visible('[data-familydraft]'), ok = ta && await copyText(ta.value);
+    if (ta) state.familyCopied = state.student;
+    if (ok) setStatus('Note copied. Paste it into your email.', 'info'); else if (ta) showCopyBox(ta.value);
+    const h = ta && ta.style.height; renderStudents(); const n = visible('[data-familydraft]'); if (n && h) n.style.height = h; return;
+  }
+  if (has('data-familyreset')){
+    const ctx = currentCtx(), ta = visible('[data-familydraft]'), h = ta && ta.style.height; delete state.familyDraft[draftKey(ctx)];
+    renderStudents(); const n = visible('[data-familydraft]'); if (n && h) n.style.height = h; return;
+  }
+  if (has('data-fulognote')){
+    const ctx = currentCtx();
+    state.fuPrefill = { key: state.student, date: todayDk(), how: 'message', text: `Sent attendance note (${monDay(ctx.period.from)} – ${monDay(ctx.period.calcTo)})` };
+    state.familyCopied = null; renderStudents();
+    const s = $('#tab-students [data-fusection]'); if (s){ s.scrollIntoView({ block: 'center' }); const i = s.querySelector('[data-fuform]:last-of-type [data-futext]'); if (i) i.focus({ preventScroll: true }); }
+    return;
+  }
   // The cheating log: logged on a student's page, or on the Students tab (pick the student there).
   if (has('data-chadd')){
     const form = t.closest('[data-chform]'), pick = form.querySelector('[data-chstudent]'), key = form.dataset.chkey || (pick && pick.value), x = readCheat(form);
@@ -2621,7 +2937,7 @@ async function onClick(t){
   // Students
   if (d.openstudent) return openStudent(d.openstudent);
   if (has('data-studentback')) return studentBack();
-  if (d.stepstudent){ state.student = d.stepstudent; state.chEdit = null; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
+  if (d.stepstudent){ state.student = d.stepstudent; state.chEdit = null; state.fuEdit = null; state.fuEditDraft = null; state.familyCopied = null; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
   // Study hall
   if (d.shrm){
     const i = d.shrm.lastIndexOf('|'), key = d.shrm.slice(0, i), dk = d.shrm.slice(i + 1), s = D.students.find(x => x.key === key);
@@ -2681,6 +2997,7 @@ async function onClick(t){
 }
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset || {};
+  if ('familydraft' in d) state.familyDraft[d.familydraft] = { text: t.value, from: d.familyfrom, to: d.familyto };
   if ((d.mllevel !== undefined || d.mlsup !== undefined) && t.value.trim()){
     const g = t.closest('[data-planmenu]'), c = g.querySelector('[data-mlstatus][value="ml"]');
     if (c && (d.mllevel !== undefined || !g.querySelector('[data-mlstatus]:checked:not([value=""])'))) c.checked = true;
@@ -2705,9 +3022,10 @@ document.addEventListener('change', e => {
   }
   if ('setday' in d){ S.homeroomDay = +t.value; changed(); return; }
   if (d.studyday){ const w = +d.studyday; S.studyDays = t.checked ? [...new Set([...S.studyDays, w])].sort() : S.studyDays.filter(x => x !== w); changed(); return; }
-  if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
+  if (d.settext){ S[d.settext] = t.value.trim().slice(0, d.settext === 'contactLine' ? 200 : 120); changed(); return; }
   if ('mlstatus' in d){ const g = t.closest('[data-planmenu]'), lv = g && g.querySelector('[data-mllevel]'); if (lv) lv.disabled = t.value === 'rfep'; }
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
+  if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); return; }
   if (d.ovmsg){ setMsg(d.ovmsg, t.checked); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return; }
   if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderOverview(); const c = $('#tab-overview [data-showdropped]'); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
@@ -2761,6 +3079,12 @@ document.addEventListener('keydown', e => {
     const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return;
   }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
+  const fform = t.closest && t.closest('[data-fuform]');
+  if (fform && t.tagName === 'INPUT'){
+    if (e.key === 'Enter'){ e.preventDefault(); const b = fform.querySelector('[data-fuadd],[data-fusave]'); if (b) b.click(); }
+    if (e.key === 'Escape' && fform.dataset.fuid){ state.fuEdit = null; state.fuEditDraft = null; renderStudents(); }
+    return;
+  }
   if (e.key === 'Enter' && t.tagName === 'INPUT'){
     // Enter in a small form presses its button.
     const f = t.closest('[data-logform], details.menu, .paddrow, [data-chform]'); const b = f && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occmove],[data-occnotesave],[data-schsave],[data-chadd],[data-chsave]');
@@ -2794,6 +3118,7 @@ function overviewKey(e, t){
 }
 document.addEventListener('toggle', e => {
   const el = e.target;
+  if (el.matches && el.matches('[data-familybox]')){ state.familyOpen = el.open; return; }
   if (!el.classList || !el.classList.contains('menu')) return;
   if ('rangemenu' in el.dataset) state.rangeMenu = el.open;
   if ('dropmenu' in el.dataset) state.dropEdit = el.open ? el.dataset.dropmenu : null;
@@ -2833,6 +3158,7 @@ window.addEventListener('beforeprint', () => {
   }
 });
 window.addEventListener('afterprint', () => {
+  document.body.classList.remove('print-reports');
   if (state.ovPrintAll){ state.ovPrintAll = false; renderOverview(); }
   const ps = $('#ovPage'); if (ps) ps.remove();
   document.body.classList.remove('print-ov');
