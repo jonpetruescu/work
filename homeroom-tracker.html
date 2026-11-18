@@ -285,8 +285,16 @@ textarea.stupaste{min-height:190px}
 .c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)}
 .c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)}
 .c-none,.c-extra{background:var(--ov-none)}
-.c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
-.c-none,.c-extra,.c-missing,.c-later{--ov-ink:var(--ink)}   /* marks on these days use the page ink, so they show in dark mode too */
+.c-noclass{background:var(--surface);color:var(--muted)} .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
+.c-none,.c-extra,.c-noclass,.c-missing,.c-later{--ov-ink:var(--ink)}
+.c-noclass .ovb{color:inherit}
+.dstrip i.c-noclass{border:1px dashed var(--line);color:var(--muted)}
+.nc1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}   /* one date with no report: the sentence, then its select and button on the same line */
+.nclist{list-style:none;margin:6px 0 0;padding:0}
+.nclist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:3px 0}
+.nclist li > span:first-child{min-width:8.5em}
+.nclist select,.nc1 select,.ovdpop select,.extraform select,.extraform input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 6px;font-size:var(--fs-sm);color:var(--ink)}
+.extraform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}   /* marks on these days use the page ink, so they show in dark mode too */
 .dstrip i.c-missing,.dstrip i.c-later{box-shadow:inset 0 0 0 1px var(--line)}
 .dstrip i.c-missing{color:var(--late)}
 .dstrip i.c-extra::after{content:"";position:absolute;inset:3px;border:1.5px dashed var(--ink);border-radius:2px}
@@ -615,9 +623,10 @@ const CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle
   away: 'Likely not actually present', absent: 'Did not attend' };
 const PRESENT = new Set(['engaged', 'idle', 'away']);   // the three colors that count as attending
 const OV_LET = { L: 'Late or left early', C: 'Camera off' };
+const NOCLASS_REASONS = { holiday:'School holiday', testing:'Testing', canceled:'Class canceled', other:'Other' };
 const FU_HOW = { call:'Called home', message:'Emailed or texted home', student:'Talked with the student', meeting:'Meeting (team or family)', other:'Other' };
 // What a day on the grid shows, in plain words.
-const CELL = { ...CAT, none: 'Not required', extra: 'Came, not required',
+const CELL = { ...CAT, none: 'Not required', extra: 'Came, not required', noclass: 'No class',
   missing: 'No Zoom report yet', later: 'Not yet' };
 const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
 // Kinds of cheating for the cheating log, in the order the list shows them (the same as the intervention tracker's).
@@ -694,7 +703,9 @@ function defaultData(){
     plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
     ml: {},          // { studentKey: { status: 'ml' | 'rfep', level, sup } } a multilingual learner (with their ELD level) or a
                      // student reclassified fluent English proficient (RFEP), and supports one per line
-    deletedDays: {} };   // { 'YYYY-MM-DD': { date } } dates taken off every tab: no homeroom or study hall, that time in Zoom set aside
+    deletedDays: {},     // { 'YYYY-MM-DD': { date } } dates taken off every tab
+    noClass: {},     // { 'YYYY-MM-DD': { reason } } no homeroom or study hall that date (a holiday, testing…), so it isn't counted
+    extraDays: {} }; // { 'YYYY-MM-DD': { kinds: ['hr' | 'sh'] } } homeroom or study hall added by hand on a date that doesn't usually have it   // { 'YYYY-MM-DD': { date } } dates taken off every tab: no homeroom or study hall, that time in Zoom set aside
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], oneOnOneMin: [1, 60] };
 // Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
@@ -707,7 +718,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], shDays: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], shDays: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, noClass: {}, extraDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
@@ -772,6 +783,8 @@ function withDefaults(d){
     if (typeof x.note === 'string' && x.note.trim()) o.note = x.note.trim().slice(0, 300);
     if (Object.keys(o).length) out.oneMarks[k] = o;
   }
+  for (const [k, v] of Object.entries(obj(d.noClass))) if (isDk(k)) out.noClass[k] = { reason: obj(v).reason in NOCLASS_REASONS ? obj(v).reason : 'other' };
+  for (const [k, v] of Object.entries(obj(d.extraDays))) if (isDk(k)){ const ks = (Array.isArray(obj(v).kinds) ? obj(v).kinds : []).filter(x => own(KIND, x)); if (ks.length) out.extraDays[k] = { kinds: [...new Set(ks)] }; }
   for (const [k, v] of Object.entries(obj(d.deletedDays))) if (isDk(k)) out.deletedDays[k] = { date: isDk(obj(v).date) ? v.date : '' };
   out.ignored = [...new Set((Array.isArray(d.ignored) ? d.ignored : []).filter(x => typeof x === 'string' && x))];
   return out;
@@ -908,6 +921,7 @@ const sumIv = list => list.reduce((t, [a, b]) => t + b - a, 0);
 const settings = () => state.data.settings;
 const winOf = kind => { const S = settings(); return kind === 'hr' ? [hmMin(S.homeroomStart), hmMin(S.homeroomEnd)] : [hmMin(S.studyStart), hmMin(S.studyEnd)]; };
 const winText = kind => fmtRange(...winOf(kind));
+const kindOnDk = (kind, dk) => kindOn(kind, parseDk(dk).getDay()) || ((state.data.extraDays[dk] || {}).kinds || []).includes(kind);
 const kindOn = (kind, wd) => kind === 'hr' ? wd === settings().homeroomDay : settings().studyDays.includes(wd);
 const roster = () => [...state.data.students].sort((a, b) => a.name.localeCompare(b.name));
 // A student is on the list from the day they were added until the day before they left.
@@ -916,7 +930,7 @@ const isCurrent = s => !s.removed || s.removed > todayDk();
 const shDaysOf = key => state.data.shDays[key] || [];
 const needsSH = (key, dk) => shDaysOf(key).includes(dk);
 // The next study hall day (today, if there's study hall today), and a student's next session.
-function nextStudyDay(){ const S = settings(); if (!S.studyDays.length) return null; let dk = todayDk(); for (let i = 0; i < 14; i++, dk = addDays(dk, 1)) if (S.studyDays.includes(parseDk(dk).getDay()) && !state.data.deletedDays[dk]) return dk; return null; }
+function nextStudyDay(){ let dk = todayDk(); for (let i = 0; i < 21; i++, dk = addDays(dk, 1)) if (kindOnDk('sh', dk) && !state.data.deletedDays[dk] && !state.data.noClass[dk]) return dk; return null; }
 const nextSH = key => shDaysOf(key).find(dk => dk >= todayDk()) || null;
 
 /* Reads every Zoom report and sorts each person's time in it by the clock:
@@ -940,7 +954,7 @@ function analyze(){
       // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
       const at = m => new Date(j.getFullYear(), j.getMonth(), j.getDate(), 0, m).getTime();
       // A row in both times (homeroom and study hall back to back on the same day) counts for both.
-      const kinds = ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0]));
+      const kinds = ['hr', 'sh'].filter(k => kindOnDk(k, dk) && a < at(W[k][1]) && b > at(W[k][0]));
       if (kinds.length && D.deletedDays[dk]) continue;   // a deleted day had no homeroom or study hall: its time in Zoom is set aside
       const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
       for (const kind of kinds.length ? kinds : [null]){
@@ -1033,8 +1047,8 @@ function classDays(period){
   for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
     const wd = parseDk(dk).getDay();
     if (state.data.deletedDays[dk]) continue;
-    if (kindOn('hr', wd)) out.push({ dk, kind: 'hr' });
-    if (kindOn('sh', wd)) out.push({ dk, kind: 'sh' });
+    if (kindOnDk('hr', dk)) out.push({ dk, kind: 'hr' });
+    if (kindOnDk('sh', dk)) out.push({ dk, kind: 'sh' });
   }
   return out;
 }
@@ -1060,7 +1074,7 @@ function cellState(A, s, dk, kind){
   // minute or less in Zoom counts as present. It can be marked when Zoom shows they left early (or were in for under a minute).
   const canFin = !!(rec && rec.inZoom && (rec.early || !rec.present)), fin = !!ov.fin && canFin, came = !!(rec && (rec.present || fin));
   const listed = onList(s, dk), req = listed && (kind === 'hr' || needsSH(key, dk));
-  const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'engaged' : 'absent') : dk > today ? 'later' : 'missing';
+  const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'engaged' : 'absent') : state.data.noClass[dk] ? 'noclass' : dk > today ? 'later' : 'missing';
   const cat = req && own(CAT, ov.cat) ? ov.cat : base, autoL = !!(rec && rec.present && (fin ? rec.late : rec.L));
   const inn = PRESENT.has(cat), L = inn && (typeof ov.L === 'boolean' ? ov.L : autoL), F = fin && inn, C = inn && ov.C === true;
   return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, C, canFin, fin: F, msg: hasMsg(key, `${dk}|${kind}`), note: ov.note || '',
@@ -1252,10 +1266,10 @@ function renderOverview(){
     <span class="tbend"><button class="btn small ovmarkbtn${state.ovMark ? '' : ' ghost'}" data-ovmark aria-pressed="${!!state.ovMark}" title="Pick a mark, then click days to apply it">${state.ovMark ? 'Done marking' : '✓ Quick mark'}</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
   if (!A.nZoom) h += setupCard(A);
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files weren’t used:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
-  h += unmatchedNotice(A, period);
+  h += missingNotice(A, period) + unmatchedNotice(A, period);
   if (days.length && rows.length) h += `<p class="printonly ovprint">Homeroom and study hall, ${esc(fmtPeriod({ from: days[0].dk, to: days[days.length - 1].dk }))} · ${plural(rows.length, 'student')}${
     state.query ? ` · Search: “${esc(state.query)}”` : ''}${state.ovShow !== 'all' ? ` · ${esc(shows.find(x => x[0] === state.ovShow)[1])}` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</p>`;
-  h += ovKey();
+  h += ovKey(days.some(d => state.data.noClass[d.dk]), rows.some(r => r.cells.some(c => c.cat === 'extra')));
   if (!days.length || !rows.length){
     el.innerHTML = h + `<p class="muted">${!days.length ? 'No homeroom or study hall days in these dates.' : hiddenMatch ? `${hiddenMatch === 1 ? 'The only student that matches was' : `The ${hiddenMatch} students that match were`} dropped from homeroom. <button class="linkish" data-showdroppedon>Show dropped</button>`
       : state.query ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'
@@ -1295,7 +1309,7 @@ function renderOverview(){
       const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
       const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === state.ovSel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === state.ovSel}">${
-        c.cat === 'missing' ? '?' : ''}${c.L || c.C ? `<span class="ovl">${['L', 'C'].filter(l => c[l]).join('')}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+        c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ''}${c.L || c.C ? `<span class="ovl">${['L', 'C'].filter(l => c[l]).join('')}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
     }).join('')}${ov1Cell(r, ri, days.length, selRow)}</tr>`).join('');
     const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(760 / idx.length)))}px"` : '';
     return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
@@ -1318,6 +1332,37 @@ function ov1Cell(r, ri, c, selRow){
   const on = selRow && selRow.key === r.key;
   return `<td class="ov1c${cls}${on ? ' sel' : ''}"><button class="ovb" data-ov1="${esc(r.key)}" data-r="${ri}" data-c="${c}" tabindex="-1" aria-label="${esc(said)}" title="${esc(said)}" aria-expanded="${!!on}">${esc(oneShort(o))}</button></td>`;
 }
+// Days that had homeroom or study hall but have no Zoom report and no "No class" mark (as in the intervention tracker).
+const hasReport = (A, dk) => ['hr', 'sh'].some(k => A.classes.has(`${dk}|${k}`));
+function missingDates(A, period){
+  const out = [], today = todayDk();
+  for (let dk = period.from, i = 0; dk <= period.to && dk < today && i < 1500; dk = addDays(dk, 1), i++)
+    if (!hasReport(A, dk) && !state.data.noClass[dk] && !state.data.deletedDays[dk] && (kindOnDk('hr', dk) || kindOnDk('sh', dk))) out.push(dk);
+  return out;
+}
+const reasonSelect = () => `<select data-ncreason aria-label="Why there was no class">${Object.entries(NOCLASS_REASONS)
+  .map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>`;
+function noClassItems(dks){
+  const shown = dks.slice(0, 5), rest = dks.slice(5);
+  return `<ul class="nclist">${shown.map(dk => `<li><span>${esc(shortDate(dk))}</span> ${reasonSelect()}
+      <button class="btn small ghost" data-noclass="${dk}">Mark no class</button></li>`).join('')}
+    ${rest.length ? `<li><span>and ${rest.length} more (${esc(monDay(rest[0]))} – ${esc(monDay(rest[rest.length - 1]))})</span> ${reasonSelect()}
+      <button class="btn small ghost" data-noclassall="${rest.join(',')}">Mark all ${rest.length} as no class</button></li>` : ''}</ul>`;
+}
+function missingNotice(A, period){
+  const miss = missingDates(A, period);
+  let h = '';
+  // One date is one line, with its select and button. Several get a row each, under one sentence.
+  if (miss.length === 1) h += `<div class="notice nc1"><span>No Zoom report for <b>${esc(shortDate(miss[0]))}</b>. If homeroom or study hall met, save its report in the folder and click Refresh. If not:</span>
+    ${reasonSelect()} <button class="btn small ghost" data-noclass="${miss[0]}">Mark no class</button></div>`;
+  else if (miss.length) h += `<div class="notice"><p style="margin:0">No Zoom report for ${plural(miss.length, 'day')}. If homeroom or study hall met, save those reports in the folder and click Refresh. If not, mark each one:</p>${noClassItems(miss)}</div>`;
+  return h + conflictNotices(A, period);
+}
+function conflictNotices(A, period, key){
+  return Object.keys(state.data.noClass).filter(dk => hasReport(A, dk) && dk >= period.from && dk <= period.to).sort()
+    .map(dk => `<div class="notice">${esc(monDay(dk))} is marked “No class” but has a Zoom report. The report is used. <button class="linkish" data-undonoclass="${dk}">Remove the mark</button></div>`).join('');
+}
+
 // Zoom names that matched no one, from the days shown: link each to a student once, or ignore it.
 function unmatchedNotice(A, period){
   const by = new Map();
@@ -1333,7 +1378,7 @@ function unmatchedNotice(A, period){
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key.
 const BRUSHES = [...Object.keys(CAT).map(k => [k, '', CAT[k]]), ['auto', '', 'Automatic color'],
   ['L', 'L', 'Late or left early'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', '', 'Dismissed early']];
-function ovKey(){
+function ovKey(noclassShown, extraShown){
   const S = settings();
   if (state.ovMark){
     const brushes = list => list.map(([k, sym, label]) => `<button class="ovchip" data-ovbrush="${k}" aria-pressed="${state.ovMark === k}">${
@@ -1346,7 +1391,7 @@ function ovKey(){
   }
   return `<div class="ovkey" aria-hidden="true">
     <div class="ovkrow"><span class="ovkh">Colors</span>${[...Object.keys(CAT), 'none'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
-    <div class="ovkrow"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-extra"></i>${esc(CELL.extra)}</span><span class="ovkend noprint">Click a day or a date to change it.</span></div>
+    <div class="ovkrow"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span>${extraShown ? `<span><i class="ovsw c-extra"></i>${esc(CELL.extra)}</span>` : ''}${noclassShown ? '<span><i class="ovsw c-noclass">–</i>No class</span>' : ''}<span class="ovkend noprint">${extraShown && noclassShown ? 'Click to change.' : 'Click a day or a date to change it.'}</span></div>
     <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> The next one, or one to mark</span></div></div>`;
 }
 // What Zoom shows for one day, in one short line (like the intervention tracker's day box).
@@ -1354,6 +1399,7 @@ function zoomLine(c){
   const r = c.rec, today = todayDk();
   if (!c.listed) return c.s.added && c.dk < c.s.added ? `Not on your list yet (added ${monDay(c.s.added)}).` : `Dropped from homeroom ${monDay(c.s.removed)}.`;
   const lead = c.kind === 'sh' && !c.req ? 'Doesn’t need study hall this day. ' : '';
+  if (!c.g && state.data.noClass[c.dk]) return lead + `Marked no class (${NOCLASS_REASONS[state.data.noClass[c.dk].reason] || 'Other'}).`;
   if (!c.g) return lead + (c.dk > today ? 'This day hasn’t happened yet.' : c.dk === today ? 'No Zoom report yet.' : 'No Zoom report in the folder for this day.');
   if (!r || !r.inZoom) return lead + 'Zoom: not in the report.';
   const bits = [`${r.min} min`, r.late ? `late ${r.lateMin} min` : '', r.early ? `left ${r.earlyMin} min early${c.fin ? ' (dismissed)' : ''}` : ''].filter(Boolean);
@@ -1409,14 +1455,17 @@ function placeOvPop(){
 }
 // The box for one whole date (opened from its date at the top of the grid): what's known about it, and Delete.
 function ovDayBox(A, dk){
-  const kinds = ['hr', 'sh'].filter(k => kindOn(k, parseDk(dk).getDay())), what = listJoin(kinds.map(k => KIND[k].toLowerCase()));
+  const kinds = ['hr', 'sh'].filter(k => kindOnDk(k, dk)), what = listJoin(kinds.map(k => KIND[k].toLowerCase()));
   const files = [...new Set(kinds.flatMap(k => { const g = A.classes.get(`${dk}|${k}`); return g ? [...g.files] : []; }))];
   const marks = Object.keys(state.data.status).filter(k => k.startsWith(dk + '|')).length;
   const facts = [`${cap(what)}, ${kinds.map(winText).join(' and ')}.`, files.length ? `Zoom report: ${files.join(', ')}.` : dk > todayDk() ? 'This day hasn’t happened yet.' : 'No Zoom report.',
-    marks ? `${plural(marks, 'student has', 'students have')} a mark or note on it.` : ''].filter(Boolean);
+    marks ? `${plural(marks, 'student has', 'students have')} a mark or note on it.` : '', state.data.extraDays[dk] ? 'A day you added.' : ''].filter(Boolean);
+  const nc = state.data.noClass[dk];
   return `<div class="ovdpop" role="dialog" aria-label="${esc(longDate(dk))}" data-ovdpop="${dk}">
     <div class="ovpop-h"><b>${esc(longDate(dk))}</b><button class="linkish ovx" data-ovdayclose>Close</button></div>
     <p class="small">${facts.map(esc).join('<br>')}</p>
+    ${nc ? `<p class="small"><b>Marked no class</b> (${esc(NOCLASS_REASONS[nc.reason] || 'Other')}). <button class="linkish" data-undonoclass="${dk}">Undo</button></p>`
+      : !files.length ? `<p class="small nc1">No ${esc(what)} this day? ${reasonSelect()} <button class="btn small ghost" data-noclass="${dk}">Mark no class</button></p>` : ''}
     <p class="small muted">Deleting the day takes it off every tab: there was no ${esc(what)}, so it isn’t counted for anyone${files.length ? ', and that time in Zoom is set aside' : ''}. 1-on-1s that day still count. Marks and notes are kept, and you can bring the day back on the Setup tab.</p>
     <div class="actions"><button class="btn small" data-ovdelday="${dk}">Delete this day</button><button class="btn small ghost" data-ovdayclose>Cancel</button></div></div>`;
 }
@@ -1620,6 +1669,7 @@ function renderStudents(){
     <span class="tbend"><label class="sortby">Sort by <select data-sortby>${SORTS.map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" data-exportcsv>Download CSV</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
   const nHr = days.filter(d => d.kind === 'hr' && d.dk <= today).length, nSh = days.filter(d => d.kind === 'sh' && d.dk <= today).length;
+  h += missingNotice(A, period);
   h += `<h2 class="printonly ptitle">Homeroom attendance: students</h2><p class="listinfo">${esc(fmtPeriod({ from: period.from, to: period.to }))} · ${plural(nHr, 'homeroom day')} and ${plural(nSh, 'study hall day')} so far · ${plural(all.length, 'student')}<span class="printonly">${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</span></p>`;
   h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Homeroom</th><th>Study hall</th><th>1-on-1s</th><th>Next 1-on-1</th></tr></thead><tbody>`;
   if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
@@ -1703,7 +1753,7 @@ function dayStrip(cells, label, empty = 'No days in these dates.'){
   if (!cells.length) return `<p class="small muted">${esc(empty)}</p>`;
   const kinds = new Set(cells.map(c => c.cat));
   return `<ul class="dstrip" aria-label="${esc(label)}">${cells.map(c => { const words = `${shortDate(c.dk)}: ${cellWords(c)}`;
-    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : ['L', 'C'].filter(l => c[l]).join('')}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
+    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'noclass' ? '–' : c.cat === 'missing' ? '?' : ['L', 'C'].filter(l => c[l]).join('')}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
     <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${Object.entries(OV_LET).filter(([k]) => cells.some(c => c[k])).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}</div>`;
 }
 // The study hall sessions a student is assigned to: upcoming ones first, each with Remove, and a date to add another.
@@ -1821,8 +1871,16 @@ function renderSetup(){
         <p class="small muted" style="margin:4px 0 0">You can copy a column of names from a spreadsheet. Names already on your list are skipped.</p></div>
       <div><h3 class="psub">On your list (${cur.length})</h3>${cur.length ? `<ul class="list">${cur.map(stuLi).join('')}</ul>` : '<p class="small muted">No students yet.</p>'}
         ${gone.length ? `<h3 class="psub">Dropped from homeroom</h3><ul class="list">${gone.map(s => `<li><span>${esc(s.name)}<span class="when">starting ${esc(monDay(s.removed))}</span></span><button class="btn small ghost" data-stuback="${esc(s.key)}">Bring back</button></li>`).join('')}</ul>` : ''}
-        ${Object.keys(state.data.deletedDays).length ? `<h3 class="psub">Deleted days</h3><p class="small muted" style="margin:0 0 4px">Not on any tab; that time in Zoom is set aside. Delete a day from its date on the Overview.</p><ul class="list">${Object.keys(state.data.deletedDays).sort().reverse().map(dk =>
-          `<li><span>${esc(shortDate(dk))}, ${parseDk(dk).getFullYear()}</span><button class="btn small ghost" data-undelday="${dk}">Bring back</button></li>`).join('')}</ul>` : ''}</div></div></div>
+</div></div></div>
+    <div class="panel"><h2>Days off and extra days</h2>
+      <p class="small" style="margin:0">Mark a date <b>no class</b> from its date at the top of the Overview, or from the notice about days with no Zoom report. Add homeroom or study hall on a date that doesn’t usually have it, like a make-up day:</p>
+      <div class="extraform"><label>Date <input type="date" data-extradate></label><select data-extrakind aria-label="Which"><option value="hr">Homeroom</option><option value="sh">Study hall</option></select><button class="btn small" data-extraadd>+ Add a day</button><span class="small extramsg" role="status"></span></div>
+      ${(() => { const L = []; const D = state.data;
+        const ex = Object.keys(D.extraDays).sort().reverse(), nc = Object.keys(D.noClass).sort().reverse(), del = Object.keys(D.deletedDays).sort().reverse(), yr = dk => `${shortDate(dk)}, ${parseDk(dk).getFullYear()}`;
+        if (ex.length) L.push(`<h3 class="psub">Days you added</h3><ul class="list">${ex.map(dk => `<li><span>${esc(yr(dk))}: ${esc(listJoin(D.extraDays[dk].kinds.map(k => KIND[k].toLowerCase())))}</span><button class="btn small ghost" data-extrarm="${dk}">Remove</button></li>`).join('')}</ul>`);
+        if (nc.length) L.push(`<h3 class="psub">No class</h3><ul class="list">${nc.map(dk => `<li><span>${esc(yr(dk))}: ${esc(NOCLASS_REASONS[D.noClass[dk].reason] || 'Other')}</span><button class="btn small ghost" data-undonoclass="${dk}">Undo</button></li>`).join('')}</ul>`);
+        if (del.length) L.push(`<h3 class="psub">Deleted days</h3><p class="small muted" style="margin:0 0 4px">Not on any tab; that time in Zoom is set aside. Delete a day from its date on the Overview.</p><ul class="list">${del.map(dk => `<li><span>${esc(yr(dk))}</span><button class="btn small ghost" data-undelday="${dk}">Bring back</button></li>`).join('')}</ul>`);
+        return L.join(''); })()}</div>
     <div class="two">
       <div class="panel"><h2>Homeroom</h2><div class="setgrid">
         <label for="s-hrday">Day</label><select id="s-hrday" data-setday>${WEEKDAYS.map(wdOpt).join('')}</select>
@@ -2069,7 +2127,8 @@ function helpHTML(){
       <dt>A file I just saved doesn’t show up.</dt><dd>Click <b>Refresh</b> at the top of the page.</dd>
       <dt>A student dropped, or joined late in the year.</dt><dd>On the student’s page, click <b>Dropped from homeroom?</b> (or use <b>Drop…</b> on the Setup tab) with the first day they weren’t in homeroom. Set the date they joined with <b>Edit</b> on the Setup tab. Their other days stay as they are.</dd>
       <dt>I let a student go early.</dt><dd>On the Overview, click the day and tick <b>Dismissed early</b>. Leaving before the end then isn’t counted as leaving early.</dd>
-      <dt>There was no homeroom or study hall one day.</dt><dd>On the Overview, click the date at the top of its column and choose <b>Delete this day</b>. It comes off every tab and isn’t counted for anyone. Bring it back from the Setup tab.</dd>
+      <dt>There was no homeroom or study hall one day.</dt><dd>On the Overview, click the date at the top of its column and choose <b>Mark no class</b> with the reason (a holiday, testing…): the day shows “–” and isn’t counted. Or choose <b>Delete this day</b> to take it off every tab. Undo either on the Setup tab.</dd>
+      <dt>Homeroom or study hall met on a different day.</dt><dd>On the Setup tab, under <b>Days off and extra days</b>, add that date as homeroom or study hall.</dd>
       <dt>A 1-on-1 got moved to another day.</dt><dd>Click <b>Reschedule</b> on that meeting and pick a day, or type a date and time. Only that meeting moves, and it shows as <b>Rescheduled</b>. For a meeting the student missed, click <b>Make-up</b>: it stays missed, and the make-up is added as its own meeting. If the regular day or time changes for good, use <b>Change schedule</b> instead.</dd>
       <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download my data</b> after making changes and put the file in your folder.</dd>
       <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
@@ -2445,6 +2504,20 @@ async function onClick(t){
     setStatus(`Deleted ${longDate(dk)}.`, 'info', { label: 'Undo', act: 'undo' });
     const b = $(`#tab-overview [data-ovdh="${next}"]`) || $('#tab-overview .ovb[tabindex="0"]'); if (b) b.focus({ preventScroll: true }); return;
   }
+  if (d.noclass || d.noclassall){
+    const sel = t.parentElement.querySelector('select[data-ncreason]'), reason = sel ? sel.value : 'other';
+    for (const dk of (d.noclass || d.noclassall).split(',')) D.noClass[dk] = { reason };
+    state.ovDay = null; changed(); renderCurrent(); setStatus(`Marked ${d.noclassall ? plural(d.noclassall.split(',').length, 'day') : shortDate(d.noclass)} as no class.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.undonoclass){ delete D.noClass[d.undonoclass]; changed(); renderCurrent(); return; }
+  if (has('data-extraadd')){
+    const f = t.closest('.extraform'), dk = f.querySelector('[data-extradate]').value, kind = f.querySelector('[data-extrakind]').value, say = m => { f.querySelector('.extramsg').textContent = m; };
+    if (!isDk(dk)) return say('Pick a date first.');
+    if (kindOnDk(kind, dk)) return say(`${shortDate(dk)} already has ${KIND[kind].toLowerCase()}.`);
+    const ks = (D.extraDays[dk] || { kinds: [] }).kinds; D.extraDays[dk] = { kinds: [...ks, kind] }; delete D.deletedDays[dk];
+    changed(); renderCurrent(); setStatus(`Added ${KIND[kind].toLowerCase()} on ${shortDate(dk)}.${kind === 'sh' ? ' Assign students to it on the Study hall tab.' : ''}`, 'info', { label: 'Undo', act: 'undo' }); return;
+  }
+  if (d.extrarm){ delete D.extraDays[d.extrarm]; changed(); renderCurrent(); setStatus(`Removed the day you added, ${shortDate(d.extrarm)}.`, 'info', { label: 'Undo', act: 'undo' }); return; }
   if (d.undelday){
     const all = [...document.querySelectorAll('[data-undelday]')], i = all.indexOf(t);
     delete D.deletedDays[d.undelday]; changed(); renderCurrent(); setStatus(`Brought back ${longDate(d.undelday)}.`, 'info', { label: 'Undo', act: 'undo' });
@@ -2557,7 +2630,7 @@ async function onClick(t){
   if (d.shadd){
     const v = t.closest('.paddrow').querySelector('[data-shnew]').value, say = text => { state.logMsg = { where: 'sh', text, bad: true }; renderCurrent(); };
     if (!isDk(v)) return say('Choose the study hall date.');
-    if (!settings().studyDays.includes(parseDk(v).getDay())) return say(`There’s no study hall on ${cap(DAYS[parseDk(v).getDay()])}s. Study hall is ${daysText(settings().studyDays)}.`);
+    if (!kindOnDk('sh', v)) return say(`There’s no study hall on ${cap(DAYS[parseDk(v).getDay()])}s. Study hall is ${daysText(settings().studyDays)}.`);
     if (state.data.deletedDays[v]) return say(`${shortDate(v)} was deleted, so it has no study hall.`);
     state.logMsg = null; shSet(d.shadd, v, true); renderCurrent(); return;
   }
