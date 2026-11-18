@@ -225,6 +225,14 @@ textarea.stupaste{min-height:190px}
 .mlist .txt{min-width:0;overflow-wrap:anywhere}
 
 /* Study hall switch: a menu that asks for the date, opening over the page */
+.shgrid th.shc,.shgrid td.shc{text-align:center;padding-left:4px;padding-right:4px;min-width:52px}
+.shgrid th.shc{font-size:var(--fs-xs);line-height:1.25}
+.shgrid th.shc span{display:block;color:var(--muted);font-weight:500}
+.shgrid th.shc .shn{color:var(--ink);font-weight:700;margin-top:2px}
+.shgrid .shc.next{background:var(--paper)}
+.shgrid th.shc.next{color:var(--focus)}
+.shgrid .shbox{display:inline-flex;align-items:center;justify-content:center;width:30px;height:24px;border-radius:4px;cursor:pointer}
+.shgrid .shbox input{width:16px;height:16px;margin:0;accent-color:var(--focus);cursor:pointer}
 .shmenu > summary{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 2px;cursor:pointer;border-radius:999px;font-size:var(--fs-sm);font-weight:600;color:var(--ink)}
 .shmenu > summary:hover .swt{box-shadow:0 0 0 3px var(--grid)}
 .swt{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--rule);flex:none}
@@ -569,7 +577,7 @@ main:focus{outline:none}
         <button role="tab" id="t-overview" aria-controls="tab-overview" data-tab="overview" aria-selected="true" title="Every student and every homeroom and study hall day on one grid">Overview</button>
         <button role="tab" id="t-students" aria-controls="tab-students" data-tab="students" aria-selected="false" title="Each student’s homeroom and study hall attendance and 1-on-1s">Students</button>
         <button role="tab" id="t-meetings" aria-controls="tab-meetings" data-tab="meetings" aria-selected="false" title="Each student’s 1-on-1 schedule, what’s coming up, and meetings to mark">1-on-1s</button>
-        <button role="tab" id="t-study" aria-controls="tab-study" data-tab="study" aria-selected="false" title="Who needs study hall, and since when">Study hall</button>
+        <button role="tab" id="t-study" aria-controls="tab-study" data-tab="study" aria-selected="false" title="The study hall sessions each student should come to">Study hall</button>
         <button role="tab" id="t-setup" aria-controls="tab-setup" data-tab="setup" aria-selected="false" title="Your students, the homeroom and study hall times, and your data">Setup</button>
       </nav>
       <div class="savebar" id="saveBar"></div>
@@ -671,7 +679,7 @@ function defaultData(){
     settings: { homeroomDay: 1, homeroomStart: '08:30', homeroomEnd: '09:00', studyDays: [2, 4], studyStart: '14:00', studyEnd: '15:00',
       lateGrace: 5, leaveGrace: 5, oneOnOneMin: 5, teacherName: '' },
     students: [],    // [{ key, name, added, removed }]: on the list from added, until the day before removed
-    studyHall: {},   // { studentKey: [{ from, to }] } needs study hall from `from`; `to` is the first day they don't ("done starting")
+    shDays: {},      // { studentKey: ['YYYY-MM-DD', …] } the study hall sessions a student is assigned to
     oneSched: {},    // { studentKey: [{ from, time, every } | { from, stop: true }] } the standing 1-on-1: on from's weekday at time,
                      //   every `every` weeks starting on `from`, until the next entry's `from` (a stop entry ends it)
     oneMarks: {},    // { 'studentKey|YYYY-MM-DD': { st, to, at, note } } one scheduled 1-on-1 (by its scheduled date): held, missed
@@ -689,16 +697,6 @@ function defaultData(){
     deletedDays: {} };   // { 'YYYY-MM-DD': { date } } dates taken off every tab: no homeroom or study hall, that time in Zoom set aside
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], oneOnOneMin: [1, 60] };
-// Study hall dates in order, with dates that overlap joined into one.
-function normPeriods(list){
-  const s = [...list].sort((a, b) => a.from.localeCompare(b.from)), out = [];
-  for (const p of s){
-    const last = out[out.length - 1];
-    if (last && (!last.to || p.from <= last.to)){ if (!p.to || !last.to) delete last.to; else if (p.to > last.to) last.to = p.to; }
-    else out.push(p.to ? { from: p.from, to: p.to } : { from: p.from });
-  }
-  return out;
-}
 // Everything read from the data file is checked here, so a damaged or hand-edited file can't break the page.
 // Fields this page doesn't know are dropped, and so are bad dates.
 function withDefaults(d){
@@ -709,7 +707,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], shDays: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
@@ -719,9 +717,18 @@ function withDefaults(d){
     if (isDk(s.removed)) st.removed = s.removed;
     out.students.push(st);
   }
-  for (const [k, v] of Object.entries(obj(d.studyHall))) if (k && Array.isArray(v)){
-    const ps = normPeriods(v.map(obj).filter(p => isDk(p.from) && !(isDk(p.to) && p.to <= p.from)).map(p => isDk(p.to) ? { from: p.from, to: p.to } : { from: p.from }));
-    if (ps.length) out.studyHall[k] = ps;
+  for (const [k, v] of Object.entries(obj(d.shDays))) if (k && Array.isArray(v)){
+    const ds = [...new Set(v.filter(isDk))].sort(); if (ds.length) out.shDays[k] = ds;
+  }
+  // From before sessions were assigned one by one: "needs study hall from … to …" becomes each study hall day in those dates
+  // (an open-ended one, through the end of this week).
+  for (const [k, v] of Object.entries(obj(d.studyHall))) if (k && Array.isArray(v) && !out.shDays[k]){
+    const ds = [], end = addDays(weekKey(todayDk()), 6);
+    for (const per of v.map(obj).filter(x => isDk(x.from))){
+      const to = isDk(per.to) ? addDays(per.to, -1) : end;
+      for (let dk = per.from, i = 0; dk <= to && i < 1500; dk = addDays(dk, 1), i++) if (S.studyDays.includes(parseDk(dk).getDay())) ds.push(dk);
+    }
+    if (ds.length) out.shDays[k] = [...new Set(ds)].sort();
   }
   for (const [k, v] of Object.entries(obj(d.meetings))) if (k && Array.isArray(v)){
     // A meeting from before 1-on-1s had schedules has no st: it was logged because it happened.
@@ -906,10 +913,11 @@ const roster = () => [...state.data.students].sort((a, b) => a.name.localeCompar
 // A student is on the list from the day they were added until the day before they left.
 const onList = (s, dk) => (!s.added || s.added <= dk) && (!s.removed || dk < s.removed);
 const isCurrent = s => !s.removed || s.removed > todayDk();
-const shPeriods = key => state.data.studyHall[key] || [];
-const needsSH = (key, dk) => shPeriods(key).some(p => p.from <= dk && (!p.to || dk < p.to));
-// The study hall dates that are going on now or still to come (what the switch on the Study hall tab shows).
-const openPeriod = key => [...shPeriods(key)].reverse().find(p => !p.to || p.to > todayDk()) || null;
+const shDaysOf = key => state.data.shDays[key] || [];
+const needsSH = (key, dk) => shDaysOf(key).includes(dk);
+// The next study hall day (today, if there's study hall today), and a student's next session.
+function nextStudyDay(){ const S = settings(); if (!S.studyDays.length) return null; let dk = todayDk(); for (let i = 0; i < 14; i++, dk = addDays(dk, 1)) if (S.studyDays.includes(parseDk(dk).getDay()) && !state.data.deletedDays[dk]) return dk; return null; }
+const nextSH = key => shDaysOf(key).find(dk => dk >= todayDk()) || null;
 
 /* Reads every Zoom report and sorts each person's time in it by the clock:
    - in the homeroom time on the homeroom day: homeroom that day;
@@ -1227,16 +1235,17 @@ function renderOverview(){
   const A = analyze(); state.lastAnalysis = A;
   if (!A.students.length){ el.innerHTML = setupCard(A); return; }
   const period = periodOf(A), days = classDays(period), today = todayDk(), q = normKey(state.query);
+  const nsd = nextStudyDay();
   // Students dropped from homeroom are hidden unless "Show dropped" is ticked (it shows only when someone was dropped).
   const all = studentRows(A, days), nDropped = all.filter(r => !r.cur).length;
-  const match = r => (!q || normKey(r.name).includes(q)) && (state.ovShow === 'all' || (state.ovShow === 'sh' ? needsSH(r.key, today) : isDue(r)));
+  const match = r => (!q || normKey(r.name).includes(q)) && (state.ovShow === 'all' || (state.ovShow === 'sh' ? !!nsd && needsSH(r.key, nsd) : isDue(r)));
   const rows = all.filter(r => match(r) && (r.cur || state.showDropped)), hiddenMatch = state.showDropped ? 0 : all.filter(r => !r.cur && match(r)).length;
   const selCell = state.ovSel ? rows.flatMap(r => r.cells).find(c => c.xk === state.ovSel) : null;
   if (state.ovSel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor
   const selRow = state.ov1 ? rows.find(r => r.key === state.ov1) : null;
   if (state.ov1 && !selRow) state.ov1 = null;
   if (state.ovDay && !days.some(d => d.dk === state.ovDay)) state.ovDay = null;
-  const shows = [['all', 'All', 'Every student'], ['sh', 'Needs study hall', 'Students who need study hall today'], ['due', '1-on-1s to check', 'Students with a 1-on-1 to mark, who missed their last one, or who have no 1-on-1 schedule']];
+  const shows = [['all', 'All', 'Every student'], ['sh', 'Next study hall', `Students assigned to the next study hall${nsd ? ` (${shortDate(nsd)})` : ''}`], ['due', '1-on-1s to check', 'Students with a 1-on-1 to mark, who missed their last one, or who have no 1-on-1 schedule']];
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <div class="seg" role="group" aria-label="Show">${shows.map(([k, l, tip]) => `<button data-show="${k}" aria-pressed="${state.ovShow === k}" title="${esc(tip)}">${esc(l)}</button>`).join('')}</div>
@@ -1615,10 +1624,10 @@ function renderStudents(){
   h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Homeroom</th><th>Study hall</th><th>1-on-1s</th><th>Next 1-on-1</th></tr></thead><tbody>`;
   if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
   for (const r of list){
-    const need = needsSH(r.key, today) ? openPeriod(r.key) : null;
+    const need = nextSH(r.key);
     h += `<tr><td><span class="nmline nmtag"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${supTags(r.key, 'noprint')}${r.removed && !r.cur ? `<span class="chip left">Dropped ${esc(monDay(r.removed))}</span>` : ''}</span></td>
       <td>${meter(r.hr.pct)}<span class="sub">${esc(attText(r.hr, 'day') || 'No days counted yet')}</span></td>
-      <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Needs study hall since ${esc(monDay(need.from))}</span>` : ''}</td>
+      <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Next study hall ${esc(shortDate(need))}</span>` : ''}</td>
       <td>${r.one.pct !== null || r.one.canceled ? `${meter(r.one.pct)}<span class="sub">${esc(oneText(r.one))}</span>` : '<span class="zero">—</span>'} ${oneChip(r.one)}</td>
       <td>${r.cur ? (r.one.next ? esc(occWhen(r.one.next)) : r.one.sched ? 'None coming' : '<b>No schedule</b>') : '<span class="zero">—</span>'}${r.cur && r.one.sched ? `<span class="sub">${esc(schedText(r.one.sched))}</span>` : ''}</td></tr>`;
   }
@@ -1630,11 +1639,11 @@ function renderStudents(){
 function exportCSV(){
   const A = state.lastAnalysis || analyze(), { period, all } = studentList(A), today = todayDk();
   const rows = [['Student', 'Homeroom days present', 'Homeroom days counted', 'Homeroom %', 'Homeroom excused', 'Homeroom late or left early', 'Homeroom dismissed early',
-    'Study hall days present', 'Study hall days required', 'Study hall %', 'Study hall excused', 'Study hall dismissed early', 'Needs study hall now', 'Needs study hall since',
+    'Study hall days present', 'Study hall days required', 'Study hall %', 'Study hall excused', 'Study hall dismissed early', 'Next study hall', 'Study hall sessions assigned',
     '1-on-1 schedule', '1-on-1s held', '1-on-1s missed', '1-on-1s canceled', '1-on-1s not marked', '1-on-1 %', 'Last 1-on-1 held', 'Next 1-on-1', 'On the list since', 'Dropped starting', 'Times caught cheating', 'Last time caught', 'Kind', 'Dates']];
   for (const r of [...all].sort((a, b) => a.name.localeCompare(b.name))){
-    const p = needsSH(r.key, today) ? openPeriod(r.key) : null;
-    rows.push([r.name, r.hr.att, r.hr.n, r.hr.pct ?? '', r.hr.exc, r.hr.L, r.hr.fin, r.sh.att, r.sh.n, r.sh.pct ?? '', r.sh.exc, r.sh.fin, p ? 'Yes' : 'No', p ? p.from : '',
+    const nx = nextSH(r.key);
+    rows.push([r.name, r.hr.att, r.hr.n, r.hr.pct ?? '', r.hr.exc, r.hr.L, r.hr.fin, r.sh.att, r.sh.n, r.sh.pct ?? '', r.sh.exc, r.sh.fin, nx || '', shDaysOf(r.key).filter(dk => dk >= period.from && dk <= period.to).length,
       r.one.sched ? schedText(r.one.sched) : '', r.one.held, r.one.missed, r.one.canceled, r.one.notMarked, r.one.pct ?? '', r.one.lastHeld ? r.one.lastHeld.date : '', r.one.next ? `${r.one.next.date}${r.one.next.time ? ' ' + r.one.next.time : ''}` : '', r.added || '', r.removed || '', ...(c => [c.length || '', c[0] ? c[0].date : '', c[0] ? cheatType(c[0]) : ''])(cheatOf(r.key)), fmtPeriod(period)]);
   }
   downloadFile(`homeroom-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
@@ -1649,8 +1658,8 @@ function renderStudentPage(A, el){
     ${i >= 0 && list.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
       <span>${i + 1} of ${list.length}</span>${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
     ${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
-  const o = r.one, need = needsSH(r.key, today) ? openPeriod(r.key) : null;
-  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need ? `Needs study hall since ${monDay(need.from)}` : ''].filter(Boolean);
+  const o = r.one, need = nextSH(r.key);
+  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need ? `Next study hall ${shortDate(need)}` : ''].filter(Boolean);
   // Dropped from homeroom: a line under the name saying so (with Undo). Until then, two quiet links at the right end of the
   // name row: "Dropped from homeroom?" opens a small menu to record it, and "Delete student" asks first.
   const plan = planOf(r.key), acc = planAcc(plan), ml = mlOf(r.key), sup = planAcc({ acc: ml && ml.sup });
@@ -1679,7 +1688,7 @@ function renderStudentPage(A, el){
   h += `<section class="rsec"><h3>Homeroom days <span class="small muted">${esc(daysText([settings().homeroomDay]))}, ${esc(winText('hr'))}</span></h3>${dayStrip(hrCells, 'Homeroom days')}</section>`;
   h += `<section class="rsec"><h3>Study hall <span class="small muted">${esc(daysText(settings().studyDays))}${settings().studyDays.length ? ', ' + esc(winText('sh')) : ''}</span></h3>
     ${dayStrip(shCells, 'Study hall days', 'No study hall days required in these dates.')}
-    <h3 class="psub">Dates ${esc(firstName(r.name))} needs study hall</h3>${periodsEditor(r)}</section>`;
+    <h3 class="psub">Study hall sessions for ${esc(firstName(r.name))}</h3>${sessionsEditor(r)}</section>`;
   const ms = o.all.filter(x => inRange(x.date) || x.date > today || x.state === 'unmarked').reverse();
   h += `<section class="rsec"><h3>1-on-1s</h3><p class="small ov1facts"><span class="schtxt">${esc(schedText(o.sched))}${o.sched && o.sched.later ? `, starting ${esc(monDay(o.sched.from))}` : ''}</span>${r.cur ? `<span class="noprint">${schedMenu(r)}</span>` : ''}</p>
     <ul class="occlist">${ms.length ? ms.map(x => occLi(x)).join('') : `<li class="none">${o.sched ? 'No meetings in these dates.' : 'No schedule yet. Set one to list the meetings.'}</li>`}</ul>
@@ -1697,15 +1706,14 @@ function dayStrip(cells, label, empty = 'No days in these dates.'){
     return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : ['L', 'C'].filter(l => c[l]).join('')}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
     <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${Object.entries(OV_LET).filter(([k]) => cells.some(c => c[k])).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}</div>`;
 }
-// The dates a student needs study hall: each one can be changed or deleted here, and new dates added.
-function periodsEditor(r){
-  const ps = shPeriods(r.key), today = todayDk();
-  const said = p => p.to ? `${monDay(p.from)} – ${monDay(addDays(p.to, -1))}` : p.from > today ? `Starting ${monDay(p.from)}` : `Since ${monDay(p.from)}`;
-  return `${ps.length ? `<ul class="plist printonly">${ps.map(p => `<li>${esc(said(p))}</li>`).join('')}</ul>` : '<p class="small muted printonly">None.</p>'}
-    <div class="noprint">${ps.length ? `<ul class="plist">${ps.map((p, i) => `<li data-period="${esc(r.key)}|${i}"><label>Starting <input type="date" data-shfrom value="${esc(p.from)}"></label>
-      <label>Done starting <input type="date" data-shto value="${esc(p.to || '')}" aria-describedby="sh-hint"></label><button class="linkish" data-shdel="${esc(r.key)}|${i}">Delete</button></li>`).join('')}</ul>
-      <p class="small muted" id="sh-hint" style="margin:6px 0 0">Leave “Done starting” empty while ${esc(firstName(r.name))} still needs study hall.</p>` : '<p class="small muted">None yet.</p>'}
-    <div class="paddrow"><label>Needs study hall starting <input type="date" data-shnew value="${today}"></label><button class="btn small" data-shadd="${esc(r.key)}">Add</button></div>${logMsgHTML('sh')}</div>`;
+// The study hall sessions a student is assigned to: upcoming ones first, each with Remove, and a date to add another.
+function sessionsEditor(r){
+  const ds = shDaysOf(r.key), today = todayDk(), up = ds.filter(dk => dk >= today), past = ds.filter(dk => dk < today).reverse(), nsd = nextStudyDay();
+  const li = (dk, rm) => `<li><span>${esc(shortDate(dk))}${dk === today ? ' (today)' : ''}</span>${rm ? `<button class="linkish noprint" data-shrm="${esc(r.key)}|${dk}" aria-label="Take ${esc(firstName(r.name))} off study hall ${esc(shortDate(dk))}">Remove</button>` : ''}</li>`;
+  return `${up.length ? `<p class="small" style="margin:6px 0 0"><b>Coming up</b></p><ul class="plist">${up.map(dk => li(dk, true)).join('')}</ul>` : '<p class="small muted">No study hall sessions coming up.</p>'}
+    ${past.length ? `<p class="small muted" style="margin:8px 0 0">Earlier: ${esc(past.slice(0, 12).map(dk => monDay(dk)).join(', '))}${past.length > 12 ? `, and ${past.length - 12} more` : ''}</p>` : ''}
+    <div class="paddrow noprint"><label>Assign to study hall on <input type="date" data-shnew value="${nsd || today}"></label><button class="btn small" data-shadd="${esc(r.key)}">Add</button>
+      <span class="small muted">Or tick sessions on the <button class="linkish" data-goto="study">Study hall</button> tab.</span></div>${logMsgHTML('sh')}`;
 }
 
 /* ---------------- 1-on-1s tab ---------------- */
@@ -1754,41 +1762,32 @@ function renderMeetings(){
 }
 
 /* ---------------- Study hall tab ---------------- */
-function shSwitch(s){
-  const p = openPeriod(s.key), on = !!p, today = todayDk(), first = firstName(s.name);
-  return `<details class="menu shmenu${on ? ' on' : ''}" data-shmenu="${esc(s.key)}"><summary aria-label="${esc(s.name)} needs study hall: ${on ? 'yes' : 'no'}. Change"><span class="swt" aria-hidden="true"></span><span class="swl">${on ? 'Yes' : 'No'}</span></summary>
-    <div class="pop" role="group" aria-label="${esc(on ? `${s.name}: done with study hall` : `${s.name}: needs study hall`)}">
-      <div class="dropline"><span>${on ? 'Done with study hall starting' : 'Needs study hall starting'}</span><input type="date" data-shdate value="${today}" aria-label="${on ? 'First day not needed' : 'First day needed'}">
-        <button class="btn small" data-${on ? 'shoff' : 'shon'}="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
-      <p class="muted">${esc(on ? `Study hall stops being required for ${first} on that day. Earlier days stay as they are.` : `${first} is expected at study hall from that day on.`)}</p></div></details>`;
-}
+// Students by study hall sessions (the past two weeks and the next three): tick a box to assign a student to that session.
 function renderStudy(){
   const el = $('#tab-study');
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   const A = analyze(); state.lastAnalysis = A;
   if (!A.students.length){ el.innerHTML = setupCard(A); return; }
-  const S = settings(), today = todayDk(), from = A.oldest && A.oldest < today ? A.oldest : weekKey(today), days = classDays({ from, to: today, open: false }).filter(d => d.kind === 'sh');
-  const rows = A.students.filter(isCurrent).map(s => ({ ...s, st: statsOf(days.map(d => cellState(A, s, d.dk, 'sh'))) }));
-  const said = p => p.to ? `${monDay(p.from)} – ${monDay(addDays(p.to, -1))}` : p.from > today ? `starting ${monDay(p.from)}` : `since ${monDay(p.from)}`;
-  const n = rows.filter(r => needsSH(r.key, today)).length;
+  const S = settings(), today = todayDk(), nsd = nextStudyDay();
+  const cols = classDays({ from: addDays(weekKey(today), -14), to: addDays(weekKey(today), 20), open: false }).filter(d => d.kind === 'sh').map(d => d.dk);
+  const from = A.oldest && A.oldest < today ? A.oldest : weekKey(today), past = classDays({ from, to: today, open: false }).filter(d => d.kind === 'sh');
+  const rows = A.students.filter(isCurrent).map(s => ({ ...s, st: statsOf(past.map(d => cellState(A, s, d.dk, 'sh'))) }));
+  const count = dk => rows.filter(r => needsSH(r.key, dk)).length;
   let h = `<div class="panel" style="margin-bottom:16px"><h2>Study hall: ${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}</h2>
-    <p class="small" style="margin:0">Students who need study hall are expected there; everyone else isn’t. Turn it on when a student has a grade under 60%, and off when they don’t. ${plural(n, 'student needs', 'students need')} study hall today.</p></div>
-    <div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Needs study hall</th><th>Dates needed</th><th>Attendance while required</th></tr></thead><tbody>
-    ${rows.map(r => `<tr><td><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></td><td>${shSwitch(r)}</td>
-      <td>${shPeriods(r.key).length ? esc(shPeriods(r.key).map(said).join('; ')) : '<span class="zero">—</span>'}</td>
-      <td>${r.st.n || r.st.exc ? `${meter(r.st.pct)}<span class="sub">${esc(attText(r.st, 'required day'))}</span>` : '<span class="zero">—</span>'}</td></tr>`).join('')}
+    <p class="small" style="margin:0">Tick the sessions each student should come to; only they are expected that day. ${nsd ? `Next study hall: <b>${esc(shortDate(nsd))}</b>, ${plural(count(nsd), 'student')}.` : ''}</p></div>`;
+  if (!S.studyDays.length){ el.innerHTML = h + '<p class="muted">No study hall days are set. Choose them on the <button class="linkish" data-goto="setup">Setup</button> tab.</p>'; return; }
+  h += `<div class="tablewrap"><table class="sum shgrid"><thead><tr><th>Student</th>${cols.map(dk => `<th class="shc${dk === nsd ? ' next' : ''}${dk < today ? ' past' : ''}" scope="col"><span>${esc(dtf({ weekday: 'short' }).format(parseDk(dk)))}</span>${esc(monDay(dk))}<span class="shn">${count(dk)}</span></th>`).join('')}<th>Attended when assigned</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td><span class="nmtag"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${supTags(r.key, 'noprint')}</span></td>${cols.map(dk => {
+      const on = needsSH(r.key, dk), c = dk < today && on ? cellState(A, r, dk, 'sh') : null;
+      return `<td class="shc${dk === nsd ? ' next' : ''}${dk < today ? ' past' : ''}"><label class="shbox${c ? ` c-${c.cat}` : ''}" title="${esc(`${r.name}, study hall ${shortDate(dk)}: ${on ? 'assigned' : 'not assigned'}${c ? `, ${CELL[c.cat].toLowerCase()}` : ''}`)}"><input type="checkbox" data-shtoggle="${esc(r.key)}|${dk}"${on ? ' checked' : ''} aria-label="${esc(`${r.name}, study hall ${shortDate(dk)}`)}"></label></td>`; }).join('')}
+      <td>${r.st.n || r.st.exc ? `${meter(r.st.pct)}<span class="sub">${esc(attText(r.st, 'session'))}</span>` : '<span class="zero">—</span>'}</td></tr>`).join('')}
     </tbody></table></div>
-    <p class="small muted" style="margin-top:10px">Attendance while required: every study hall day so far that the student needed it. Excused days and days with no Zoom report aren’t counted. A student who came on a day they didn’t need it shows on the Overview as “came, not required”.</p>`;
+    <p class="small muted" style="margin-top:10px">Each column is a study hall session; the number under the date is how many are assigned. A past session a student was assigned to shows its color from the Overview. Attended when assigned: every session so far a student was assigned to; excused days and days with no Zoom report aren’t counted. A student who came when not assigned shows on the Overview as “came, not required”.</p>`;
   el.innerHTML = h;
 }
-function shTurnOn(key, from){
-  state.data.studyHall[key] = normPeriods([...shPeriods(key), { from }]); changed();
-}
-function shTurnOff(key, to){
-  const p = openPeriod(key); if (!p) return;
-  const list = shPeriods(key).filter(x => x !== p);
-  if (to > p.from) list.push({ from: p.from, to });
-  if (list.length) state.data.studyHall[key] = normPeriods(list); else delete state.data.studyHall[key];
+function shSet(key, dk, on){
+  const ds = new Set(shDaysOf(key)); if (on) ds.add(dk); else ds.delete(dk);
+  if (ds.size) state.data.shDays[key] = [...ds].sort(); else delete state.data.shDays[key];
   changed();
 }
 
@@ -1880,7 +1879,7 @@ function renameKey(oldK, newK){
   const D = state.data;
   if (!D.aliases[oldK]) D.aliases[oldK] = newK;
   for (const k of Object.keys(D.status)){ const [dk, kind, ...rest] = k.split('|'); if (rest.join('|') === oldK){ const nk = `${dk}|${kind}|${newK}`; if (!D.status[nk]) D.status[nk] = D.status[k]; delete D.status[k]; } }
-  if (D.studyHall[oldK]){ D.studyHall[newK] = normPeriods([...(D.studyHall[newK] || []), ...D.studyHall[oldK]]); delete D.studyHall[oldK]; }
+  if (D.shDays[oldK]){ D.shDays[newK] = [...new Set([...(D.shDays[newK] || []), ...D.shDays[oldK]])].sort(); delete D.shDays[oldK]; }
   if (D.meetings[oldK]){ D.meetings[newK] = [...(D.meetings[newK] || []), ...D.meetings[oldK]]; delete D.meetings[oldK]; }
   for (const x of ['plans', 'ml']) if (D[x][oldK]){ if (!D[x][newK]) D[x][newK] = D[x][oldK]; delete D[x][oldK]; }
   if (D.cheating[oldK]){ D.cheating[newK] = [...(D.cheating[newK] || []), ...D.cheating[oldK]]; delete D.cheating[oldK]; }
@@ -2013,7 +2012,10 @@ function sampleFolder(){
   const back = n => { const dk = addDays(today, -n), w = parseDk(dk).getDay(); return w === 6 ? addDays(dk, -1) : w === 0 ? addDays(dk, -2) : dk; };
   const club = back(2);   // five students: not a 1-on-1
   file(`zoom-chess-club-${mdY(club)}.csv`, club, [[teacher, 15 * 60 + 28, 16 * 60 + 18], ...['Amara Okafor', 'Ben Whitfield', 'Dev Patel', 'Elif Demir', 'Hugo Martins'].map(n => [n, 15 * 60 + 30, 16 * 60 + 15])]);
-  const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [], oneSched, oneMarks,
+  const shDays = {};
+  for (const [k, ps] of Object.entries(studyHall)) for (let dk = mon0; dk <= addDays(weekKey(today), 13); dk = addDays(dk, 1))
+    if ([2, 4].includes(parseDk(dk).getDay()) && need(k, dk)) (shDays[k] = shDays[k] || []).push(dk);
+  const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, shDays, aliases: {}, ignored: [], oneSched, oneMarks,
     plans: { 'carmen reyes': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nCheck for understanding privately' }, 'hugo martins': { type: '504', acc: 'Preferential seating\nMovement breaks' } },
     ml: { 'elif demir': { status: 'ml', level: '3', sup: 'Sentence frames\nBilingual glossary' }, 'dev patel': { status: 'rfep', level: '', sup: '' } },
     cheating: { 'ben whitfield': [{ id: 'ch1', date: back(6), type: 'ai', note: 'Essay answer pasted from ChatGPT' }], 'isabel cruz': [{ id: 'ch2', date: back(15), type: 'copy', note: 'Same answers as another student on the quiz' }, { id: 'ch3', date: back(3), type: 'app', note: '' }] },
@@ -2044,9 +2046,9 @@ function helpHTML(){
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Students dropped from homeroom are hidden; tick <b>Show dropped</b> to see them. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
-      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, assign study hall sessions, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
-      <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
+      <li><b>Study hall</b>: tick the study hall sessions each student should come to (like when they have a grade under 60%). Only those students are expected that day. You can also add a session on the student’s page.</li>
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
     <h3>How attendance is worked out</h3>
     <ul><li>A Zoom report counts for homeroom when it has someone in it during homeroom time (${esc(daysText([S.homeroomDay]))}, ${esc(winText('hr'))}), and for study hall the same way (${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}).</li>
@@ -2349,14 +2351,6 @@ function occPatch(id, patch){
   }
 }
 function occFind(id){ const { key } = occParse(id), s = state.data.students.find(x => x.key === key); return s ? meetingsOf(s).find(o => occId(o) === id) : null; }
-function addPeriodFromRow(li){
-  const [key, i] = li.dataset.period.split('|'), from = li.querySelector('[data-shfrom]').value, to = li.querySelector('[data-shto]').value, ps = [...shPeriods(key)];
-  const say = text => { state.logMsg = { where: 'sh', text, bad: true }; renderCurrent(); };
-  if (!isDk(from)) return say('Each “Starting” needs a date.');
-  if (to && (!isDk(to) || to <= from)) return say('“Done starting” has to be after “Starting”.');
-  ps[+i] = to ? { from, to } : { from };
-  state.data.studyHall[key] = normPeriods(ps); state.logMsg = null; changed(); renderCurrent();
-}
 
 /* ---------------- Events ---------------- */
 const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; if ('planmenu' in m.dataset) state.planEdit = null; };
@@ -2459,10 +2453,6 @@ async function onClick(t){
   // 1-on-1s
   if (d.tagpop !== undefined){ if (tagPopFrom === t) closeTagPop(); else openTagPop(t); return; }
   if (has('data-tagpopclose')) return closeTagPop(true);
-  if (has('data-printlist') || has('data-rptprint')) return window.print();
-  if (has('data-ovshowreset')){ state.ovShow = { ...state.ovShow, who: 'all', under: false, order: 'name' }; renderOverview(); const x = $('#tab-overview [data-showmenu] > summary'); if (x) x.focus(); return; }
-  if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
-  if (has('data-rptcsv')) return rptCSV();
   if (d.plansave){
     const m = t.closest('[data-planmenu]'), type = (m.querySelector('[data-plantype]:checked') || {}).value || '';
     const acc = m.querySelector('[data-planacc]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000);
@@ -2560,22 +2550,16 @@ async function onClick(t){
   if (has('data-studentback')) return studentBack();
   if (d.stepstudent){ state.student = d.stepstudent; state.chEdit = null; state.logMsg = null; navReplace(); renderStudents(); const h = $('#tab-students h2[tabindex]'); if (h) h.focus(); return; }
   // Study hall
-  if (d.shon || d.shoff){
-    const m = t.closest('details.menu'), v = m.querySelector('[data-shdate]').value, key = d.shon || d.shoff, s = state.lastAnalysis.byKey.get(key);
-    if (!isDk(v)){ m.querySelector('[data-shdate]').focus(); return; }
-    if (d.shon) shTurnOn(key, v); else shTurnOff(key, v);
-    renderCurrent(); const b = $(`#tab-${state.tab} [data-shmenu="${CSS.escape(key)}"] > summary`); if (b) b.focus();
-    setStatus(d.shon ? `${s.name} needs study hall starting ${shortDate(v)}.` : `${s.name} is done with study hall starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
-  }
-  if (d.shdel){
-    const [key, i] = d.shdel.split('|'), ps = shPeriods(key).filter((p, n) => n !== +i);
-    if (ps.length) D.studyHall[key] = ps; else delete D.studyHall[key];
-    state.logMsg = null; changed(); renderCurrent(); setStatus('Deleted those study hall dates.', 'info', { label: 'Undo', act: 'undo' }); return;
+  if (d.shrm){
+    const i = d.shrm.lastIndexOf('|'), key = d.shrm.slice(0, i), dk = d.shrm.slice(i + 1), s = D.students.find(x => x.key === key);
+    shSet(key, dk, false); state.logMsg = null; renderCurrent(); setStatus(`${s ? s.name : key} is off study hall ${shortDate(dk)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
   }
   if (d.shadd){
-    const v = t.closest('.paddrow').querySelector('[data-shnew]').value;
-    if (!isDk(v)){ state.logMsg = { where: 'sh', text: 'Choose the first day they need study hall.', bad: true }; renderCurrent(); return; }
-    state.logMsg = null; shTurnOn(d.shadd, v); renderCurrent(); return;
+    const v = t.closest('.paddrow').querySelector('[data-shnew]').value, say = text => { state.logMsg = { where: 'sh', text, bad: true }; renderCurrent(); };
+    if (!isDk(v)) return say('Choose the study hall date.');
+    if (!settings().studyDays.includes(parseDk(v).getDay())) return say(`There’s no study hall on ${cap(DAYS[parseDk(v).getDay()])}s. Study hall is ${daysText(settings().studyDays)}.`);
+    if (state.data.deletedDays[v]) return say(`${shortDate(v)} was deleted, so it has no study hall.`);
+    state.logMsg = null; shSet(d.shadd, v, true); renderCurrent(); return;
   }
   // Setup: students
   if (has('data-addstudents')){
@@ -2614,7 +2598,7 @@ async function onClick(t){
   if (d.studelete){
     const k = d.studelete, s = D.students.find(x => x.key === k); if (!s) return;
     if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates, 1-on-1s, cheating log, and IEP, 504 or ML. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
-    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.oneSched[k]; delete D.cheating[k]; delete D.plans[k]; delete D.ml[k];
+    D.students = D.students.filter(x => x.key !== k); delete D.shDays[k]; delete D.meetings[k]; delete D.oneSched[k]; delete D.cheating[k]; delete D.plans[k]; delete D.ml[k];
     for (const x of Object.keys(D.oneMarks)) if (x.slice(0, x.lastIndexOf('|')) === k) delete D.oneMarks[x];
     for (const x of Object.keys(D.status)) if (x.split('|').slice(2).join('|') === k) delete D.status[x];
     for (const z of Object.keys(D.aliases)) if (D.aliases[z] === k) delete D.aliases[z];
@@ -2665,7 +2649,10 @@ document.addEventListener('change', e => {
     const box = visible(`.range [data-${'rfrom' in d ? 'rfrom' : 'rto'}]`); if (box) box.focus({ preventScroll: true });
     return;
   }
-  if ('shfrom' in d || 'shto' in d){ const li = t.closest('[data-period]'), sel = `[data-period="${CSS.escape(li.dataset.period)}"] [data-${'shfrom' in d ? 'shfrom' : 'shto'}]`; addPeriodFromRow(li); const n = visible(sel); if (n) n.focus(); return; }
+  if (d.shtoggle){
+    const i = d.shtoggle.lastIndexOf('|'), key = d.shtoggle.slice(0, i), dk = d.shtoggle.slice(i + 1);
+    shSet(key, dk, t.checked); renderCurrent(); const c = $(`#tab-study [data-shtoggle="${CSS.escape(d.shtoggle)}"]`); if (c) c.focus(); return;
+  }
   if (d.ovnote){
     const v = t.value.trim();
     setOverride(d.ovnote, { note: v || undefined });
@@ -2703,7 +2690,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
   if (e.key === 'Enter' && t.tagName === 'INPUT'){
     // Enter in a small form presses its button.
-    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period], [data-chform]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occmove],[data-occnotesave],[data-schsave],[data-chadd],[data-chsave]');
+    const f = t.closest('[data-logform], details.menu, .paddrow, [data-chform]'); const b = f && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd],[data-dropsave],[data-occmove],[data-occnotesave],[data-schsave],[data-chadd],[data-chsave]');
     if (b){ e.preventDefault(); b.click(); return; }
   }
   if (e.key === 'Escape' && state.ovMark && state.tab === 'overview' && !hadMenu && !typing && !dlg){ state.ovMark = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
