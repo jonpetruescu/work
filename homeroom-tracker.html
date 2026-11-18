@@ -10,7 +10,7 @@
 :root{
   --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
   --ink:#1C2433; --muted:#566074; --faint:#626B7D; --rule:#A3ACBA; --bar:#24324D;
-  --ok:#1D6F47; --ok-bg:#DFF1E7;
+  --ok:#1D6F47; --ok-bg:#DFF1E7; --fin:#11636C; --fin-bg:#D8EFF1;
   --late:#8F4B00; --late-bg:#FBE8D2;
   --bad:#A8231A; --bad-bg:#FADFDB;
   --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
@@ -26,7 +26,7 @@
     color-scheme:dark;   /* the browser's own boxes, lists and scroll bars are dark too */
     --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
     --ink:#E5E9F1; --muted:#A4AEBF; --faint:#8C96A8; --rule:#4E5A6E; --bar:#A9C2F5;
-    --ok:#74D3A2; --ok-bg:#163428; --late:#F2B36B; --late-bg:#3D2A12;
+    --ok:#74D3A2; --ok-bg:#163428; --fin:#7FD3DB; --fin-bg:#14363A; --late:#F2B36B; --late-bg:#3D2A12;
     --bad:#F28B82; --bad-bg:#40201D;
     --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
     --ov-present:#5E8F4B; --ov-excused:#4C78C4; --ov-absent:#B44A4A; --ov-none:#262F3D; --ov-ink:#10151E;
@@ -405,11 +405,50 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .rsquick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rsquick .btn{font-weight:500}
 .occmenu .pop p.lead{margin:0;color:var(--ink);font-weight:600}
-/* Caught cheating: a flag and how many times, by the student's name */
-.cheattag{display:inline-block;font-size:var(--fs-xs);font-weight:700;color:var(--bad);background:var(--bad-bg);border-radius:5px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px;line-height:1.5}
-.ovname .cheattag{margin-left:4px;font-size:.66rem;padding:0 4px}
-.ovt th.ovname .nmrow{display:flex;align-items:baseline;min-width:0}
-.ovt th.ovname .nmrow .name-btn{flex:0 1 auto;min-width:0}
+/* IEP, 504, ML and caught-cheating tags by the student's name, their box, and the editor (from the intervention tracker) */
+.plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
+.ovnm{display:flex;align-items:center;gap:6px;min-width:0}
+.plantag.mltag{color:var(--fin)}
+button.plantag{background:none;font-family:inherit;cursor:pointer;margin:0}
+button.plantag:hover,button.plantag[aria-expanded="true"]{background:color-mix(in srgb, currentColor 14%, transparent)}
+.tagpop{position:absolute;z-index:30;width:320px;max-height:60vh;overflow:auto;box-sizing:border-box;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 14px 12px;font-size:var(--fs-sm)}
+.tagpop[hidden]{display:none}
+.tagpop-h{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.tagpop-h .linkish{margin-left:auto}
+.tagpop-s{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.tagpop-s .plantag{margin-top:1px}
+.tagpop ul{margin:2px 0 0;padding-left:18px}
+.tagpop p{margin:2px 0 0}
+.plantag.cheattag{color:var(--bad)}
+.ovt th.ovname .ovnm .name-btn{min-width:0}
+.ovt th.ovname .ovnm{max-width:202px}   /* a long name shortens with … so its tags still show */
+.nmtag{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.planbox{display:grid;gap:6px}
+.planrow{display:flex;gap:10px;align-items:flex-start}
+.planset{border:1px solid var(--line);border-radius:6px;margin:0;padding:6px 10px 10px;display:grid;gap:8px}
+.planset legend{font-weight:600;padding:0 4px}
+.mlrow{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.mlrow label{display:inline-flex;gap:6px;align-items:center}
+.mlrow input[type=text]{width:9em;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 7px}
+.showmenu > summary{display:block;width:10.5em;height:30px;line-height:30px;padding:0 12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:var(--muted);font-weight:600;font-size:var(--fs-sm);border:1px solid var(--line);border-radius:6px;background:var(--surface);box-sizing:border-box}
+.showmenu > summary.on{background:var(--bar);border-color:var(--bar);color:var(--btn-ink)}
+.showmenu .pop{width:430px;padding:12px 14px;display:grid;gap:10px;font-size:var(--fs-sm)}
+.shrow{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.shrow b{width:100%}
+.shrow label,.shunder{display:inline-flex;gap:6px;align-items:center}
+.shunder input[type=number]{width:56px;height:26px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:0 6px}
+.nmtag{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.ovpop-h .plantag{align-self:center}
+.planbox{margin:8px 0 2px;font-size:var(--fs-sm)}
+.planbox .plantag{margin-top:2px}
+.planacc{margin:2px 0 0;padding-left:18px;columns:2;column-gap:32px}
+.planacc li{break-inside:avoid}
+.menu.planmenu .pop{left:auto;right:0;width:440px;padding:12px 14px;display:grid;gap:8px;font-size:var(--fs-sm)}
+.planradios{display:flex;gap:18px}
+.planradios label{display:inline-flex;gap:6px;align-items:center}
+.planacclabel{display:grid;gap:4px;font-weight:600}
+.planform textarea{min-height:130px;font-weight:400}
+.planmsg{margin:0;min-height:1.4em;color:var(--bad)}
 .fu{list-style:none;margin:0;padding:0}
 .fu li{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--grid);font-size:var(--fs-sm)}
 .fu .when{font-weight:600;min-width:4.6em}
@@ -466,7 +505,7 @@ main:focus{outline:none}
   :root{
     --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
     --ink:#1C2433; --muted:#566074; --faint:#8790A0; --rule:#A3ACBA; --bar:#24324D;
-    --ok:#1D6F47; --ok-bg:#DFF1E7; --late:#8F4B00; --late-bg:#FBE8D2; --bad:#A8231A; --bad-bg:#FADFDB;
+    --ok:#1D6F47; --ok-bg:#DFF1E7; --fin:#11636C; --fin-bg:#D8EFF1; --late:#8F4B00; --late-bg:#FBE8D2; --bad:#A8231A; --bad-bg:#FADFDB;
     --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
     --ov-present:#93C47D; --ov-excused:#6D9EEB; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
   }
@@ -542,6 +581,7 @@ main:focus{outline:none}
 </main>
 <dialog class="dlg" id="helpDlg" aria-labelledby="helpTitle"></dialog>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
+<div id="tagPop" class="tagpop noprint" role="dialog" hidden></div>
 <script>
 'use strict';
 /* ------------------------------------------------------------------
@@ -629,6 +669,9 @@ function defaultData(){
     aliases: {},     // { zoomNameKey: studentKey }
     ignored: [],     // Zoom names that aren't students
     cheating: {},    // { studentKey: [{ id, date, type, note }] } times a student was caught cheating (type: a CHEAT_TYPES key)
+    plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
+    ml: {},          // { studentKey: { status: 'ml' | 'rfep', level, sup } } a multilingual learner (with their ELD level) or a
+                     // student reclassified fluent English proficient (RFEP), and supports one per line
     deletedDays: {} };   // { 'YYYY-MM-DD': { date } } dates taken off every tab: no homeroom or study hall, that time in Zoom set aside
 }
 const NUM_SETTINGS = { lateGrace: [0, 60], leaveGrace: [0, 60], oneOnOneMin: [1, 60] };
@@ -652,7 +695,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {} }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, plans: {}, ml: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
@@ -682,6 +725,8 @@ function withDefaults(d){
     if (Object.keys(o).length) out.status[`${dk}|${kind}|${key}`] = o;
   }
   for (const [k, v] of Object.entries(obj(d.aliases))) if (k && typeof v === 'string' && v) out.aliases[k] = v;
+  for (const [k, v] of Object.entries(obj(d.plans))){ const t = obj(v).type; if (k && (t === 'iep' || t === '504')) out.plans[k] = { type: t, acc: String(obj(v).acc || '').slice(0, 4000) }; }
+  for (const [k, v] of Object.entries(obj(d.ml))) if (k) out.ml[k] = { status: obj(v).status === 'rfep' ? 'rfep' : 'ml', level: String(obj(v).level || '').trim().slice(0, 40), sup: String(obj(v).sup || '').slice(0, 4000) };
   for (const [k, v] of Object.entries(obj(d.cheating))) if (k && Array.isArray(v)){
     const xs = v.map(obj).filter(x => isDk(x.date)).map(x => ({ id: String(x.id || uid()).slice(0, 40), date: x.date, type: own(CHEAT_TYPES, x.type) ? x.type : 'other', note: String(x.note || '').slice(0, 300) }));
     if (xs.length) out.cheating[k] = xs;
@@ -710,7 +755,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, planEdit: null, ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -1216,7 +1261,7 @@ function renderOverview(){
     const head = idx.map(n => { const d = days[n], g = A.classes.get(`${d.dk}|${d.kind}`);
       const tip = `${KIND[d.kind]}, ${longDate(d.dk)}, ${winText(d.kind)}. ${g ? `Zoom report: ${[...g.files].join(', ')}` : d.dk > today ? 'Not yet.' : 'No Zoom report yet.'}`;
       return `<th scope="col" data-dk="${d.dk}" class="${wkStart[n] ? 'wk' : ''}${d.dk === today ? ' today' : ''}${state.ovDay === d.dk ? ' dsel' : ''}" title="${esc(tip)}"><button class="ovdh" data-ovdh="${d.dk}" tabindex="-1" aria-label="${esc(KIND[d.kind])}, ${esc(longDate(d.dk))}: check or delete this day" aria-expanded="${state.ovDay === d.dk}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(d.dk)).slice(0, 2))}</span>${parseDk(d.dk).getDate()}<span class="ovkind ${d.kind}">${d.kind.toUpperCase()}</span></button></th>`; }).join('');
-    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="nmrow"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${cheatTag(r.key)}</span>${
+    const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><span class="ovnm"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${supTags(r.key, 'noprint', false)}</span>${
       r.removed ? `<span class="ovleft">${r.removed > today ? 'leaving' : 'dropped'} ${esc(monDay(r.removed))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
       const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
@@ -1289,7 +1334,7 @@ function ovEditor(A, c){
   const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean', canF = c.req && c.canFin && (!c.ov.cat || c.ov.cat === 'present');
   const cats = Object.entries(CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.req && c.ov.cat === k}"${dis}><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(KIND[c.kind])}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
-    <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
+    <div class="ovpop-h"><b>${esc(name)}</b>${supTags(c.key)}<span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
     <p class="small ovfacts">${esc(zoomLine(c))}</p>
     <div class="ovcols"><div class="ovgrp" role="group" aria-label="Color"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
       <div class="ovgrp" role="group" aria-label="Letters"><span class="small muted">Letters</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
@@ -1394,9 +1439,6 @@ function pinMonths(sc){
    student's name (⚑ and how many times), and never printed: the log and the flag are left off every printout. */
 const cheatOf = key => [...(state.data.cheating[key] || [])].sort((a, b) => b.date.localeCompare(a.date));
 const cheatType = x => CHEAT_TYPES[x.type] || 'Other';
-const cheatTag = key => { const xs = cheatOf(key); if (!xs.length) return '';
-  const said = `Caught cheating ${plural(xs.length, 'time')}. Last: ${monDay(xs[0].date)}, ${cheatType(xs[0])}`;
-  return `<span class="cheattag noprint" title="${esc(said)}" aria-label="${esc(said)}">⚑ ${xs.length}</span>`; };
 const chInputs = x => `<input type="date" data-chdate value="${esc(x.date)}" aria-label="Date">
   <select data-chtype aria-label="Kind">${Object.entries(CHEAT_TYPES).map(([k, l]) => `<option value="${k}"${x.type === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
   <input type="text" data-chnote maxlength="300" placeholder="What happened (optional)" value="${esc(x.note)}" aria-label="What happened">`;
@@ -1423,6 +1465,80 @@ function cheatPanel(A){
     <div class="fuform" data-chform><select data-chstudent aria-label="Student"><option value="">Student…</option>${opts}</select>${chInputs({ date: todayDk(), type: 'ai', note: '' })}<button class="btn small" data-chadd>Log it</button></div>
     ${log.length ? `<ul class="fu" style="margin-top:10px">${log.map(x => `<li><span class="when">${esc(monDay(x.date))}</span><button class="name-btn" data-openstudent="${esc(x.key)}">${esc(x.name)}</button><b>${esc(cheatType(x))}</b><span class="txt">${esc(x.note)}</span></li>`).join('')}</ul>` : ''}</div>`;
 }
+
+// IEP and 504 plans. Kept only in the folder's data file, and never put in a message to a family. They
+// show by the student's name, and on a student's printed report or copied summary only when "IEP/504 and accommodations" is checked.
+const PLAN_NAME = { iep: 'IEP', '504': '504 plan' };
+const planOf = key => state.data.plans[key] || null;
+const planAcc = p => String((p && p.acc) || '').split('\n').map(x => x.trim()).filter(Boolean);
+const planShort = key => { const p = planOf(key); return p ? (p.type === 'iep' ? 'IEP' : '504') : ''; };
+const tagBtn = (key, cls, tab, title, text) => `<button type="button" class="plantag${cls}" data-tagpop="${esc(key)}" aria-haspopup="dialog" aria-expanded="false"${tab === false ? ' tabindex="-1"' : ''} title="${esc(title)}">${esc(text)}</button>`;
+const planTag = (key, cls = '', tab) => { const p = planOf(key); if (!p) return ''; const a = planAcc(p);
+  return tagBtn(key, cls ? ` ${cls}` : '', tab, `${PLAN_NAME[p.type]}${a.length ? `: ${a.join('; ')}` : ''}`, planShort(key)); };
+// Multilingual learners (ML): an ELD level as the teacher writes it (a number like 3, or a name like Expanding), and supports.
+// Kept and shown like IEP and 504 plans.
+const mlOf = key => state.data.ml[key] || null;
+const isRfep = m => !!m && m.status === 'rfep';
+const mlShort = key => { const m = mlOf(key); return !m ? '' : isRfep(m) ? 'RFEP' : `ML${m.level && m.level.length <= 3 ? ` ${m.level}` : ''}`; };
+const mlWords = m => isRfep(m) ? 'Reclassified fluent English proficient (RFEP)' : `Multilingual learner${m.level ? `, ELD level ${m.level}` : ''}`;
+const mlTag = (key, cls = '', tab) => { const m = mlOf(key); if (!m) return ''; const a = planAcc({ acc: m.sup });
+  return tagBtn(key, ` mltag${cls ? ` ${cls}` : ''}`, tab, `${mlWords(m)}${a.length ? `: ${a.join('; ')}` : ''}`, mlShort(key)); };
+// Caught cheating: each time, its date, kind and a note. Kept only in the folder's data file and flagged wherever the IEP, 504
+// and ML tags show (⚑ and how many times). Never put in a message to a family; printed on a report
+// or copied in a summary only when "Cheating log" is checked.
+const cheatTag = (key, cls = '', tab) => { const xs = cheatOf(key); if (!xs.length) return '';
+  return tagBtn(key, ` cheattag${cls ? ` ${cls}` : ''}`, tab, `Caught cheating ${plural(xs.length, 'time')}. Last: ${monDay(xs[0].date)}, ${cheatType(xs[0])}`, `⚑ ${xs.length}`); };
+const supTags = (key, cls, tab) => planTag(key, cls, tab) + mlTag(key, cls, tab) + cheatTag(key, cls, tab);
+// Clicking a tag opens a small box beside it: the student's accommodations, and their ML or RFEP status and supports.
+// It closes with a click anywhere else, Esc, or the tag again, and it's never printed.
+let tagPopFrom = null;
+function openTagPop(btn){
+  const key = btn.dataset.tagpop, box = $('#tagPop'), A = state.lastAnalysis || analyze(), name = (A.byKey.get(key) || {}).name || key, p = planOf(key), m = mlOf(key), ch = cheatOf(key);
+  const list = xs => xs.length ? `<ul>${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<p class="muted">None entered.</p>';
+  closeTagPop();
+  box.innerHTML = `<div class="tagpop-h"><b>${esc(name)}</b><button class="linkish" data-tagpopclose>Close</button></div>
+    ${p ? `<div class="tagpop-s"><span class="plantag">${planShort(key)}</span><div><b>${PLAN_NAME[p.type]}: accommodations</b>${list(planAcc(p))}</div></div>` : ''}
+    ${m ? `<div class="tagpop-s"><span class="plantag mltag">${esc(mlShort(key))}</span><div><b>${esc(mlWords(m))}</b>${planAcc({ acc: m.sup }).length ? list(planAcc({ acc: m.sup })) : ''}</div></div>` : ''}
+    ${ch.length ? `<div class="tagpop-s"><span class="plantag cheattag">⚑ ${ch.length}</span><div><b>Caught cheating ${plural(ch.length, 'time')}</b>${list(ch.map(x => `${monDay(x.date)}: ${cheatType(x)}${x.note ? `. ${x.note}` : ''}`))}</div></div>` : ''}
+    ${state.tab === 'students' && state.student === key ? '' : `<button class="linkish" data-openstudent="${esc(key)}">Open ${esc(firstName(name))}’s page to change these</button>`}`;
+  box.hidden = false; tagPopFrom = btn; btn.setAttribute('aria-expanded', 'true');
+  box.setAttribute('aria-label', `About ${name}`);
+  // Under the tag, or above it when there isn't room below; kept inside the window.
+  const r = btn.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - 8 - w)), top = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8 ? r.top - 6 - h : r.bottom + 6;
+  box.style.left = `${left + scrollX}px`; box.style.top = `${top + scrollY}px`;
+}
+function closeTagPop(focus){
+  const box = $('#tagPop'); if (!box || box.hidden) return;
+  box.hidden = true; const b = tagPopFrom; tagPopFrom = null;
+  if (b){ b.setAttribute('aria-expanded', 'false'); if (focus && document.body.contains(b)) b.focus(); }
+}
+const hasSupports = key => !!(planOf(key) || mlOf(key));
+// Groups of students: everyone, IEP, 504, IEP or 504, ML, or none of these. A student can be in more than one.
+const WHO = [['all', 'All students', 'All students'], ['iep', 'IEP', 'Students with an IEP'], ['504', '504', 'Students with a 504 plan'], ['plan', 'IEP or 504', 'Students with an IEP or 504 plan'],
+  ['ml', 'ML', 'Multilingual learners (ML)'], ['rfep', 'RFEP', 'Reclassified fluent English proficient (RFEP)'], ['none', 'None of these', 'Students without an IEP, 504, ML or RFEP']];
+const whoOk = (key, who) => { const p = planOf(key), m = mlOf(key);
+  return who === 'all' || (who === 'none' ? !p && !m : who === 'ml' ? !!m && !isRfep(m) : who === 'rfep' ? isRfep(m) : who === 'plan' ? !!p : !!p && p.type === who); };
+const ELD_LEVELS = ['1', '2', '3', '4', '5', '6', 'Emerging', 'Expanding', 'Bridging', 'Entering', 'Developing', 'Reaching'];
+function planMenu(ctx){
+  const p = planOf(ctx.key) || { type: '', acc: '' }, m = mlOf(ctx.key);
+  return `<details class="menu planmenu" data-planmenu="${esc(ctx.key)}"${state.planEdit === ctx.key ? ' open' : ''}><summary class="linkish">${hasSupports(ctx.key) ? 'Edit IEP, 504 or ML' : 'Add IEP, 504 or ML'}</summary>
+    <div class="pop planform" role="group" aria-label="IEP, 504 and ML for ${esc(ctx.name)}">
+      <fieldset class="planset"><legend>IEP or 504</legend>
+      <div class="planradios" role="radiogroup" aria-label="Plan">${[['', 'None'], ['iep', 'IEP'], ['504', '504 plan']].map(([v, l]) =>
+        `<label><input type="radio" name="plantype" data-plantype value="${v}"${p.type === v ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+      <label class="planacclabel">Accommodations, one per line<textarea data-planacc rows="4" maxlength="4000" spellcheck="true" placeholder="Extended time&#10;Breaks as needed&#10;Questions read aloud">${esc(p.acc)}</textarea></label></fieldset>
+      <fieldset class="planset"><legend>Multilingual learner</legend>
+        <div class="mlrow"><span class="planradios" role="radiogroup" aria-label="Multilingual learner">${[['', 'None'], ['ml', 'ML'], ['rfep', 'RFEP (reclassified)']].map(([v, l]) =>
+          `<label><input type="radio" name="mlstatus" data-mlstatus value="${v}"${(m ? m.status : '') === v ? ' checked' : ''}> ${l}</label>`).join('')}</span>
+          <label>ELD level <input type="text" data-mllevel maxlength="40" list="eldLevels" autocomplete="off" value="${esc(m && !isRfep(m) ? m.level : '')}" placeholder="e.g. 3 or Expanding"${isRfep(m) ? ' disabled' : ''}></label></div>
+        <datalist id="eldLevels">${ELD_LEVELS.map(x => `<option value="${x}"></option>`).join('')}</datalist>
+        <label class="planacclabel">Language supports, one per line<textarea data-mlsup rows="3" maxlength="4000" spellcheck="true" placeholder="Sentence frames&#10;Bilingual glossary">${esc(m ? m.sup : '')}</textarea></label></fieldset>
+      <p class="small muted" style="margin:0">Kept in your folder’s data file only, and never put in messages to families. It shows by the student’s name, and on a printed student report only when you check “IEP/504, ML and supports”.</p>
+      <p class="small planmsg" data-planmsg role="alert"></p>
+      <div class="actions" style="margin:0"><button class="btn small" data-plansave="${esc(ctx.key)}">Save</button><button class="btn small ghost" data-plancancel>Cancel</button></div></div></details>`;
+}
+const planFocus = () => { const x = $(`#tab-${state.tab} [data-planmenu] > summary`); if (x) x.focus(); };
 
 /* ---------------- Students tab ---------------- */
 function meter(v){
@@ -1463,7 +1579,7 @@ function renderStudents(){
   if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
   for (const r of list){
     const need = needsSH(r.key, today) ? openPeriod(r.key) : null;
-    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${cheatTag(r.key)}${r.removed && !r.cur ? `<span class="chip left">Dropped ${esc(monDay(r.removed))}</span>` : ''}</span></td>
+    h += `<tr><td><span class="nmline nmtag"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${supTags(r.key, 'noprint')}${r.removed && !r.cur ? `<span class="chip left">Dropped ${esc(monDay(r.removed))}</span>` : ''}</span></td>
       <td>${meter(r.hr.pct)}<span class="sub">${esc(attText(r.hr, 'day') || 'No days counted yet')}</span></td>
       <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Needs study hall since ${esc(monDay(need.from))}</span>` : ''}</td>
       <td>${r.one.pct !== null || r.one.canceled ? `${meter(r.one.pct)}<span class="sub">${esc(oneText(r.one))}</span>` : '<span class="zero">—</span>'} ${oneChip(r.one)}</td>
@@ -1500,7 +1616,12 @@ function renderStudentPage(A, el){
   const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need ? `Needs study hall since ${monDay(need.from)}` : ''].filter(Boolean);
   // Dropped from homeroom: a line under the name saying so (with Undo). Until then, two quiet links at the right end of the
   // name row: "Dropped from homeroom?" opens a small menu to record it, and "Delete student" asks first.
-  const links = `<span class="noprint dropbtns">${s.removed ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(s.key)}"${state.dropEdit === s.key ? ' open' : ''}>
+  const plan = planOf(r.key), acc = planAcc(plan), ml = mlOf(r.key), sup = planAcc({ acc: ml && ml.sup });
+  const accList = xs => `<ul class="planacc">${xs.map(a => `<li>${esc(a)}</li>`).join('')}</ul>`;
+  const planBox = plan || ml ? `<div class="planbox noprint">${
+    plan ? `<div class="planrow"><span class="plantag" title="${esc(PLAN_NAME[plan.type])}">${planShort(r.key)}</span><div><b>Accommodations</b>${acc.length ? accList(acc) : ' <span class="muted">None entered.</span>'}</div></div>` : ''}${
+    ml ? `<div class="planrow"><span class="plantag mltag">${esc(mlShort(r.key))}</span><div><b>${esc(mlWords(ml))}</b>${sup.length ? accList(sup) : ''}</div></div>` : ''}</div>` : '';
+  const links = `<span class="noprint dropbtns">${planMenu({ key: r.key, name: r.name })}${s.removed ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(s.key)}"${state.dropEdit === s.key ? ' open' : ''}>
       <summary class="linkish">Dropped from homeroom?</summary><div class="pop dropform" role="group" aria-label="Dropped from homeroom">
         <div class="dropline"><span>Not in homeroom starting</span><input type="date" data-dropdate value="${esc(today)}" aria-label="First day not in homeroom">
           <button class="btn small" data-dropsave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
@@ -1510,7 +1631,7 @@ function renderStudentPage(A, el){
       <button class="linkish noprint" data-stuback="${esc(s.key)}">Undo</button></p>` : '';
   const tile = (label, value, sub, cls = '') => `<div class="tile${cls}"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div><div class="s">${esc(sub)}</div></div>`;
   h += `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow printonly">Homeroom attendance</div>
-    <div class="rname"><h2 tabindex="-1">${esc(r.name)}${cheatTag(r.key)}</h2>${links}</div>${dropLine}
+    <div class="rname"><h2 tabindex="-1">${esc(r.name)}</h2>${cheatTag(r.key, 'noprint')}${links}</div>${dropLine}${planBox}
     <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${settings().teacherName ? ` · ${esc(settings().teacherName)}` : ''}</span></p>
     <div class="rtiles">${tile('Homeroom', r.hr.pct === null ? '—' : `${r.hr.pct}%`, attText(r.hr, 'day') || 'No days counted yet')}
       ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'required day') || 'Not required in these dates')}
@@ -1724,6 +1845,7 @@ function renameKey(oldK, newK){
   for (const k of Object.keys(D.status)){ const [dk, kind, ...rest] = k.split('|'); if (rest.join('|') === oldK){ const nk = `${dk}|${kind}|${newK}`; if (!D.status[nk]) D.status[nk] = D.status[k]; delete D.status[k]; } }
   if (D.studyHall[oldK]){ D.studyHall[newK] = normPeriods([...(D.studyHall[newK] || []), ...D.studyHall[oldK]]); delete D.studyHall[oldK]; }
   if (D.meetings[oldK]){ D.meetings[newK] = [...(D.meetings[newK] || []), ...D.meetings[oldK]]; delete D.meetings[oldK]; }
+  for (const x of ['plans', 'ml']) if (D[x][oldK]){ if (!D[x][newK]) D[x][newK] = D[x][oldK]; delete D[x][oldK]; }
   if (D.cheating[oldK]){ D.cheating[newK] = [...(D.cheating[newK] || []), ...D.cheating[oldK]]; delete D.cheating[oldK]; }
   if (D.oneSched[oldK]){ if (!D.oneSched[newK]) D.oneSched[newK] = D.oneSched[oldK]; delete D.oneSched[oldK]; }
   for (const k of Object.keys(D.oneMarks)){ const i = k.lastIndexOf('|'); if (k.slice(0, i) === oldK){ const nk = `${newK}|${k.slice(i + 1)}`; if (!D.oneMarks[nk]) D.oneMarks[nk] = D.oneMarks[k]; delete D.oneMarks[k]; } }
@@ -1855,6 +1977,8 @@ function sampleFolder(){
   const club = back(2);   // five students: not a 1-on-1
   file(`zoom-chess-club-${mdY(club)}.csv`, club, [[teacher, 15 * 60 + 28, 16 * 60 + 18], ...['Amara Okafor', 'Ben Whitfield', 'Dev Patel', 'Elif Demir', 'Hugo Martins'].map(n => [n, 15 * 60 + 30, 16 * 60 + 15])]);
   const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [], oneSched, oneMarks,
+    plans: { 'carmen reyes': { type: 'iep', acc: 'Extended time (1.5x)\nBreaks as needed\nCheck for understanding privately' }, 'hugo martins': { type: '504', acc: 'Preferential seating\nMovement breaks' } },
+    ml: { 'elif demir': { status: 'ml', level: '3', sup: 'Sentence frames\nBilingual glossary' }, 'dev patel': { status: 'rfep', level: '', sup: '' } },
     cheating: { 'ben whitfield': [{ id: 'ch1', date: back(6), type: 'ai', note: 'Essay answer pasted from ChatGPT' }], 'isabel cruz': [{ id: 'ch2', date: back(15), type: 'copy', note: 'Same answers as another student on the quiz' }, { id: 'ch3', date: back(3), type: 'app', note: '' }] },
     meetings: { 'grace lin': [{ id: 'sample1', date: back(4), time: '12:15', st: 'held', note: 'Talked at lunch about her science project' }] },
     status: { [`${mons[3]}|hr|dev patel`]: { cat: 'excused', note: 'Doctor’s appointment' }, [`${mons[1]}|hr|ben whitfield`]: { note: 'Wi‑Fi trouble at home' } } };
@@ -1883,7 +2007,7 @@ function helpHTML(){
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Students dropped from homeroom are hidden; tick <b>Show dropped</b> to see them. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
-      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. A ⚑ by a name means the student was caught cheating, and how many times; the cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
@@ -2082,7 +2206,7 @@ function undo(redo){
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
   if (!state.loaded || !from.length) return;
   to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
-  Object.assign(state, { ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, logMsg: null });
+  Object.assign(state, { ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, planEdit: null, logMsg: null });
   if (state.student && !state.data.students.some(s => s.key === state.student)) state.student = null;
   state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
   render();
@@ -2197,7 +2321,7 @@ function addPeriodFromRow(li){
 }
 
 /* ---------------- Events ---------------- */
-const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; };
+const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; if ('planmenu' in m.dataset) state.planEdit = null; };
 // Pressing anywhere outside the Overview's open box closes it in place. A press that starts in the box never closes it.
 document.addEventListener('pointerdown', e => {
   if (state.ovDay && state.tab === 'overview' && !e.target.closest('.ovdpop, .ovdh')){
@@ -2209,6 +2333,7 @@ document.addEventListener('pointerdown', e => {
 }, true);
 document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
+  if (tagPopFrom && !e.target.closest('#tagPop') && e.target.closest('[data-tagpop]') !== tagPopFrom) closeTagPop();
   const t = e.target.closest('button'); if (!t) return;
   if (e.detail > 1 && ['ovcell', 'ov1', 'logadd', 'addstudents', 'ovdh', 'ovdelday'].some(k => t.dataset[k] !== undefined)) return;   // a double-click acts once
   const sel = focusSelector(t);
@@ -2294,6 +2419,28 @@ async function onClick(t){
     const left = [...document.querySelectorAll('[data-undelday]')], f = left[Math.min(Math.max(i, 0), left.length - 1)]; if (f) f.focus(); return;
   }
   // 1-on-1s
+  if (d.tagpop !== undefined){ if (tagPopFrom === t) closeTagPop(); else openTagPop(t); return; }
+  if (has('data-tagpopclose')) return closeTagPop(true);
+  if (has('data-printlist') || has('data-rptprint')) return window.print();
+  if (has('data-ovshowreset')){ state.ovShow = { ...state.ovShow, who: 'all', under: false, order: 'name' }; renderOverview(); const x = $('#tab-overview [data-showmenu] > summary'); if (x) x.focus(); return; }
+  if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
+  if (has('data-rptcsv')) return rptCSV();
+  if (d.plansave){
+    const m = t.closest('[data-planmenu]'), type = (m.querySelector('[data-plantype]:checked') || {}).value || '';
+    const acc = m.querySelector('[data-planacc]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000);
+    const was = planOf(d.plansave), name = (D.students.find(x => x.key === d.plansave) || {}).name || d.plansave;
+    if (!type && acc && !was){ m.querySelector('[data-planmsg]').textContent = 'Pick IEP or 504 plan to keep these accommodations.'; return; }
+    const mlSt = (m.querySelector('[data-mlstatus]:checked') || {}).value || '', mlOn = !!mlSt;
+    const level = mlSt === 'ml' ? m.querySelector('[data-mllevel]').value.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
+    const sup = m.querySelector('[data-mlsup]').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n').slice(0, 4000), wasMl = mlOf(d.plansave);
+    if (type) state.data.plans[d.plansave] = { type, acc }; else delete state.data.plans[d.plansave];
+    if (mlOn) state.data.ml[d.plansave] = { status: mlSt, level, sup }; else delete state.data.ml[d.plansave];
+    state.planEdit = null; changed(); renderCurrent(); planFocus();
+    const said = [type ? `${PLAN_NAME[type]} saved` : was ? `${PLAN_NAME[was.type]} taken off` : '', mlOn ? `${mlSt === 'rfep' ? 'RFEP' : 'ML'} saved${level ? ` (ELD level ${level})` : ''}` : wasMl ? `${isRfep(wasMl) ? 'RFEP' : 'ML'} taken off` : ''].filter(Boolean);
+    if (said.length) setStatus(`${name}: ${said.join(', ')}.`, 'info', { label: 'Undo', act: 'undo' });
+    return;
+  }
+  if (has('data-plancancel')){ const m = t.closest('details'); if (m) closeMenu(m); renderCurrent(); planFocus(); return; }
   // The cheating log: logged on a student's page, or on the Students tab (pick the student there).
   if (has('data-chadd')){
     const form = t.closest('[data-chform]'), pick = form.querySelector('[data-chstudent]'), key = form.dataset.chkey || (pick && pick.value), x = readCheat(form);
@@ -2428,8 +2575,8 @@ async function onClick(t){
   if (d.stuback){ const s = D.students.find(x => x.key === d.stuback); if (!s) return; delete s.removed; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' }); return; }
   if (d.studelete){
     const k = d.studelete, s = D.students.find(x => x.key === k); if (!s) return;
-    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates, 1-on-1s and cheating log. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
-    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.oneSched[k]; delete D.cheating[k];
+    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates, 1-on-1s, cheating log, and IEP, 504 or ML. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
+    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.oneSched[k]; delete D.cheating[k]; delete D.plans[k]; delete D.ml[k];
     for (const x of Object.keys(D.oneMarks)) if (x.slice(0, x.lastIndexOf('|')) === k) delete D.oneMarks[x];
     for (const x of Object.keys(D.status)) if (x.split('|').slice(2).join('|') === k) delete D.status[x];
     for (const z of Object.keys(D.aliases)) if (D.aliases[z] === k) delete D.aliases[z];
@@ -2439,6 +2586,10 @@ async function onClick(t){
 }
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset || {};
+  if ((d.mllevel !== undefined || d.mlsup !== undefined) && t.value.trim()){
+    const g = t.closest('[data-planmenu]'), c = g.querySelector('[data-mlstatus][value="ml"]');
+    if (c && (d.mllevel !== undefined || !g.querySelector('[data-mlstatus]:checked:not([value=""])'))) c.checked = true;
+  }
   if ('search' in d){ state.query = t.value; const pos = t.selectionStart; renderCurrent(); const s = $(`#tab-${state.tab} [data-search]`); if (s){ s.focus(); s.setSelectionRange(pos, pos); } }
 });
 document.addEventListener('change', e => {
@@ -2460,6 +2611,8 @@ document.addEventListener('change', e => {
   if ('setday' in d){ S.homeroomDay = +t.value; changed(); return; }
   if (d.studyday){ const w = +d.studyday; S.studyDays = t.checked ? [...new Set([...S.studyDays, w])].sort() : S.studyDays.filter(x => x !== w); changed(); return; }
   if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
+  if ('mlstatus' in d){ const g = t.closest('[data-planmenu]'), lv = g && g.querySelector('[data-mllevel]'); if (lv) lv.disabled = t.value === 'rfep'; }
+  if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
   if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderOverview(); const c = $('#tab-overview [data-showdropped]'); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
   if ('rfrom' in d || 'rto' in d){
@@ -2487,8 +2640,9 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
+  if (e.key === 'Escape' && tagPopFrom){ e.preventDefault(); closeTagPop(true); return; }
   const hadMenu = !!document.querySelector('details.menu[open]');
-  const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable]'), dlg = document.querySelector('dialog[open]');
+  const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable], .planform'), dlg = document.querySelector('dialog[open]');
   // Shortcuts that work anywhere except while typing (where Ctrl+Z undoes the typing): Undo and Redo, ? for Help, / to find a student.
   if ((!typing || t.tagName === 'SELECT') && !dlg && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zy]$/i.test(e.key)){ e.preventDefault(); undo(e.key.toLowerCase() === 'y' || e.shiftKey); return; }   // a list box has no undo of its own
   if (!typing && !dlg && !e.ctrlKey && !e.metaKey && !e.altKey){
@@ -2544,6 +2698,7 @@ document.addEventListener('toggle', e => {
   if (!el.classList || !el.classList.contains('menu')) return;
   if ('rangemenu' in el.dataset) state.rangeMenu = el.open;
   if ('dropmenu' in el.dataset) state.dropEdit = el.open ? el.dataset.dropmenu : null;
+  if ('planmenu' in el.dataset){ state.planEdit = el.open ? el.dataset.planmenu : null; if (el.open){ const r = el.querySelector('[data-plantype]:checked'); if (r) r.focus(); return; } }
   if (!el.open) return;
   // A menu opens rightward unless that would run off the window; its first box gets focus.
   const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
