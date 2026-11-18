@@ -148,8 +148,9 @@ main.wrap{padding:22px 20px 60px}
 .menumsg{min-height:1.4em;color:var(--bad)}
 
 /* Tables */
-.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.tablewrap{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
 .tablewrap.schwrap{overflow:visible}
+.menu:not([open]) > .pop{display:none}   /* a closed menu's box takes no room (some browsers still lay it out) */
 table.sum{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
 table.sum th{font-size:var(--fs-sm);color:var(--muted);font-weight:600;text-align:left;padding:10px 12px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 table.sum td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
@@ -588,6 +589,18 @@ table.rpt tr.rptall td{font-weight:600;border-top:1px solid var(--line)}
   details.day > summary{padding:12px 14px}
   .day-body{padding:0 14px 14px}
   .counts .count{width:auto !important}
+  .two{grid-template-columns:1fr}
+  /* A 1-on-1 on a phone: who, when and the time on one line, then what's known, then the buttons */
+  .occlist li,.occlist.named li{grid-template-columns:auto auto minmax(0,1fr)}
+  .occlist .what,.occlist .acts{grid-column:1 / -1}
+  .occlist .acts{display:flex;flex-wrap:wrap;justify-content:flex-start}
+  .logform{flex-wrap:wrap}
+  .logform label.grow{flex-basis:100%}
+  .menu .pop{max-width:calc(100vw - 32px)}
+  .menu.formmenu .pop,.menu.occmenu .pop,.menu.schmenu .pop,.menu.dropmenu .pop,.menu.planmenu .pop,.shmenu .pop{width:calc(100vw - 32px)}
+  .dropline{flex-wrap:wrap;white-space:normal}
+  .tablewrap.schwrap{overflow-x:auto}
+  .setgrid{grid-template-columns:max-content minmax(0,1fr)}
 }
 /* IEP, 504, ML and caught-cheating tags by the student's name, their box, and the editor (from the intervention tracker) */
 .plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
