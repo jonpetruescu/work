@@ -296,6 +296,7 @@ textarea.stupaste{min-height:190px}
 .ovkey .qmsg{color:var(--late);font-weight:600}
 .ovwrap.marking .ovb[data-ovcell]{cursor:copy}
 .ovwrap.marking .ovb[data-ovcell]:hover{box-shadow:inset 0 0 0 2px var(--focus)}
+.ovdropped{display:flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-weight:500;color:var(--muted);margin-bottom:10px;cursor:pointer}
 .ovmarkbtn{min-width:9em}   /* fits "Done marking" too, so the button keeps its width */
 #tab-overview .toolbar .search{width:150px}   /* room for Quick mark and Print on the same line */
 .ovsw{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:2px;font-style:normal;font-size:var(--fs-xs);border:1px solid var(--line);position:relative}
@@ -709,7 +710,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -1161,8 +1162,10 @@ function renderOverview(){
   const A = analyze(); state.lastAnalysis = A;
   if (!A.students.length){ el.innerHTML = setupCard(A); return; }
   const period = periodOf(A), days = classDays(period), today = todayDk(), q = normKey(state.query);
-  const rows = studentRows(A, days).filter(r => (!q || normKey(r.name).includes(q))
-    && (state.ovShow === 'all' || (state.ovShow === 'sh' ? needsSH(r.key, today) : isDue(r))));
+  // Students dropped from homeroom are hidden unless "Show dropped" is ticked (it shows only when someone was dropped).
+  const all = studentRows(A, days), nDropped = all.filter(r => !r.cur).length;
+  const match = r => (!q || normKey(r.name).includes(q)) && (state.ovShow === 'all' || (state.ovShow === 'sh' ? needsSH(r.key, today) : isDue(r)));
+  const rows = all.filter(r => match(r) && (r.cur || state.showDropped)), hiddenMatch = state.showDropped ? 0 : all.filter(r => !r.cur && match(r)).length;
   const selCell = state.ovSel ? rows.flatMap(r => r.cells).find(c => c.xk === state.ovSel) : null;
   if (state.ovSel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor
   const selRow = state.ov1 ? rows.find(r => r.key === state.ov1) : null;
@@ -1180,7 +1183,8 @@ function renderOverview(){
     state.query ? ` · Search: “${esc(state.query)}”` : ''}${state.ovShow !== 'all' ? ` · ${esc(shows.find(x => x[0] === state.ovShow)[1])}` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</p>`;
   h += ovKey();
   if (!days.length || !rows.length){
-    el.innerHTML = h + `<p class="muted">${!days.length ? 'No homeroom or study hall days in these dates.' : state.query ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'
+    el.innerHTML = h + `<p class="muted">${!days.length ? 'No homeroom or study hall days in these dates.' : hiddenMatch ? `${hiddenMatch === 1 ? 'The only student that matches was' : `The ${hiddenMatch} students that match were`} dropped from homeroom. <button class="linkish" data-showdroppedon>Show dropped</button>`
+      : state.query ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>'
       : `No students match what’s chosen. <button class="linkish" data-show="all">Show everyone</button>`}</p>`;
     return;
   }
@@ -1221,7 +1225,7 @@ function renderOverview(){
     }).join('')}${ov1Cell(r, ri, days.length, selRow)}</tr>`).join('');
     const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(760 / idx.length)))}px"` : '';
     return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
-      <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}<th class="ov1h" rowspan="2" scope="col">1-on-1</th></tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+      <thead><tr><th class="ovname ovcorner" rowspan="2">${nDropped ? `<label class="ovdropped noprint" title="Students dropped from homeroom"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped (${nDropped})</label>` : ''}Student</th>${months}<th class="ov1h" rowspan="2" scope="col">1-on-1</th></tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
   h += `<div class="ovwrap${state.ovMark ? ' marking' : ''}">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}${state.ovDay ? ovDayBox(A, state.ovDay) : ''}</div>`;
   el.innerHTML = h;
@@ -1878,7 +1882,7 @@ function helpHTML(){
     ${zoomHelp()}
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
-    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
+    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Students dropped from homeroom are hidden; tick <b>Show dropped</b> to see them. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
       <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. A ⚑ by a name means the student was caught cheating, and how many times; the cheating log is at the bottom of the tab. Click a name for the student’s page, where you can log cheating, change the dates they need study hall, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
@@ -2254,6 +2258,7 @@ async function onClick(t){
   if (d.unlink){ delete D.aliases[d.unlink]; changed(); renderSetup(); return; }
   if (d.unignore){ D.ignored = D.ignored.filter(z => z !== d.unignore); changed(); renderSetup(); return; }
   // The Overview's day editor and 1-on-1 box
+  if (has('data-showdroppedon')){ state.showDropped = true; renderOverview(); return; }
   if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'present'; state.ovMarkN = 0; state.ovMarkMsg = ''; state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; state.ovMarkMsg = ''; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
@@ -2455,6 +2460,7 @@ document.addEventListener('change', e => {
   if ('setday' in d){ S.homeroomDay = +t.value; changed(); return; }
   if (d.studyday){ const w = +d.studyday; S.studyDays = t.checked ? [...new Set([...S.studyDays, w])].sort() : S.studyDays.filter(x => x !== w); changed(); return; }
   if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
+  if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderOverview(); const c = $('#tab-overview [data-showdropped]'); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
   if ('rfrom' in d || 'rto' in d){
     const r = t.closest('.range');
