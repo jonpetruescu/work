@@ -19,7 +19,7 @@
   /* Five text sizes: notes, small text, body, headings, page titles */
   --fs-xs:.75rem; --fs-sm:.8125rem; --fs-md:.9375rem; --fs-lg:1.125rem; --fs-xl:1.5rem;
   /* The Overview's colors: the teacher's own */
-  --ov-present:#93C47D; --ov-excused:#6D9EEB; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
+  --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -29,7 +29,7 @@
     --ok:#74D3A2; --ok-bg:#163428; --fin:#7FD3DB; --fin-bg:#14363A; --late:#F2B36B; --late-bg:#3D2A12;
     --bad:#F28B82; --bad-bg:#40201D;
     --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
-    --ov-present:#5E8F4B; --ov-excused:#4C78C4; --ov-absent:#B44A4A; --ov-none:#262F3D; --ov-ink:#10151E;
+    --ov-engaged:#5E8F4B; --ov-excused:#4C78C4; --ov-idle:#C2A23A; --ov-away:#97577A; --ov-absent:#B44A4A; --ov-none:#262F3D; --ov-ink:#10151E;
   }
 }
 *{box-sizing:border-box}
@@ -274,7 +274,8 @@ textarea.stupaste{min-height:190px}
 .printonly{display:none}
 
 /* Overview grid: the teacher's colors */
-.c-present{background:var(--ov-present)} .c-excused{background:var(--ov-excused)} .c-absent{background:var(--ov-absent)}
+.c-engaged{background:var(--ov-engaged)} .c-excused{background:var(--ov-excused)} .c-idle{background:var(--ov-idle)}
+.c-away{background:var(--ov-away)} .c-absent{background:var(--ov-absent)}
 .c-none,.c-extra{background:var(--ov-none)}
 .c-missing{background:var(--surface);color:var(--late)} .c-later{background:var(--surface)}
 .c-none,.c-extra,.c-missing,.c-later{--ov-ink:var(--ink)}   /* marks on these days use the page ink, so they show in dark mode too */
@@ -334,6 +335,12 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .ovc.sel .ovb,.ov1c.sel .ovb{outline:3px solid var(--ink);outline-offset:-3px;box-shadow:inset 0 0 0 5px var(--surface)}
 .c-extra .ovb::after{content:"";position:absolute;inset:3px;border:1.5px dashed var(--ov-ink);border-radius:2px;pointer-events:none}
 .c-missing .ovb,.c-later .ovb{color:inherit}
+.ovm{font-size:var(--fs-xs);color:var(--ov-ink)}
+.ovb .ovm{position:absolute;right:2px;bottom:1px;line-height:1;font-size:.66rem}
+.ovkey .ovm{color:var(--ink)}
+.ovmsg{display:flex;align-items:center;height:26px;margin:10px 0 0;padding:0 6px;gap:7px;font-size:var(--fs-sm)}
+.ovmsg input{width:14px;height:14px;margin:0;accent-color:var(--focus)}
+@media (prefers-color-scheme: dark){ .ovmsg input{color-scheme:dark} }   /* a dark box, like the letters' boxes beside it */
 .ovn,.dstrip .dn{position:absolute;top:0;right:0;width:0;height:0;border-top:7px solid var(--ov-ink);border-left:7px solid transparent}
 .ovt td.ov1c{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line);width:136px;min-width:136px}
 .ov1c .ovb{justify-content:flex-start;padding:0 10px;color:var(--ink);font-weight:500;white-space:nowrap}
@@ -507,7 +514,7 @@ main:focus{outline:none}
     --ink:#1C2433; --muted:#566074; --faint:#8790A0; --rule:#A3ACBA; --bar:#24324D;
     --ok:#1D6F47; --ok-bg:#DFF1E7; --fin:#11636C; --fin-bg:#D8EFF1; --late:#8F4B00; --late-bg:#FBE8D2; --bad:#A8231A; --bad-bg:#FADFDB;
     --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
-    --ov-present:#93C47D; --ov-excused:#6D9EEB; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
+    --ov-engaged:#93C47D; --ov-excused:#6D9EEB; --ov-idle:#FFD966; --ov-away:#C27BA0; --ov-absent:#E06666; --ov-none:#E3E5E8; --ov-ink:#1C2433;
   }
   @page{margin:.5in}
   body{background:#fff}
@@ -594,9 +601,15 @@ const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','satur
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const HAS_FSA = typeof window.showDirectoryPicker === 'function';
 const KIND = { hr: 'Homeroom', sh: 'Study hall' };
-const CAT = { present: 'Present', absent: 'Absent', excused: 'Excused' };
+// The Overview's colors, in the teacher's own words (the intervention tracker's). Engagement is marked by hand: a day in Zoom
+// starts as "Present and engaged".
+const CAT = { engaged: 'Present and engaged', excused: 'Excusable absence', idle: 'Likely present but not engaging',
+  away: 'Likely not actually present', absent: 'Did not attend' };
+const PRESENT = new Set(['engaged', 'idle', 'away']);   // the three colors that count as attending
+const OV_LET = { L: 'Late or left early', C: 'Camera off' };
+const FU_HOW = { call:'Called home', message:'Emailed or texted home', student:'Talked with the student', meeting:'Meeting (team or family)', other:'Other' };
 // What a day on the grid shows, in plain words.
-const CELL = { present: 'Present', absent: 'Absent', excused: 'Excused', none: 'Not required', extra: 'Came, not required',
+const CELL = { ...CAT, none: 'Not required', extra: 'Came, not required',
   missing: 'No Zoom report yet', later: 'Not yet' };
 const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
 // Kinds of cheating for the cheating log, in the order the list shows them (the same as the intervention tracker's).
@@ -669,6 +682,7 @@ function defaultData(){
     aliases: {},     // { zoomNameKey: studentKey }
     ignored: [],     // Zoom names that aren't students
     cheating: {},    // { studentKey: [{ id, date, type, note }] } times a student was caught cheating (type: a CHEAT_TYPES key)
+    followUps: {},   // { studentKey: [{ id, date, how, text, day }] } (day: the class day a message was about)
     plans: {},       // { studentKey: { type: 'iep' | '504', acc } } an IEP or 504 plan, and its accommodations one per line
     ml: {},          // { studentKey: { status: 'ml' | 'rfep', level, sup } } a multilingual learner (with their ELD level) or a
                      // student reclassified fluent English proficient (RFEP), and supports one per line
@@ -695,7 +709,7 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, plans: {}, ml: {} }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [], deletedDays: {}, oneSched: {}, oneMarks: {}, cheating: {}, followUps: {}, plans: {}, ml: {} }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
@@ -718,13 +732,18 @@ function withDefaults(d){
   for (const [k, v] of Object.entries(obj(d.status))){
     const [dk, kind, ...rest] = k.split('|'), key = rest.join('|'), x = obj(v), o = {};
     if (!isDk(dk) || !own(KIND, kind) || !key) continue;
-    if (own(CAT, x.cat)) o.cat = x.cat;
+    if (own(CAT, x.cat)) o.cat = x.cat; else if (x.cat === 'present') o.cat = 'engaged';   // "Present", from before the engagement colors
     if (typeof x.L === 'boolean') o.L = x.L;
+    if (x.C === true) o.C = true;
     if (x.fin === true) o.fin = true;
     if (typeof x.note === 'string' && x.note.trim()) o.note = x.note.trim().slice(0, 300);
     if (Object.keys(o).length) out.status[`${dk}|${kind}|${key}`] = o;
   }
   for (const [k, v] of Object.entries(obj(d.aliases))) if (k && typeof v === 'string' && v) out.aliases[k] = v;
+  for (const [k, v] of Object.entries(obj(d.followUps))) if (Array.isArray(v)){
+    const xs = v.filter(f => f && isDk(f.date)).map(f => ({ id: String(f.id || uid()), date: f.date, how: f.how in FU_HOW ? f.how : 'other', text: String(f.text || '').slice(0, 300), ...(isDk(f.day) ? { day: f.day } : {}), ...(isDk(f.day) && f.kind === 'sh' ? { kind: 'sh' } : {}) }));
+    if (xs.length) out.followUps[k] = xs;
+  }
   for (const [k, v] of Object.entries(obj(d.plans))){ const t = obj(v).type; if (k && (t === 'iep' || t === '504')) out.plans[k] = { type: t, acc: String(obj(v).acc || '').slice(0, 4000) }; }
   for (const [k, v] of Object.entries(obj(d.ml))) if (k) out.ml[k] = { status: obj(v).status === 'rfep' ? 'rfep' : 'ml', level: String(obj(v).level || '').trim().slice(0, 40), sup: String(obj(v).sup || '').slice(0, 4000) };
   for (const [k, v] of Object.entries(obj(d.cheating))) if (k && Array.isArray(v)){
@@ -1033,23 +1052,24 @@ function cellState(A, s, dk, kind){
   // minute or less in Zoom counts as present. It can be marked when Zoom shows they left early (or were in for under a minute).
   const canFin = !!(rec && rec.inZoom && (rec.early || !rec.present)), fin = !!ov.fin && canFin, came = !!(rec && (rec.present || fin));
   const listed = onList(s, dk), req = listed && (kind === 'hr' || needsSH(key, dk));
-  const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'present' : 'absent') : dk > today ? 'later' : 'missing';
+  const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'engaged' : 'absent') : dk > today ? 'later' : 'missing';
   const cat = req && own(CAT, ov.cat) ? ov.cat : base, autoL = !!(rec && rec.present && (fin ? rec.late : rec.L));
-  const L = cat === 'present' && (typeof ov.L === 'boolean' ? ov.L : autoL), F = fin && cat === 'present';
-  return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, canFin, fin: F, note: ov.note || '', hand: req && (!!ov.cat || typeof ov.L === 'boolean' || !!ov.fin) };
+  const inn = PRESENT.has(cat), L = inn && (typeof ov.L === 'boolean' ? ov.L : autoL), F = fin && inn, C = inn && ov.C === true;
+  return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, C, canFin, fin: F, msg: hasMsg(key, `${dk}|${kind}`), note: ov.note || '',
+    auto: { L: autoL, C: false }, hand: req && (!!ov.cat || typeof ov.L === 'boolean' || !!ov.fin || !!ov.C) };
 }
-const cellWords = c => [CELL[c.cat], c.L ? 'late or left early' : '', c.fin ? 'dismissed early' : '', c.hand ? 'set by you' : '', c.note ? `note: ${c.note}` : ''].filter(Boolean).join(', ');
+const cellWords = c => [CELL[c.cat], c.L ? 'late or left early' : '', c.C ? 'camera off' : '', c.fin ? 'dismissed early' : '', c.msg ? 'message sent home' : '', c.hand ? 'set by you' : '', c.note ? `note: ${c.note}` : ''].filter(Boolean).join(', ');
 // Days counted: present and absent days so far. Excused days and days with no report aren't counted.
 function statsOf(cells){
-  const today = todayDk(); let n = 0, att = 0, exc = 0, L = 0, noRep = 0, fin = 0;
+  const today = todayDk(); let n = 0, att = 0, eng = 0, exc = 0, L = 0, noRep = 0, fin = 0;
   for (const c of cells){
     if (!c.req || c.dk > today) continue;
     if (c.cat === 'excused') exc++;
-    else if (c.cat === 'present'){ n++; att++; if (c.L) L++; if (c.fin) fin++; }
+    else if (PRESENT.has(c.cat)){ n++; att++; if (c.cat === 'engaged') eng++; if (c.L) L++; if (c.fin) fin++; }
     else if (c.cat === 'absent') n++;
     else if (c.cat === 'missing') noRep++;
   }
-  return { n, att, exc, L, fin, noRep, abs: n - att, pct: pct(att, n) };
+  return { n, att, eng, exc, L, fin, noRep, abs: n - att, pct: pct(att, n), engPct: pct(eng, n) };
 }
 /* ---------------- 1-on-1s ----------------
    Each student has a standing 1-on-1: a weekday and time every so many weeks. Every meeting on that schedule is listed,
@@ -1266,7 +1286,7 @@ function renderOverview(){
       const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
       const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === state.ovSel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === state.ovSel}">${
-        c.cat === 'missing' ? '?' : ''}${c.L ? '<span class="ovl">L</span>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+        c.cat === 'missing' ? '?' : ''}${c.L || c.C ? `<span class="ovl">${['L', 'C'].filter(l => c[l]).join('')}</span>` : ''}${c.msg ? '<b class="ovm">✓</b>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
     }).join('')}${ov1Cell(r, ri, days.length, selRow)}</tr>`).join('');
     const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(760 / idx.length)))}px"` : '';
     return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
@@ -1302,7 +1322,8 @@ function unmatchedNotice(A, period){
 }
 // The key above the grid: always three rows, so the grid never moves.
 // Quick mark: pick what to mark, then click days. Clicking a day again undoes it. In the same order as the key.
-const BRUSHES = [['present', '', CAT.present], ['absent', '', CAT.absent], ['excused', '', CAT.excused], ['L', 'L', 'Late or left early'], ['fin', '', 'Dismissed early'], ['auto', '', 'Automatic']];
+const BRUSHES = [...Object.keys(CAT).map(k => [k, '', CAT[k]]), ['auto', '', 'Automatic color'],
+  ['L', 'L', 'Late or left early'], ['C', 'C', 'Camera off'], ['msg', '✓', 'Message sent home'], ['fin', '', 'Dismissed early']];
 function ovKey(){
   const S = settings();
   if (state.ovMark){
@@ -1311,12 +1332,12 @@ function ovKey(){
     const msg = state.ovMarkMsg ? `<span class="qmsg">${esc(state.ovMarkMsg)}</span>` : state.ovMarkN ? esc(plural(state.ovMarkN, 'change') + ' so far') : '';
     return `<div class="ovkey marking" role="group" aria-label="Quick mark">
       <div class="ovkrow"><span><b>Quick mark:</b> pick a mark, then click days. Click a day again to undo.</span><span class="ovkend" role="status">${msg}</span></div>
-      <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 3))}</div>
-      <div class="ovkrow"><span class="ovkh">Letter</span>${brushes(BRUSHES.slice(3, 4))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(4, 5))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(5))}</div></div>`;
+      <div class="ovkrow"><span class="ovkh">Colors</span>${brushes(BRUSHES.slice(0, 5))}</div>
+      <div class="ovkrow"><span class="ovkh">Letters</span>${brushes(BRUSHES.slice(6, 8))}<span class="ovkh2">Marks</span>${brushes(BRUSHES.slice(8))}<span class="ovkh2">Reset</span>${brushes(BRUSHES.slice(5, 6))}</div></div>`;
   }
   return `<div class="ovkey" aria-hidden="true">
-    <div class="ovkrow"><span class="ovkh">Colors</span>${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
-    <div class="ovkrow"><span class="ovkh">Marks</span><span><b>L</b> Late or left early</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a day to change it, or a date to delete it.</span></div>
+    <div class="ovkrow"><span class="ovkh">Colors</span>${[...Object.keys(CAT), 'none'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
+    <div class="ovkrow"><span class="ovkh">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}<span class="ovkh2">Marks</span><span><b class="ovm">✓</b> Message sent home</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span><i class="ovsw c-extra"></i>${esc(CELL.extra)}</span><span class="ovkend noprint">Click a day or a date to change it.</span></div>
     <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> The next one, or one to mark</span></div></div>`;
 }
 // What Zoom shows for one day, in one short line (like the intervention tracker's day box).
@@ -1331,16 +1352,17 @@ function zoomLine(c){
 }
 // The editor for one day, next to its cell. The same size on every day.
 function ovEditor(A, c){
-  const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean', canF = c.req && c.canFin && (!c.ov.cat || c.ov.cat === 'present');
+  const name = c.s.name, dis = c.req ? '' : ' disabled', canL = PRESENT.has(c.cat), setL = typeof c.ov.L === 'boolean', canF = c.req && c.canFin && (!c.ov.cat || PRESENT.has(c.ov.cat));
   const cats = Object.entries(CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.req && c.ov.cat === k}"${dis}><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(KIND[c.kind])}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b>${supTags(c.key)}<span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
     <p class="small ovfacts">${esc(zoomLine(c))}</p>
     <div class="ovcols"><div class="ovgrp" role="group" aria-label="Color"><span class="small muted">Color</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
-      <div class="ovgrp" role="group" aria-label="Letters"><span class="small muted">Letters</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
-        <button class="ovlet" data-ovfin aria-pressed="${c.fin}"${canF ? '' : ' disabled'} title="${esc(canF ? 'Let go before the end: leaving isn’t counted as leaving early' : 'Can be marked on a day Zoom shows they left early')}"><span class="tbox" aria-hidden="true"></span>Dismissed early</button></div></div>
+      <div class="ovgrp" role="group" aria-label="Letters"><span class="small muted">Letters</span>${Object.entries(OV_LET).map(([k, v]) => `<button class="ovlet" data-ovlet="${k}" data-auto="${c.auto[k]}" aria-pressed="${c[k]}"${canL ? '' : ' disabled'} title="${esc(v)}${c.ov[k] !== undefined ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>${k}</b> ${esc(v)}<i class="ovset${c.ov[k] !== undefined ? ' on' : ''}" aria-hidden="true"></i></button>`).join('')}
+        <button class="ovlet" data-ovfin aria-pressed="${c.fin}"${canF ? '' : ' disabled'} title="${esc(canF ? 'Let go before the end: leaving isn’t counted as leaving early' : 'Can be marked on a day Zoom shows they left early')}"><span class="tbox" aria-hidden="true"></span>Dismissed early</button>
+        <label class="ovmsg"><input type="checkbox" data-ovmsg="${esc(c.xk)}"${c.msg ? ' checked' : ''}> Message sent home</label></div></div>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" maxlength="300"></label>
-    <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL || c.ov.fin ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button><button class="linkish" data-ovdelfrom="${c.dk}">Delete this day…</button></div></div>`;
+    <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL || c.ov.fin || c.ov.C ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button><button class="linkish" data-ovdelfrom="${c.dk}">Delete this day…</button></div></div>`;
 }
 // "Add a meeting": an extra 1-on-1 off the schedule. A past date counts as held; a later one is listed to mark after.
 function logForm(key, hidden){
@@ -1407,14 +1429,15 @@ function applyBrush(xk, brush){
   const c = ovCell(xk); if (!c) return 'That day can’t be changed.';
   const who = firstName(c.s.name), day = monDay(c.dk);
   if (!c.req) return `${who} isn’t expected ${day}, so it can’t be marked.`;
-  if (brush === 'auto'){ if (!c.ov.cat && typeof c.ov.L !== 'boolean' && !c.ov.fin) return `${who}, ${day} is already automatic.`; setOverride(xk, { cat: undefined, L: undefined, fin: undefined }); return ''; }
+  if (brush === 'msg'){ setMsg(xk, !c.msg); return ''; }
+  if (brush === 'auto'){ if (!c.ov.cat) return `${who}, ${day} already has its automatic color.`; setOverride(xk, { cat: undefined }); return ''; }
   if (own(CAT, brush)){ setOverride(xk, { cat: c.ov.cat === brush ? undefined : brush }); return ''; }
-  if (brush === 'L'){
-    if (c.cat !== 'present') return `L goes on a day ${who} was present.`;
-    const now = !c.L; setOverride(xk, { L: now === c.autoL ? undefined : now }); return '';
+  if (own(OV_LET, brush)){
+    if (!PRESENT.has(c.cat)) return `${brush} goes on a day ${who} was there.`;
+    const now = !c[brush]; setOverride(xk, { [brush]: now === c.auto[brush] ? undefined : now }); return '';
   }
   if (brush === 'fin'){
-    if (!c.canFin || (c.ov.cat && c.ov.cat !== 'present')) return `Dismissed early goes on a day Zoom shows ${who} left early.`;
+    if (!c.canFin || (c.ov.cat && !PRESENT.has(c.ov.cat))) return `Dismissed early goes on a day Zoom shows ${who} left early.`;
     setOverride(xk, { fin: c.ov.fin ? undefined : true }); return '';
   }
   return '';
@@ -1432,6 +1455,20 @@ function ovCell(xk){
 function pinMonths(sc){
   const left = sc.querySelector('th.ovname').getBoundingClientRect().right;
   for (const th of sc.querySelectorAll('th.ovmo')){ const sp = th.firstElementChild; sp.style.visibility = th.getBoundingClientRect().right - left < sp.offsetWidth + 8 ? 'hidden' : ''; }
+}
+
+// A message about a class day is kept in the student's follow-up log, tied to that day ("YYYY-MM-DD|hr" or "|sh").
+const hasMsg = (key, day) => (state.data.followUps[key] || []).some(f => f.day === day.slice(0, 10) && (f.kind || 'hr') === day.slice(11));
+function setMsg(xk, on){
+  const [dk, kind, ...rest] = xk.split('|'), key = rest.join('|'), list = state.data.followUps[key] || [];
+  const autoText = `Attendance message about ${KIND[kind].toLowerCase()}, ${shortDate(dk)}`, mine = f => f.day === dk && (f.kind || 'hr') === kind;
+  if (on){ if (!list.some(mine)) state.data.followUps[key] = [...list, { id: uid(), date: todayDk(), how: 'message', text: autoText, day: dk, ...(kind === 'sh' ? { kind } : {}) }]; }
+  else {
+    // Only the message this box added is taken out. One you've rewritten stays in the log, no longer tied to the day.
+    const rest2 = list.filter(f => !(mine(f) && f.how === 'message' && f.text === autoText)).map(f => { if (!mine(f)) return f; const r = { ...f }; delete r.day; delete r.kind; return r; });
+    if (rest2.length) state.data.followUps[key] = rest2; else delete state.data.followUps[key];
+  }
+  changed();
 }
 
 /* ---------------- Cheating log ----------------
@@ -1657,8 +1694,8 @@ function dayStrip(cells, label, empty = 'No days in these dates.'){
   if (!cells.length) return `<p class="small muted">${esc(empty)}</p>`;
   const kinds = new Set(cells.map(c => c.cat));
   return `<ul class="dstrip" aria-label="${esc(label)}">${cells.map(c => { const words = `${shortDate(c.dk)}: ${cellWords(c)}`;
-    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : c.L ? 'L' : ''}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
-    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${cells.some(c => c.L) ? '<span><b>L</b> Late or left early</span>' : ''}</div>`;
+    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : ['L', 'C'].filter(l => c[l]).join('')}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
+    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${Object.entries(OV_LET).filter(([k]) => cells.some(c => c[k])).map(([k, v]) => `<span><b>${k}</b> ${esc(v)}</span>`).join('')}</div>`;
 }
 // The dates a student needs study hall: each one can be changed or deleted here, and new dates added.
 function periodsEditor(r){
@@ -2013,14 +2050,15 @@ function helpHTML(){
       <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and leaving-early rules, and your data.</li></ul>
     <h3>How attendance is worked out</h3>
     <ul><li>A Zoom report counts for homeroom when it has someone in it during homeroom time (${esc(daysText([S.homeroomDay]))}, ${esc(winText('hr'))}), and for study hall the same way (${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}).</li>
-      <li><b>Present</b>: in Zoom during that time. <b>L</b>: joined more than ${plural(S.lateGrace, 'minute')} after the start, or left more than ${plural(S.leaveGrace, 'minute')} before the end. A student you marked <b>dismissed early</b> has no L for leaving before the end (being late still gets one).</li>
+      <li><b>Present and engaged</b>: in Zoom during that time. If they weren’t really taking part, mark the day <b>Likely present but not engaging</b> or <b>Likely not actually present</b> (Quick mark makes it fast); all three count as attending. <b>L</b>: joined more than ${plural(S.lateGrace, 'minute')} after the start, or left more than ${plural(S.leaveGrace, 'minute')} before the end. A student you marked <b>dismissed early</b> has no L for leaving before the end (being late still gets one).</li>
       <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
       <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
       <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
       <li><b>1-on-1s</b> come from each student’s schedule. Every meeting on it is listed. A Zoom report that starts within half an hour of the meeting’s time is that meeting: it marks it held (and shows if the student was late), or a <b>no-show</b> when the student never joined. A meeting with them on another day or time that week counts as the make-up (after a no-show) or as the meeting moved. Without a report, mark it held, missed or canceled yourself. A missed or unmarked meeting shows in red in the Overview’s last column. Canceled meetings aren’t counted</li></ul>
     <h3>Colors and marks</h3>
-    <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
-      <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
+    <ul class="helpkey">${[...Object.keys(CAT), 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
+      ${Object.entries(OV_LET).map(([k, v]) => `<li><b>${k}</b> ${esc(v)}</li>`).join('')}<li><b class="ovm">✓</b> Message sent home</li>
+      <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
     <h3>Keyboard</h3>
     <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid')}${kb(['Enter'], 'Open the day (or the 1-on-1s) you’re on')}${kb(['Esc'], 'Close it, or end Quick mark')}
       ${kb([MOD, 'Z'], 'Undo')}${kb([MOD, 'Y'], 'Redo')}${kb(['/'], 'Find a student')}${kb(['?'], 'This help')}</div>
@@ -2384,7 +2422,7 @@ async function onClick(t){
   if (d.unignore){ D.ignored = D.ignored.filter(z => z !== d.unignore); changed(); renderSetup(); return; }
   // The Overview's day editor and 1-on-1 box
   if (has('data-showdroppedon')){ state.showDropped = true; renderOverview(); return; }
-  if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'present'; state.ovMarkN = 0; state.ovMarkMsg = ''; state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
+  if (has('data-ovmark')){ state.ovMark = state.ovMark ? null : 'msg'; state.ovMarkN = 0; state.ovMarkMsg = ''; state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); const b = $('#tab-overview [data-ovmark]'); if (b) b.focus(); return; }
   if (d.ovbrush){ state.ovMark = d.ovbrush; state.ovMarkMsg = ''; renderOverview(); return; }
   if (d.ovcell !== undefined && state.ovMark){
     // Quick mark: a click applies the chosen mark right in the cell, without opening the editor.
@@ -2396,11 +2434,11 @@ async function onClick(t){
   if (has('data-ovclose')){ const was = state.ovSel ? cellSel(state.ovSel) : state.ov1 ? oneSel(state.ov1) : null; state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return; }
   if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
   if (d.ovlet && state.ovSel){
-    const c = ovCell(state.ovSel); if (!c) return;
-    const now = !c.L; setOverride(state.ovSel, { L: now === c.autoL ? undefined : now }); renderOverview(); return;
+    const now = t.getAttribute('aria-pressed') !== 'true', auto = d.auto === 'true';
+    setOverride(state.ovSel, { [d.ovlet]: now === auto ? undefined : now }); renderOverview(); return;
   }
   if (has('data-ovfin') && state.ovSel){ const c = ovCell(state.ovSel); if (!c || !c.canFin) return; setOverride(state.ovSel, { fin: c.ov.fin ? undefined : true }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovfin]'); if (b) b.focus(); return; }
-  if (has('data-ovreset') && state.ovSel){ setOverride(state.ovSel, { cat: undefined, L: undefined, fin: undefined }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
+  if (has('data-ovreset') && state.ovSel){ setOverride(state.ovSel, { cat: undefined, L: undefined, C: undefined, fin: undefined }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
   if (d.ovopen) return openStudent(d.ovopen);
   // A whole day: open its box from the date, delete it, or bring it back (Setup)
   if (d.ovdh){ state.ovSel = null; state.ov1 = null; state.ovDay = state.ovDay === d.ovdh ? null : d.ovdh; renderOverview();
@@ -2613,6 +2651,7 @@ document.addEventListener('change', e => {
   if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
   if ('mlstatus' in d){ const g = t.closest('[data-planmenu]'), lv = g && g.querySelector('[data-mllevel]'); if (lv) lv.disabled = t.value === 'rfep'; }
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
+  if (d.ovmsg){ setMsg(d.ovmsg, t.checked); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return; }
   if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderOverview(); const c = $('#tab-overview [data-showdropped]'); if (c) c.focus(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
   if ('rfrom' in d || 'rto' in d){
