@@ -11,6 +11,8 @@
   --paper:#F7F9FC; --surface:#FFFFFF; --line:#DDE3EC; --grid:#E9EDF3;
   --ink:#1C2433; --muted:#566074; --faint:#626B7D; --rule:#A3ACBA; --bar:#24324D;
   --ok:#1D6F47; --ok-bg:#DFF1E7; --fin:#11636C; --fin-bg:#D8EFF1;
+  --instr:#C9DAF8; --support:#FFF2CC;
+  --loss-before:#CB7E6B; --loss-out:#5346A7; --loss-after:#837120; --loss-absent:#8E3642;
   --late:#8F4B00; --late-bg:#FBE8D2;
   --bad:#A8231A; --bad-bg:#FADFDB;
   --focus:#2F6FEB; --btn:#24324D; --btn-ink:#FFFFFF;
@@ -26,6 +28,8 @@
     color-scheme:dark;   /* the browser's own boxes, lists and scroll bars are dark too */
     --paper:#121822; --surface:#19212E; --line:#2B3546; --grid:#222B39;
     --ink:#E5E9F1; --muted:#A4AEBF; --faint:#8C96A8; --rule:#4E5A6E; --bar:#A9C2F5;
+    --instr:#2C3D61; --support:#4A4123;
+    --loss-before:#A05B11; --loss-out:#6863B1; --loss-after:#A19500; --loss-absent:#D1717A;
     --ok:#74D3A2; --ok-bg:#163428; --fin:#7FD3DB; --fin-bg:#14363A; --late:#F2B36B; --late-bg:#3D2A12;
     --bad:#F28B82; --bad-bg:#40201D;
     --focus:#7FA8FF; --btn:#A9C2F5; --btn-ink:#121822;
@@ -428,6 +432,152 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .rsquick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rsquick .btn{font-weight:500}
 .occmenu .pop p.lead{margin:0;color:var(--ink);font-weight:600}
+details.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+details.day > summary{list-style:none;cursor:pointer;padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+/* On a desktop screen a closed day is one line in three columns: the date, who came and when, and the counts. Dates on
+   days with no class line up under the other dates. Printed pages and narrow windows keep the wrapping line. */
+@media screen and (min-width: 821px){ details.day > summary{display:grid;grid-template-columns:10px minmax(0,1fr) max-content;grid-template-areas:"a t c" "a s c";gap:2px 16px}
+  details.day > summary::before{grid-area:a} details.day > summary h2{grid-area:t} details.day > summary .sub{grid-area:s} details.day > summary .counts{grid-area:c}
+  details.day .counts{flex-wrap:nowrap} details.day .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} }
+details.day > summary::-webkit-details-marker{display:none}
+details.day > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);align-self:center;margin-right:2px;transition:transform .15s}
+details.day[open] > summary::before{transform:rotate(45deg)}
+.day h2{font-size:var(--fs-lg)}
+.day .sub{color:var(--muted);font-size:var(--fs-sm)}
+.counts{display:flex;flex-wrap:wrap;gap:6px;width:auto;padding-left:0}
+.count{font-size:var(--fs-sm);font-weight:600;border-radius:999px;padding:2px 10px}
+/* The day boxes keep one width each, so they line up from day to day; a box with 0 is faded. */
+.counts .count{box-sizing:border-box;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.counts .k-full{width:7.4em} .counts .k-fin{width:9.2em} .counts .k-late{width:5.4em} .counts .k-early{width:8.2em} .counts .k-drop{width:9.6em} .counts .k-absent{width:6.8em}
+.counts .count.zero{background:transparent;color:var(--faint);box-shadow:inset 0 0 0 1px var(--grid)}
+.day-body{padding:0 20px 18px}
+.k-full{background:var(--ok-bg);color:var(--ok)}
+.s-in{background:var(--bar)} .s-before{background:var(--loss-before)} .s-out{background:var(--loss-out)}
+.k-fin{background:var(--fin-bg);color:var(--fin)}
+.k-late{background:var(--late-bg);color:var(--late)}
+.k-missed,.k-early{background:var(--bad-bg);color:var(--bad)}
+.k-soft{background:var(--soft-bg);color:var(--soft)}
+.k-drop{background:var(--drop-bg);color:var(--drop)}
+.k-absent{background:var(--bad);color:var(--surface)}
+.k-extra{background:var(--grid);color:var(--muted)}
+.k-exc{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.note-txt{display:block;font-size:.8rem;color:var(--ink);font-style:italic;line-height:1.35;margin-top:2px}
+input.note{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:.82rem;width:100%;margin-top:4px}
+.grid-head,.row{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:0 14px;align-items:center}
+.grid-head{font-size:var(--fs-xs);color:var(--muted);padding:6px 0 6px;border-bottom:1px solid var(--line);font-weight:600}
+.row{padding:8px 0;border-bottom:1px solid var(--grid)}
+.row:last-child{border-bottom:0}
+.who b{font-weight:600}
+.who .meta{display:block;font-size:var(--fs-sm);color:var(--muted);line-height:1.35}
+.time{font-size:var(--fs-md)}
+.time.none{color:var(--faint)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips .acts{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;flex-basis:100%}
+.row > .chips{align-self:start}
+.chip{font-size:var(--fs-sm);font-weight:600;border-radius:5px;padding:2px 8px;white-space:nowrap}
+.quiet{font-size:var(--fs-sm);color:var(--muted)}   /* "Present full time" on a day's row, so the exceptions are what stand out */
+.linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-size:var(--fs-sm)}
+.linkish:hover{color:var(--ink)}
+
+/* Timeline: the class block drawn like a strip of graph paper */
+.axis{position:relative;height:16px}
+.axis span{position:absolute;transform:translateX(-50%);font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+.tl{position:relative;height:22px;border-radius:4px;background:var(--paper);border:1px solid var(--grid);overflow:hidden}
+.tl .band{position:absolute;top:0;bottom:0}
+.tl .band.instruction{background:var(--instr)}
+.tl .band.support{background:var(--support)}
+.tl .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.9}
+.tl .tick.half{opacity:.45}
+.tl .bar{position:absolute;top:7px;height:8px;border-radius:2px;background:var(--bar)}
+
+.subhead{font-family:var(--serif);font-size:var(--fs-lg);margin:20px 0 6px}
+.mini{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(240px,2.6fr) 74px 74px minmax(190px,1.45fr);gap:6px 14px;align-items:center;padding:7px 0;border-bottom:1px solid var(--grid)}
+.mini:last-child{border-bottom:0}
+.mini > :nth-child(3){grid-column:3 / -1}
+.mini .act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mini select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;max-width:210px;font-size:.84rem}
+.files{font-size:var(--fs-sm);color:var(--faint);margin-top:12px}
+.tgl{display:inline-flex;align-items:center;gap:7px;background:none;border:0;padding:2px 0;font:inherit;font-size:.86rem;color:var(--ink);cursor:pointer}
+:is(.tgl,.ovlet) .tbox{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+:is(.tgl,.ovlet)[aria-pressed="true"] .tbox{background:var(--focus);border-color:var(--focus)}
+:is(.tgl,.ovlet)[aria-pressed="true"] .tbox::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.tgl:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+:root{--viz-1:#2a78d6;--viz-2:#eb6834}
+@media (prefers-color-scheme: dark){ :root{--viz-1:#3987e5;--viz-2:#d95926} }
+.rptpick{margin-bottom:14px;padding:12px 18px}
+.rptrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.rptlab{font-weight:600;font-size:var(--fs-sm)}
+.rtile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:0}
+.rt-l{font-size:var(--fs-sm);color:var(--muted)}
+.rt-v{font-size:var(--fs-xl);font-weight:600;line-height:1.3}
+.rt-d{font-size:var(--fs-xs);color:var(--muted)}
+.rt-c{font-size:var(--fs-xs);border-top:1px solid var(--grid);margin-top:6px;padding-top:4px}
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rcard{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px 12px;min-width:0}
+.rcard.wide{grid-column:1 / -1}
+.rcard h3{margin:0;font-size:var(--fs-md)}
+.rcard figcaption p{margin:2px 0 10px}
+svg.viz{display:block;width:100%;height:auto;overflow:visible}
+svg.viz:focus{outline:none} svg.viz:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.vgrid{stroke:var(--grid);stroke-width:1;vector-effect:non-scaling-stroke}
+.vaxis{stroke:var(--rule);stroke-width:1;vector-effect:non-scaling-stroke}
+.vtick{fill:var(--muted);font-size:12px}
+.vcol .vtick{font-size:11px}
+.vval{fill:var(--ink);font-size:11px;font-weight:600}
+.vend{fill:var(--ink);font-size:12px;font-weight:600}
+.vln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.vdot,.vxd{stroke:var(--surface);stroke-width:2;vector-effect:non-scaling-stroke}
+.vxh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.vhit{fill:transparent}
+.vline{cursor:crosshair}
+.vmark{outline:none;cursor:default}
+.vmark:hover .vhit,.vmark:focus-visible .vhit{fill:var(--grid)}
+.vmark:focus-visible .vhit{stroke:var(--focus);stroke-width:2;vector-effect:non-scaling-stroke}
+.vlegend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:var(--fs-sm);color:var(--muted);margin:0 0 6px}
+.vlegend span{display:inline-flex;align-items:center;gap:6px}
+.vkey{display:inline-block;width:12px;height:12px;border-radius:2px}
+.vrows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.vrows li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:3px 8px;align-items:center;font-size:var(--fs-sm);border-radius:4px;outline:none}
+.vrows li:hover,.vrows li:focus-visible{background:var(--grid);box-shadow:0 0 0 4px var(--grid)}
+.vrows li:focus-visible{box-shadow:0 0 0 4px var(--grid),0 0 0 6px var(--focus)}
+.vrn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vrv{grid-row:1;grid-column:3;text-align:right;white-space:nowrap;color:var(--muted)}
+.vrv b{color:var(--ink);font-weight:600}
+.vrt{grid-row:2;grid-column:2 / -1;height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.vrf{display:block;height:100%;border-radius:4px}
+.vtab{margin-top:10px}
+.vtab > summary{cursor:pointer;color:var(--muted);font-size:var(--fs-sm);width:max-content}
+.vtab .tablewrap{margin-top:6px}
+.viztip{position:fixed;z-index:40;left:0;top:0;max-width:300px;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:7px 10px;font-size:var(--fs-sm);line-height:1.4}
+.viztip b{display:block;font-weight:600;margin-bottom:2px}
+table.rpt td:first-child{white-space:nowrap}
+table.sum.rpt th{white-space:normal}
+table.rpt tr.rptall td{font-weight:600;border-top:1px solid var(--line)}
+.counts .k-dismissed{width:9.2em} .counts .k-present{width:7.4em}
+.s-in{background:var(--bar)} .s-before{background:var(--loss-before)} .s-out{background:var(--loss-out)} .s-after{background:var(--loss-after)} .s-absent{background:var(--loss-absent)}
+.ksw{display:inline-block;width:12px;height:12px;border-radius:2px}
+.tl .band.hr{background:var(--instr)} .tl .band.sh{background:var(--support)}
+.sw{display:inline-block;width:14px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:6px} .sw.hr{background:var(--instr)} .sw.sh{background:var(--support)} .sw.p{background:var(--bar);height:6px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--muted)}
+.noclasscard{border:1px dashed var(--line);border-radius:10px;padding:12px 20px 12px 46px;margin-bottom:8px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.noclasscard b{color:var(--ink);font-family:var(--serif);font-size:var(--fs-lg)}
+.rtiles .rtile .rt-v{font-size:var(--fs-xl)}
+/* The Days tab on a narrow screen (the intervention tracker's): each row stacks, the timeline under the name */
+@media screen and (max-width: 820px){
+  .grid-head{display:none}
+  .row{grid-template-columns:1fr auto auto;gap:6px 12px;padding:12px 0}
+  .row .who{grid-column:1 / -1}
+  .row .tlc{grid-column:1 / -1}
+  .row .time::before{content:attr(data-label) " ";color:var(--muted);font-size:.78rem}
+  .row .chips{grid-column:1 / -1}
+  .mini{grid-template-columns:1fr}
+  .mini > :nth-child(3){grid-column:auto}
+  .legend{margin-left:0}
+  .counts{padding-left:0}
+  details.day > summary{padding:12px 14px}
+  .day-body{padding:0 14px 14px}
+  .counts .count{width:auto !important}
+}
 /* IEP, 504, ML and caught-cheating tags by the student's name, their box, and the editor (from the intervention tracker) */
 .plantag{display:inline-block;flex:none;font-size:var(--fs-xs);font-weight:700;line-height:1;padding:2px 4px;border-radius:4px;border:1px solid currentColor;color:var(--bar);vertical-align:1px;white-space:nowrap}
 .ovnm{display:flex;align-items:center;gap:6px;min-width:0}
@@ -579,6 +729,11 @@ main:focus{outline:none}
   .sreport + .sreport{break-before:page}
   .rtiles, .calwrap, .hist tr, .fu li, .occlist li{break-inside:avoid}
   .cal td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .count, .tl, .tl *, .ksw, .vrt, .vrf, .vkey, svg.viz, .rtile{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rcard, .rtile{break-inside:avoid}
+  .rgrid{gap:10px}
+  .vtab > summary{display:none}
+  details.day{break-inside:avoid-page;border-color:#bbb}
   header.top{display:none}
   h2.ptitle{display:block;font-size:var(--fs-lg);margin:0 0 4px}
   .ovt .ovleft{font-size:.5rem}
@@ -624,7 +779,9 @@ main:focus{outline:none}
     <div class="tabrow">
       <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" id="t-overview" aria-controls="tab-overview" data-tab="overview" aria-selected="true" title="Every student and every homeroom and study hall day on one grid">Overview</button>
+        <button role="tab" id="t-days" aria-controls="tab-days" data-tab="days" aria-selected="false" title="Each homeroom and study hall: who came, who was late, who left early">Days</button>
         <button role="tab" id="t-students" aria-controls="tab-students" data-tab="students" aria-selected="false" title="Each student’s homeroom and study hall attendance and 1-on-1s">Students</button>
+        <button role="tab" id="t-rpt" aria-controls="tab-rpt" data-tab="rpt" aria-selected="false" title="Attendance reports for a group of students, like only IEP and 504 students">Reports</button>
         <button role="tab" id="t-meetings" aria-controls="tab-meetings" data-tab="meetings" aria-selected="false" title="Each student’s 1-on-1 schedule, what’s coming up, and meetings to mark">1-on-1s</button>
         <button role="tab" id="t-study" aria-controls="tab-study" data-tab="study" aria-selected="false" title="The study hall sessions each student should come to">Study hall</button>
         <button role="tab" id="t-setup" aria-controls="tab-setup" data-tab="setup" aria-selected="false" title="Your students, the homeroom and study hall times, and your data">Setup</button>
@@ -638,7 +795,9 @@ main:focus{outline:none}
   <div id="banner"></div>
   <div id="status" aria-live="polite"></div>
   <section id="tab-overview" role="tabpanel" aria-labelledby="t-overview"></section>
+  <section id="tab-days" role="tabpanel" aria-labelledby="t-days" hidden></section>
   <section id="tab-students" role="tabpanel" aria-labelledby="t-students" hidden></section>
+  <section id="tab-rpt" role="tabpanel" aria-labelledby="t-rpt" hidden></section>
   <section id="tab-meetings" role="tabpanel" aria-labelledby="t-meetings" hidden></section>
   <section id="tab-study" role="tabpanel" aria-labelledby="t-study" hidden></section>
   <section id="tab-setup" role="tabpanel" aria-labelledby="t-setup" hidden></section>
@@ -648,6 +807,7 @@ main:focus{outline:none}
 <section id="printArea" aria-hidden="true"></section>
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
 <div id="tagPop" class="tagpop noprint" role="dialog" hidden></div>
+<div id="vizTip" class="viztip noprint" role="status" hidden></div>
 <script>
 'use strict';
 /* ------------------------------------------------------------------
@@ -838,7 +998,7 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, planEdit: null,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, dropEdit: null, chEdit: null, ovMark: null, ovMarkN: 0, ovMarkMsg: '', showDropped: false, planEdit: null, openDays: new Set(), autoOpened: false, noteEdit: null, rpt: { who: 'all', kind: 'all' },
   include: { table: true, log: true, notes: false, plan: false, cheat: false }, fuEdit: null, fuEditDraft: null, fuPrefill: null, familyDraft: {}, familyOpen: false, familyCopied: null, ovScroll: null, ovPrintAll: false,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
@@ -1680,6 +1840,129 @@ function planMenu(ctx){
 }
 const planFocus = () => { const x = $(`#tab-${state.tab} [data-planmenu] > summary`); if (x) x.focus(); };
 
+
+/* ---------------- Days tab ----------------
+   Each homeroom and study hall, newest first, as in the intervention tracker's Days tab: how many came, were late, left early
+   or were absent, and, opened, each student's time in Zoom on a timeline with the class's time behind it. */
+const DAY_BOXES = [['present', 'present'], ['dismissed', 'dismissed early'], ['late', 'late'], ['early', 'left early'], ['absent', 'absent']];
+const tgl = (attr, xk, on, label, extra = '') => `<button class="tgl" ${attr}="${esc(xk)}" aria-pressed="${!!on}"${extra}><span class="tbox" aria-hidden="true"></span>${esc(label)}</button>`;
+// The axis of a class: from ten minutes before it starts to ten after it ends, a tick every quarter hour.
+function dayAxis(g){
+  const [A0, B0] = g.win, a = A0 - 10 * 60000, b = B0 + 10 * 60000, ticks = [];
+  for (let t = Math.ceil(a / 9e5) * 9e5; t <= b; t += 9e5) ticks.push(t);
+  return { axisStart: a, axisEnd: b, ticks, secs: [{ a: A0, b: B0, type: g.kind }] };
+}
+function timeline(day, merged, secs){
+  const span = day.axisEnd - day.axisStart, pct = t => ((t - day.axisStart) / span * 100).toFixed(3);
+  let h = '';
+  for (const s of secs || []) h += `<span class="band ${s.type}" style="left:${pct(s.a)}%;width:${(pct(s.b) - pct(s.a)).toFixed(3)}%"></span>`;
+  for (const t of day.ticks) h += `<span class="tick${new Date(t).getMinutes() ? ' half' : ''}" style="left:${pct(t)}%"></span>`;
+  const label = [];
+  for (const [a, b] of merged){
+    const A = Math.max(a, day.axisStart), B = Math.min(b, day.axisEnd); label.push(`${fmt(a)} to ${fmt(b)}`);
+    if (B <= A) continue;
+    h += `<span class="bar" title="In Zoom ${esc(fmt(a))}–${esc(fmt(b))}" style="left:${pct(A)}%;width:${Math.max(0.5, pct(B) - pct(A)).toFixed(3)}%"></span>`;
+  }
+  return `<div class="tl" role="img" aria-label="${esc(label.length ? 'In Zoom ' + label.join(', ') : 'Not in Zoom')}">${h}</div>`;
+}
+function axis(day){
+  const span = day.axisEnd - day.axisStart;
+  return `<div class="axis" aria-hidden="true">${day.ticks.filter(t => !new Date(t).getMinutes() || new Date(t).getMinutes() === 30)
+    .map(t => `<span style="left:${((t - day.axisStart) / span * 100).toFixed(2)}%">${esc(fmt(t).replace(/:00/, ''))}</span>`).join('')}</div>`;
+}
+function rangeText(merged){ return merged.map(([a, b]) => `${fmt(a)}–${fmt(b)}`).join(', '); }
+// The students a class day lists: everyone expected that day, and anyone who came without being expected.
+function dayStudents(A, g){
+  return A.students.map(s => cellState(A, s, g.dk, g.kind)).filter(c => c.req || c.cat === 'extra');
+}
+function renderDays(){
+  const el = $('#tab-days');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  const period = periodOf(A), q = normKey(state.query);
+  const gs = [...A.classes.values()].filter(g => g.dk >= period.from && g.dk <= period.to).sort((a, b) => b.dk.localeCompare(a.dk) || (a.kind === 'hr' ? -1 : 1));
+  let h = `<div class="toolbar">${rangeBar()}
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
+    <button class="btn small ghost" data-exportdays${gs.length ? '' : ' disabled'}>Export CSV</button><span class="grow"></span>
+    <div class="legend"><span><i class="sw hr"></i>Homeroom</span><span><i class="sw sh"></i>Study hall</span><span><i class="sw p"></i>In Zoom</span></div></div>`;
+  if (A.fileErrors.length) h += `<div class="notice"><b>Some files weren’t used:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
+  h += missingNotice(A, period);
+  const ncDays = Object.keys(state.data.noClass).filter(dk => !hasReport(A, dk) && !state.data.deletedDays[dk] && dk >= period.from && dk <= period.to);
+  if (!gs.length && !ncDays.length){ el.innerHTML = h + `<div class="notice info">No Zoom reports for homeroom or study hall fall in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</div>`; return; }
+  if (!state.autoOpened && gs.length){ state.openDays.add(gs[0].id); state.autoOpened = true; }
+  const cards = [...gs.map(g => ({ dk: g.dk, g })), ...ncDays.map(dk => ({ dk }))].sort((a, b) => b.dk.localeCompare(a.dk));
+  for (const c of cards) h += c.g ? renderDay(A, c.g, q) : `<div class="noclasscard" data-dk="${esc(c.dk)}"><b>${esc(longDate(c.dk))}</b> <span>No class: ${esc(NOCLASS_REASONS[(state.data.noClass[c.dk] || {}).reason] || 'Other')}</span>
+    <button class="linkish" data-undonoclass="${esc(c.dk)}">Undo</button></div>`;
+  el.innerHTML = h;
+  const ni = $('#tab-days input.note'); if (ni){ ni.focus(); ni.setSelectionRange(ni.value.length, ni.value.length); }
+}
+// A closed day only draws its heading; its rows are drawn when it's opened, which keeps the tab quick with a year of reports.
+function renderDay(A, g, q){
+  const cs = dayStudents(A, g), n = { present: 0, dismissed: 0, late: 0, early: 0, absent: 0 }; let exc = 0;
+  for (const c of cs){
+    if (!c.req) continue;
+    if (!PRESENT.has(c.cat)){ if (c.cat === 'absent' || c.cat === 'excused'){ n.absent++; if (c.cat === 'excused') exc++; } continue; }
+    const r = c.rec, late = !!(r && r.late), early = !!(r && r.early) && !c.fin;
+    if (c.fin) n.dismissed++; if (late) n.late++; if (early) n.early++; if (!c.fin && !late && !early) n.present++;
+  }
+  const exp = cs.filter(c => c.req && c.cat !== 'excused').length, came = cs.filter(c => c.req && PRESENT.has(c.cat)).length, extra = cs.filter(c => !c.req).length;
+  const sub = `${came} of ${exp} attended${extra ? ` (+${extra} not required)` : ''} · ${KIND[g.kind]}, ${winText(g.kind)}${state.data.extraDays[g.dk] ? ' · a day you added' : ''}`;
+  const open = state.openDays.has(g.id);
+  return `<details class="day" data-dayid="${esc(g.id)}"${open ? ' open' : ''}>
+    <summary><h2>${esc(longDate(g.dk))}</h2><span class="sub" title="${esc(sub)}">${esc(sub)}</span>
+      <span class="counts">${DAY_BOXES.map(([k, l]) => `<span class="count k-${k === 'present' ? 'full' : k === 'dismissed' ? 'fin' : k}${n[k] ? '' : ' zero'}"${k === 'absent' && exc ? ` title="${exc} of them excused"` : ''}>${n[k]} ${l}</span>`).join('')}
+      ${g.unmatched.size ? `<span class="count k-extra">${g.unmatched.size} unmatched Zoom name${g.unmatched.size > 1 ? 's' : ''}</span>` : ''}</span>
+    </summary><div class="day-body">${open ? dayBody(A, g, q) : ''}</div></details>`;
+}
+// A row's status in the words of the day's boxes, with the minutes.
+function dayChips(c){
+  const r = c.rec, out = [];
+  if (c.cat === 'excused') return [['exc', 'Absent (excused)']];
+  if (c.cat === 'absent') return [['absent', 'Absent']];
+  if (!PRESENT.has(c.cat)) return [];
+  if (c.cat !== 'engaged') out.push(['extra', CELL[c.cat]]);
+  if (r && r.late) out.push(['late', `Late (${r.lateMin} min)`]);
+  if (c.fin) out.push(['fin', `Dismissed early (${r.earlyMin} min)`]); else if (r && r.early) out.push(['early', `Left early (${r.earlyMin} min)`]);
+  if (c.C) out.push(['extra', 'Camera off']);
+  return out;
+}
+function dayBody(A, g, q){
+  const day = dayAxis(g), cs = dayStudents(A, g).filter(c => !q || normKey(c.s.name).includes(q));
+  let h = `<div class="grid-head"><span>Student</span>${axis(day)}<span>Joined</span><span>Left</span><span>Status</span></div>`;
+  if (!cs.length) h += `<p class="muted small" style="padding:10px 0">${q ? 'No students match that search. <button class="linkish" data-clearsearch>Clear search</button>' : 'No students expected.'}</p>`;
+  for (const c of cs){
+    const r = c.rec, e = g.byKey.get(c.key), merged = e ? mergeIntervals(e.intervals) : [], ch = dayChips(c), editing = state.noteEdit === c.xk;
+    const meta = [!c.req ? 'Came, not required' : '', r && r.inZoom ? `${r.min} of ${mins(g.win[1] - g.win[0])} min` : ''].filter(Boolean);
+    h += `<div class="row" data-xkey="${esc(c.xk)}">
+      <div class="who"><span class="nmtag"><button class="name-btn" data-openstudent="${esc(c.key)}" title="Open ${esc(c.s.name)}’s report">${esc(c.s.name)}</button>${supTags(c.key, 'noprint')}</span>
+        ${meta.length ? `<span class="meta">${esc(meta.join(', '))}</span>` : ''}
+        ${r && r.names.some(n => normKey(n) !== c.key) ? `<span class="meta">In Zoom as ${r.names.map(z => `“${esc(z)}”`).join(', ')}</span>` : ''}
+        ${editing ? `<input class="note" data-dnote="${esc(c.xk)}" value="${esc(c.note)}" placeholder="Note, then press Enter" aria-label="Note for ${esc(c.s.name)}, ${esc(shortDate(c.dk))}">` : c.note ? `<span class="note-txt">${esc(c.note)}</span>` : ''}</div>
+      <div class="tlc">${timeline(day, merged, day.secs)}</div>
+      <div class="time${r && r.first ? '' : ' none'}" data-label="Joined">${esc(fmt(r && r.first))}</div>
+      <div class="time${r && r.last ? '' : ' none'}" data-label="Left">${esc(fmt(r && r.last))}</div>
+      <div class="chips">${!ch.length ? `<span class="quiet">${PRESENT.has(c.cat) ? 'Present' : esc(CELL[c.cat])}</span>` : ch.map(([k, t]) => `<span class="chip k-${k}">${esc(t)}</span>`).join('')}
+        <span class="acts">${c.req && c.canFin ? tgl('data-dfin', c.xk, c.fin, 'Dismissed early') : ''}${c.req && (c.cat === 'absent' || c.cat === 'excused') ? tgl('data-dexc', c.xk, c.cat === 'excused', 'Excused absence') : ''}
+          <button class="linkish" data-dnoteedit="${esc(c.xk)}"${editing ? ' disabled' : ''}>Note</button></span></div></div>`;
+  }
+  if (g.unmatched.size){
+    const opts = A.students.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('');
+    h += `<h3 class="subhead">Unmatched Zoom names</h3><p class="small muted" style="margin:0 0 4px">Link a name once and it’s matched automatically from then on. Ignore names that aren’t students, like your own.</p>`;
+    for (const u of g.unmatched.values()) h += `<div class="mini" data-rk="${esc(u.rk)}"><div class="who"><b>${esc(u.raw)}</b>${u.email ? `<span class="meta">${esc(u.email)}</span>` : ''}</div><div></div>
+      <div class="act"><select aria-label="Student for ${esc(u.raw)}"><option value="">Choose student…</option>${opts}</select><button class="btn small" data-link>Link</button><button class="btn small ghost" data-ignore>Ignore</button></div></div>`;
+  }
+  return h + `<div class="files">From ${[...g.files].map(esc).join(', ')}</div>`;
+}
+function exportDays(){
+  const A = state.lastAnalysis || analyze(), period = periodOf(A);
+  const rows = [['Date', 'Class', 'Student', 'Status', 'Late', 'Left early', 'Dismissed early', 'Camera off', 'Joined', 'Left', 'Minutes in Zoom', 'Note']];
+  for (const g of [...A.classes.values()].filter(g => g.dk >= period.from && g.dk <= period.to).sort((a, b) => a.dk.localeCompare(b.dk)))
+    for (const c of dayStudents(A, g)){ const r = c.rec;
+      rows.push([g.dk, KIND[g.kind], c.s.name, CELL[c.cat], r && r.late ? r.lateMin : '', r && r.early && !c.fin ? r.earlyMin : '', c.fin ? 'Yes' : '', c.C ? 'Yes' : '', r && r.first ? fmt(r.first) : '', r && r.last ? fmt(r.last) : '', r && r.inZoom ? r.min : '', c.note]); }
+  downloadFile(`homeroom-days_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+
 /* ---------------- Students tab ---------------- */
 function meter(v){
   if (v === null) return '<span class="zero">—</span>';
@@ -2034,6 +2317,203 @@ function sessionsEditor(r){
       <span class="small muted">Or tick sessions on the <button class="linkish" data-goto="study">Study hall</button> tab.</span></div>${logMsgHTML('sh')}`;
 }
 
+
+/* ---------------- Reports tab ----------------
+   Attendance for a group of students (like only students with an IEP or 504 plan), as in the intervention tracker:
+   headline numbers, week by week, how the days went, where the minutes went, and more. Homeroom, study hall, or both. */
+const nf = n => Number(n).toLocaleString('en-US');
+const rptWhoName = who => (WHO.find(w => w[0] === who) || WHO[0])[2];
+const RPT_KIND = [['all', 'Homeroom and study hall'], ['hr', 'Homeroom'], ['sh', 'Study hall']];
+// Each student in the group, as the Overview shows them for these dates: their days that count and the totals of those.
+function rptData(A, who = state.rpt.who){
+  const period = periodOf(A), days = classDays(period).filter(d => state.rpt.kind === 'all' || d.kind === state.rpt.kind), today = todayDk();
+  const rows = A.students.filter(s => (state.showDropped || isCurrent(s)) && whoOk(s.key, who)).map(s => {
+    const cells = days.map(d => cellState(A, s, d.dk, d.kind)).filter(c => c.req && c.dk <= today && own(CAT, c.cat));
+    const st = statsOf(cells);
+    return { key: s.key, days: cells, n: st.n, att: st.att, eng: st.eng, abs: st.abs, exc: st.exc, L: st.L };
+  }).filter(r => r.days.length);
+  return { period, dates: [...new Set(days.map(d => d.dk))], rows };
+}
+// Where a day's minutes went: in Zoom, before joining (late), out of Zoom in the middle, after leaving early, or absent.
+function dayMinutes(c){
+  const g = c.g, out = { in: 0, before: 0, out: 0, after: 0, absent: 0, req: 0 };
+  if (!g) return out;
+  const w = mins(g.win[1] - g.win[0]), r = c.rec, dismissed = c.fin && r ? r.earlyMin : 0;
+  out.req = w - dismissed;
+  if (!PRESENT.has(c.cat) || !r || !r.present){ out.absent = out.req; return out; }
+  out.in = Math.min(r.min, out.req); out.before = r.late ? r.lateMin : 0; out.after = r.early && !c.fin ? r.earlyMin : 0;
+  out.out = Math.max(0, out.req - out.in - out.before - out.after);
+  return out;
+}
+// The group's totals: days and their colors, Zoom's minutes and where they went, and the same by week and by weekday.
+function rptSum(rows){
+  const z = () => ({ n: 0, att: 0, eng: 0, pres: 0, req: 0 });
+  const t = { students: rows.length, ...z(), abs: 0, exc: 0, L: 0, col: { engaged: 0, idle: 0, away: 0, absent: 0, excused: 0 },
+    min: { in: 0, before: 0, out: 0, after: 0, absent: 0 }, weeks: new Map(), wdays: new Map(), dates: new Set(), zoomDates: new Set() };
+  const add = (m, k, c, M) => { const o = m.get(k) || { key: k, ...z() }; o.n++; if (c.cat !== 'absent') o.att++; if (c.cat === 'engaged') o.eng++; o.pres += M.in; o.req += M.req; m.set(k, o); };
+  for (const r of rows){
+    t.n += r.n; t.att += r.att; t.eng += r.eng; t.abs += r.abs; t.exc += r.exc; t.L += r.L;
+    for (const c of r.days){
+      t.col[c.cat]++; t.dates.add(c.dk); if (c.g) t.zoomDates.add(c.dk);
+      if (c.cat === 'excused') continue;
+      const M = dayMinutes(c); t.pres += M.in; t.req += M.req; for (const k in t.min) t.min[k] += M[k];
+      add(t.weeks, weekKey(c.dk), c, M); add(t.wdays, parseDk(c.dk).getDay(), c, M);
+    }
+  }
+  const per = v => t.students ? v / t.students : null;
+  return { ...t, rate: pct(t.att, t.n), engRate: pct(t.eng, t.n), dose: pct(t.pres, t.req), absPer: per(t.abs), LPer: per(t.L) };
+}
+const nf1 = v => v === null ? '—' : (Math.round(v * 10) / 10).toLocaleString();
+const pctTxt = v => v === null ? '—' : `${v}%`;
+// The charts' hover details: one box, filled with plain text (never HTML), beside the pointer or the focused mark.
+const vizData = new Map();
+function vizTip(lines, x, y){
+  const tip = $('#vizTip'); if (!lines){ tip.hidden = true; return; }
+  tip.replaceChildren(...lines.map((l, i) => { const d = document.createElement(i ? 'div' : 'b'); d.textContent = l; return d; }));
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.max(8, Math.min(x + 14, innerWidth - w - 8))}px`; tip.style.top = `${Math.max(8, y - h - 12 < 8 ? y + 18 : y - h - 12)}px`;
+}
+// A column chart: one or two series on a 0-to-max scale, with rounded tops on a square baseline. One hover target per
+// category shows all its series; a single series also has its values on the caps.
+function vizColumns(cats, series, max, unit, title){
+  const w = 460, h = 200, L = 34, R = 8, T = 20, B = 30, pw = w - L - R, ph = h - T - B, slot = pw / cats.length, bw = Math.min(24, (slot - 12) / series.length - 2);
+  const y = v => T + ph - (max ? v / max * ph : 0), fmt = v => unit === '%' ? `${v}%` : String(v);
+  let ticks = [0, 50, 100];
+  if (unit !== '%'){ const rough = Math.max(1, max) / 4, mag = 10 ** Math.floor(Math.log10(rough)), step = Math.max(1, [1, 2, 5, 10].find(m => m * mag >= rough) * mag);
+    max = Math.ceil(Math.max(1, max) / step) * step; ticks = []; for (let v = 0; v <= max; v += step) ticks.push(v); }
+  const col = (x, v) => { const top = y(v), r = Math.min(4, (T + ph - top) / 2, bw / 2); return `M${x},${T + ph}V${top + r}Q${x},${top} ${x + r},${top}H${x + bw - r}Q${x + bw},${top} ${x + bw},${top + r}V${T + ph}Z`; };
+  let s = `<svg class="viz vcol" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(title)}">`;
+  for (const v of ticks) s += `<line class="vgrid" x1="${L}" x2="${L + pw}" y1="${y(v)}" y2="${y(v)}"/><text class="vtick" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  cats.forEach((c, i) => {
+    const gw = series.length * (bw + 2) - 2, x0 = L + i * slot + (slot - gw) / 2;
+    s += `<g class="vmark" tabindex="0" data-tip="${esc([c.label, ...series.map((se, k) => `${se.name}: ${c.tips ? c.tips[k] : fmt(c.values[k])}`)].join('\n'))}"><rect class="vhit" x="${x0 - 6}" y="${T}" width="${gw + 12}" height="${ph}" rx="4"/>`;
+    series.forEach((se, j) => { const v = c.values[j], x = x0 + j * (bw + 2); if (!v) return;
+      s += `<path d="${col(x, v)}" style="fill:var(${se.color})"/>${series.length === 1 || unit !== '%' ? `<text class="vval" x="${x + bw / 2}" y="${y(v) - 5}" text-anchor="middle">${fmt(v)}</text>` : ''}`; });
+    s += `</g><text class="vtick" x="${L + i * slot + slot / 2}" y="${h - 10}" text-anchor="middle">${esc(c.label)}</text>`;
+  });
+  return s + `<line class="vaxis" x1="${L}" x2="${L + pw}" y1="${T + ph}" y2="${T + ph}"/></svg>`;
+}
+// The week-by-week lines: days attended and engaged days (percents), with a crosshair that finds the nearest week.
+// For a half-width card, w = 500 keeps its words the same size as the other half-width charts.
+function vizLines(id, W, Wall, S = [['rate', 'Days attended', '--viz-1'], ['engRate', 'Engaged days', '--viz-2']], tip = null, label = 'Days attended and engaged days, week by week', w = 1000){
+  const h = w < 800 ? 220 : 250, L = 44, R = w < 800 ? 100 : 130, T = 14, B = 34, pw = w - L - R, ph = h - T - B;
+  const x = i => L + (W.length === 1 ? pw / 2 : i * pw / (W.length - 1)), y = v => T + ph - v / 100 * ph;
+  vizData.set(id, { W, Wall, x: W.map((_, i) => x(i)), y: S.map(([k]) => W.map(o => o[k] === null ? null : y(o[k]))), S, tip });
+  let s = `<svg class="viz vline" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}" data-vizid="${id}" tabindex="0">`;
+  for (const v of [0, 25, 50, 75, 100]) s += `<line class="vgrid" x1="${L}" x2="${L + pw}" y1="${y(v)}" y2="${y(v)}"/><text class="vtick" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}%</text>`;
+  const every = Math.max(1, Math.ceil(W.length / (w < 800 ? 6 : 12)));
+  W.forEach((o, i) => { if (i === W.length - 1 || (i % every === 0 && x(W.length - 1) - x(i) >= 60)) s += `<text class="vtick" x="${x(i)}" y="${h - 12}" text-anchor="middle">${esc(monDay(o.key))}</text>`; });
+  const ends = [];
+  for (const [k, name, c] of S){
+    const pts = W.map((o, i) => o[k] === null ? null : `${x(i).toFixed(1)},${y(o[k]).toFixed(1)}`).filter(Boolean);
+    if (pts.length > 1) s += `<polyline class="vln" points="${pts.join(' ')}" style="stroke:var(${c})"/>`;
+    const li = W.findLastIndex(o => o[k] !== null);
+    if (li >= 0){ s += `<circle class="vdot" cx="${x(li)}" cy="${y(W[li][k])}" r="4" style="fill:var(${c})"/>`; ends.push({ x: x(li), y: y(W[li][k]), t: name }); }
+  }
+  // The lines' names at their ends, only when they don't crowd each other (the legend names them either way). No number here:
+  // the last week's number beside a line read as the total for all dates. Pointing at a week shows its numbers.
+  if (ends.length < 2 || Math.abs(ends[0].y - ends[1].y) >= 16) for (const e of ends) s += `<text class="vend" x="${e.x + 10}" y="${e.y + 4}">${esc(e.t)}</text>`;
+  s += `<line class="vxh" x1="0" x2="0" y1="${T}" y2="${T + ph}" visibility="hidden"/>${S.map(([, , c], j) => `<circle class="vxd" data-s="${j}" r="4" style="fill:var(${c})" visibility="hidden"/>`).join('')}
+    <rect class="vhit" x="${L - 10}" y="${T}" width="${pw + 20}" height="${ph}"/><line class="vaxis" x1="${L}" x2="${L + pw}" y1="${T + ph}" y2="${T + ph}"/></svg>`;
+  return s;
+}
+function vizLineAt(svg, i){
+  const D = vizData.get(svg.dataset.vizid); if (!D || !D.W.length) return;
+  i = Math.max(0, Math.min(D.W.length - 1, i)); svg.dataset.at = i;
+  const xh = svg.querySelector('.vxh'); xh.setAttribute('x1', D.x[i]); xh.setAttribute('x2', D.x[i]); xh.setAttribute('visibility', 'visible');
+  svg.querySelectorAll('.vxd').forEach(c => { const yy = D.y[+c.dataset.s][i]; if (yy === null){ c.setAttribute('visibility', 'hidden'); return; } c.setAttribute('cx', D.x[i]); c.setAttribute('cy', yy); c.setAttribute('visibility', 'visible'); });
+  const o = D.W[i], a = D.Wall && D.Wall.get(o.key);
+  const lines = D.tip ? D.tip(o, a) : [`Week of ${monDay(o.key)}`, `Days attended: ${pctTxt(o.rate)} (${o.att} of ${plural(o.n, 'day')})`, `Engaged days: ${pctTxt(o.engRate)} (${o.eng} of ${o.n})`];
+  if (a && !D.tip) lines.push(`All students: ${pctTxt(a.rate)} attended, ${pctTxt(a.engRate)} engaged`);
+  const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+  vizTip(lines, r.left + D.x[i] / vb.width * r.width, r.top + Math.min(...D.y.map(yy => yy[i] ?? 999)) / vb.height * r.height);
+}
+function vizLineOff(svg){ svg.querySelector('.vxh').setAttribute('visibility', 'hidden'); svg.querySelectorAll('.vxd').forEach(c => c.setAttribute('visibility', 'hidden')); vizTip(null); }
+// A row for each part of a whole: a swatch and its name, a bar for its share, the share and the amount.
+function vizRows(parts, total, unit, compare){
+  return `<ul class="vrows">${parts.map(([k, name, v, sw, cv]) => { const sh = total ? Math.round(v / total * 100) : 0, u = v === 1 && unit === 'days' ? 'day' : unit;
+    return `<li tabindex="0" data-tip="${esc([name, `${sh}% · ${nf(v)} ${u}`, ...(compare && cv !== undefined ? [`All students: ${cv}%`] : [])].join('\n'))}"><span class="ksw ${sw}" aria-hidden="true"></span><span class="vrn">${esc(name)}</span>
+      <span class="vrt"><span class="vrf ${sw}" style="width:${total ? (v / total * 100).toFixed(2) : 0}%"></span></span><span class="vrv"><b>${sh}%</b> ${nf(v)} ${u}${compare && cv !== undefined ? `<span class="muted"> · all ${cv}%</span>` : ''}</span></li>`; }).join('')}</ul>`;
+}
+const vizTable = (head, rows) => `<details class="vtab"><summary>Show the numbers</summary><div class="tablewrap"><table class="sum rpt"><thead><tr>${head.map(x => `<th>${esc(x)}</th>`).join('')}</tr></thead>
+  <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
+const BANDS = [['Under 70%', v => v < 70], ['70–79%', v => v >= 70 && v < 80], ['80–89%', v => v >= 80 && v < 90], ['90–99%', v => v >= 90 && v < 100], ['100%', v => v === 100]];
+function rptOutput(A){
+  const R = state.rpt, D = rptData(A), T = rptSum(D.rows), all = R.who === 'all' ? null : rptSum(rptData(A, 'all').rows);
+  const wkRow = o => ({ ...o, rate: pct(o.att, o.n), engRate: pct(o.eng, o.n), dose: pct(o.pres, o.req) });
+  const W = [...T.weeks.values()].sort((a, b) => a.key.localeCompare(b.key)).map(wkRow), Wall = all ? new Map([...all.weeks.values()].map(o => [o.key, wkRow(o)])) : null;
+  let h = `<div class="printonly rpttitle"><h2>Attendance summary: ${esc(rptWhoName(R.who))} · ${esc(RPT_KIND.find(k => k[0] === R.kind)[1])}</h2><p>${esc(fmtPeriod(D.period))} · Printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}${state.data.settings.teacherName ? ` · ${esc(state.data.settings.teacherName)}` : ''}</p></div>`;
+  const marked = A.students.some(r => R.who === 'all' || R.who === 'none' || whoOk(r.key, R.who));
+  if (!marked) return h + `<div class="notice info">No students are marked ${R.who === 'ml' ? 'as multilingual learners (ML)' : R.who === 'rfep' ? 'RFEP' : R.who === 'iep' ? 'with an IEP' : R.who === '504' ? 'with a 504 plan' : 'with an IEP or 504 plan'} yet. To mark one, click their name on the Students tab, then “Add IEP, 504 or ML” beside it.</div>`;
+  if (!D.dates.length) return h + `<div class="notice info">No homeroom or study hall days in these dates. <button class="linkish" data-range="all">Show all dates</button></div>`;
+  if (!T.students || !T.n) return h + `<p class="muted">${T.exc ? `All ${plural(T.exc, 'day')} for ${esc(rptWhoName(R.who).toLowerCase())} in these dates are excused.` : `No days for ${esc(rptWhoName(R.who).toLowerCase())} in these dates.`}</p>`;
+  h += `<p class="listinfo">${esc(rptWhoName(R.who))} · ${plural(T.students, 'student')} · ${plural(T.dates.size, 'day')}${T.zoomDates.size < T.dates.size ? ` (${T.zoomDates.size} with a Zoom report)` : ''} · ${esc(fmtPeriod(D.period))}</p>`;
+  // The headline numbers, each with the same number for all students when this is a smaller group.
+  const tile = (label, value, detail, cmp) => `<div class="rtile"><div class="rt-l">${label}</div><div class="rt-v">${value}</div><div class="rt-d">${detail}</div>${all && cmp !== null ? `<div class="rt-c">All students: ${cmp}</div>` : ''}</div>`;
+  h += `<div class="rtiles">${tile('Students', T.students, R.who === 'all' ? 'in these dates' : `of ${all.students} in these dates`, null)}
+    ${tile('Days attended', pctTxt(T.rate), `${nf(T.att)} of ${nf(T.n)} days`, all && pctTxt(all.rate))}
+    ${tile('Engaged days', pctTxt(T.engRate), `${nf(T.eng)} of ${nf(T.n)} days`, all && pctTxt(all.engRate))}
+    ${tile('Minutes in Zoom', pctTxt(T.dose), `${nf(T.pres)} of ${nf(T.req)} min in Zoom reports`, all && pctTxt(all.dose))}
+    ${tile('Absences', nf1(T.absPer), `per student (${nf(T.abs)} in all)`, all && nf1(all.absPer))}
+    ${tile('Late or left early', nf1(T.LPer), `days per student with an L (${nf(T.L)} in all)`, all && nf1(all.LPer))}</div>`;
+  const card = (title, sub, body, wide) => `<figure class="rcard${wide ? ' wide' : ''}"><figcaption><h3>${title}</h3>${sub ? `<p class="small muted">${sub}</p>` : ''}</figcaption>${body}</figure>`;
+  const legend = `<div class="vlegend"><span><i class="vkey" style="background:var(--viz-1)"></i>Days attended</span><span><i class="vkey" style="background:var(--viz-2)"></i>Engaged days</span></div>`;
+  let cards = card('Week by week', 'Days attended and engaged days, out of the group’s days each week. Point at a week for its numbers.',
+    legend + vizLines('rptweeks', W, Wall) + vizTable(['Week of', 'Days', 'Days attended', 'Engaged days', 'Minutes in Zoom'],
+      W.map(o => [monDay(o.key), o.n, `${o.att} (${pctTxt(o.rate)})`, `${o.eng} (${pctTxt(o.engRate)})`, o.req ? `${nf(o.pres)} of ${nf(o.req)} (${pctTxt(o.dose)})` : 'No Zoom report'])), true);
+  // How the days went, in the Overview's colors (an excused absence is one of them), and where the scheduled minutes went.
+  const cs = [['engaged', CAT.engaged], ['idle', CAT.idle], ['away', CAT.away], ['absent', CAT.absent], ['excused', CAT.excused]];
+  const ctot = cs.reduce((a, [k]) => a + T.col[k], 0), acTot = all ? cs.reduce((a, [k]) => a + all.col[k], 0) : 0;
+  cards += card('How days went', 'Each day’s color on the Overview, colors you picked by hand included.', vizRows(cs.map(([k, name]) => [k, name, T.col[k], `c-${k}`, all && acTot ? Math.round(all.col[k] / acTot * 100) : undefined]), ctot, 'days', !!all)
+    + vizTable(['Color', 'Days', 'Share'], cs.map(([k, name]) => [name, T.col[k], `${ctot ? Math.round(T.col[k] / ctot * 100) : 0}%`])));
+  const ms = [['in', 'In Zoom', 's-in'], ['before', 'Before joining (late)', 's-before'], ['out', 'Out of Zoom in the middle', 's-out'], ['after', 'After leaving early', 's-after'], ['absent', 'Absent', 's-absent']];
+  const mtot = ms.reduce((a, [k]) => a + T.min[k], 0), amTot = all ? ms.reduce((a, [k]) => a + all.min[k], 0) : 0;
+  cards += card('Where the minutes went', 'Every minute of homeroom and study hall on the days with a Zoom report. Time after a student was dismissed early, and excused days, aren’t counted.',
+    vizRows(ms.map(([k, name, sw]) => [k, name, T.min[k], sw, all && amTot ? Math.round(all.min[k] / amTot * 100) : undefined]), mtot, 'min', !!all)
+    + vizTable(['Where', 'Minutes', 'Share'], ms.map(([k, name]) => [name, nf(T.min[k]), `${mtot ? Math.round(T.min[k] / mtot * 100) : 0}%`])));
+  // How the group's students spread out: how many attended (or were engaged on) each share of their days.
+  const withDays = D.rows.filter(r => r.n), fa = r => Math.round(r.att / r.n * 100), fe = r => Math.round(r.eng / r.n * 100);
+  const bands = BANDS.map(([l, test]) => { const v = [withDays.filter(r => test(fa(r))).length, withDays.filter(r => test(fe(r))).length];
+    return { label: l, values: v, tips: v.map(n => plural(n, 'student')) }; });
+  // An example from the tallest "Days attended" bar, so the chart reads at a glance.
+  const big = bands.reduce((a, x) => x.values[0] > a.values[0] ? x : a, bands[0]), bigShare = big.label === '100%' ? 'all' : big.label.toLowerCase();
+  cards += card('Students by share of their days', `Students counted by the share of their own days they attended, or were engaged on. For example, ${big.values[0]} of ${plural(withDays.length, 'student')} attended ${bigShare} of theirs.`, legend
+    + vizColumns(bands, [{ name: 'Days attended', color: '--viz-1' }, { name: 'Engaged days', color: '--viz-2' }], Math.max(...bands.flatMap(x => x.values)), '', 'Students by share of their days')
+    + vizTable(['Share of days', 'Students by days attended', 'Students by engaged days'], bands.map(x => [x.label, x.values[0], x.values[1]])));
+  // By weekday (Monday first): the same two percents, side by side.
+  const wd = [1, 2, 3, 4, 5, 6, 0].filter(d => T.wdays.has(d)).map(d => { const o = wkRow(T.wdays.get(d));
+    return { label: cap(DAYS[d]).slice(0, 3), values: [o.rate, o.engRate], tips: [`${pctTxt(o.rate)} (${o.att} of ${o.n})`, `${pctTxt(o.engRate)} (${o.eng} of ${o.n})`], o, d }; });
+  cards += card('By day of the week', `Days attended and engaged days on each day of the week (homeroom is ${daysText([settings().homeroomDay])}; study hall ${daysText(settings().studyDays)}).`, legend + vizColumns(wd, [{ name: 'Days attended', color: '--viz-1' }, { name: 'Engaged days', color: '--viz-2' }], 100, '%', 'By day of the week')
+    + vizTable(['Day', 'Days', 'Days attended', 'Engaged days'], wd.map(x => [cap(DAYS[x.d]), x.o.n, `${x.o.att} (${pctTxt(x.o.rate)})`, `${x.o.eng} (${pctTxt(x.o.engRate)})`])));
+  // For everyone: each group side by side (a student can be in two, like an IEP and ML).
+  if (R.who === 'all'){
+    const gs = WHO.filter(([k]) => k !== 'all' && k !== 'plan').map(([k, l]) => [l, rptSum(D.rows.filter(r => whoOk(r.key, k)))]).filter(([, g]) => g.students);
+    cards += card('By group', 'A student can be in more than one group (an IEP and ML).', `<div class="tablewrap"><table class="sum rpt"><thead><tr><th>Group</th><th class="num">Students</th><th>Days attended</th><th>Engaged days</th><th>Minutes in Zoom</th><th class="num">Absences per student</th></tr></thead><tbody>${
+      [...gs, ['All students', T]].map(([l, g], i) => `<tr${i === gs.length ? ' class="rptall"' : ''}><td>${esc(l)}</td><td class="num">${g.students}</td><td>${pctTxt(g.rate)}</td><td>${pctTxt(g.engRate)}</td><td>${pctTxt(g.dose)}</td><td class="num">${nf1(g.absPer)}</td></tr>`).join('')}</tbody></table></div>`, true);
+  }
+  return h + `<div class="rgrid">${cards}</div><p class="small muted" style="margin-top:10px">Each day counts as it’s colored on the Overview, colors you picked by hand included, with or without a Zoom report. Days attended are days in any of the three present colors; engaged days are days colored “Present and engaged”. Excused days aren’t counted in the shares. Minutes come from Zoom reports, without time after a student was dismissed early. Study hall counts only the sessions a student was assigned to.</p>`;
+}
+function rptCSV(){
+  const A = state.lastAnalysis || analyze(), T = rptSum(rptData(A).rows), R = state.rpt;
+  const rows = [['Week of', 'Days', 'Days attended', 'Days attended %', 'Engaged days', 'Engaged days %', 'Minutes in Zoom', 'Minutes of class', 'Minutes in Zoom %'],
+    ...[...T.weeks.values()].sort((a, b) => a.key.localeCompare(b.key)).map(o => [o.key, o.n, o.att, pct(o.att, o.n) ?? '', o.eng, pct(o.eng, o.n) ?? '', o.req ? o.pres : '', o.req || '', pct(o.pres, o.req) ?? '']),
+    ['All weeks', T.n, T.att, T.rate ?? '', T.eng, T.engRate ?? '', T.req ? T.pres : '', T.req || '', T.dose ?? '']];
+  downloadFile(`homeroom-summary_${R.who}_${R.kind}_${stamp()}.csv`, toCSV(rows), 'text/csv');
+}
+function renderRpt(){
+  const el = $('#tab-rpt');
+  if (!state.loaded){ el.innerHTML = startScreen(); return; }
+  const A = analyze(); state.lastAnalysis = A;
+  if (!A.students.length){ el.innerHTML = setupCard(A); return; }
+  const R = state.rpt, nd = A.students.filter(s => !isCurrent(s)).length;
+  el.innerHTML = `<div class="toolbar">${rangeBar()}${nd ? `<label class="sortby"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped (${nd})</label>` : ''}<span class="grow"></span><span class="tbend"><button class="btn small ghost" data-rptcsv title="The week-by-week numbers for this group">Download CSV</button><button class="btn small ghost" data-printlist>Print</button></span></div>
+    <div class="panel rptpick noprint"><div class="rptrow"><span class="rptlab">Students</span>
+      <div class="seg" role="group" aria-label="Students">${WHO.map(([k, l, t]) => `<button data-rptwho="${k}" aria-pressed="${R.who === k}" title="${esc(t)}">${esc(l)}</button>`).join('')}</div></div>
+      <div class="rptrow" style="margin-top:8px"><span class="rptlab">Days</span><div class="seg" role="group" aria-label="Days">${RPT_KIND.map(([k, l]) => `<button data-rptkind="${k}" aria-pressed="${R.kind === k}">${esc(l)}</button>`).join('')}</div></div></div>
+    <div id="rptOut">${rptOutput(A)}</div>`;
+}
+
 /* ---------------- 1-on-1s tab ---------------- */
 function renderMeetings(){
   const el = $('#tab-meetings');
@@ -2373,6 +2853,8 @@ function helpHTML(){
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
     <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Students dropped from homeroom are hidden; tick <b>Show dropped</b> to see them. Click a day to see what Zoom shows, change it by hand or add a note. To mark many days at once, click <b>✓ Quick mark</b>, pick a mark, then click days. The last column shows each student’s next 1-on-1, or one to mark; click it to mark or move their meetings.</li>
+      <li><b>Days</b>: each homeroom and study hall, newest first: how many came, were late, left early or were absent. Open one to see each student’s time in Zoom, mark a student dismissed early or excused, or add a note.</li>
+      <li><b>Reports</b>: attendance for a group of students, like only students with an IEP or 504 plan: days attended, engaged days, week by week, and more. Pick homeroom, study hall, or both.</li>
       <li><b>Students</b>: each student’s homeroom and study hall attendance and how many 1-on-1s they’ve had. Tags by a name show an <b>IEP</b> or <b>504</b> plan, a multilingual learner (<b>ML</b>, with the ELD level) or <b>RFEP</b>, and <b>⚑</b> how many times they were caught cheating; click one to see the accommodations and supports. Add them on the student’s page. The cheating log is at the bottom of the tab. Click a name for the student’s page, where you can print a report or a family version, copy a summary, export a CSV, keep a follow-up log, write a note to the family, log cheating, assign study hall sessions, see their meetings and notes, and print it.</li>
       <li><b>1-on-1s</b>: meetings to mark, what’s coming up, and each student’s schedule (like every other Wednesday at 3:30). Mark each meeting held, missed or canceled, move one with <b>Reschedule</b>, set up a <b>Make-up</b> for a missed one, or add an extra one.</li>
       <li><b>Study hall</b>: tick the study hall sessions each student should come to (like when they have a grade under 60%). Only those students are expected that day. You can also add a session on the student’s page.</li>
@@ -2458,7 +2940,7 @@ function renderBanner(){
     <span class="acts"><button class="linkish" data-leavesample>Leave the sample</button></span></div>` : '';
   const el = $('#banner'); if (el.innerHTML !== h) el.innerHTML = h;
 }
-const RENDER = { overview: () => renderOverview(), students: () => renderStudents(), meetings: () => renderMeetings(), study: () => renderStudy(), setup: () => renderSetup() };
+const RENDER = { overview: () => renderOverview(), days: () => renderDays(), students: () => renderStudents(), rpt: () => renderRpt(), meetings: () => renderMeetings(), study: () => renderStudy(), setup: () => renderSetup() };
 function render(){
   renderFolderBar(); renderSaveState(); renderStatus(); renderBanner();
   // Tabs work like tabs everywhere else: one Tab stop, and the arrow keys move between them.
@@ -2466,7 +2948,7 @@ function render(){
   for (const t of Object.keys(RENDER)) $('#tab-' + t).hidden = state.tab !== t;
   RENDER[state.tab]();
 }
-function renderCurrent(){ RENDER[state.tab](); }
+function renderCurrent(){ closeTagPop(); vizTip(null); RENDER[state.tab](); }
 function setStatus(text, type, action){
   state.status = text ? { text, type, auto: type === 'info', action } : null; renderStatus();
   clearTimeout(state.statusTimer);
@@ -2811,6 +3293,14 @@ async function onClick(t){
     return;
   }
   if (has('data-plancancel')){ const m = t.closest('details'); if (m) closeMenu(m); renderCurrent(); planFocus(); return; }
+  // The Days tab and the Reports tab
+  if (has('data-exportdays')) return exportDays();
+  if (d.dfin){ const c = ovCell(d.dfin); if (c) setOverride(d.dfin, { fin: c.ov.fin ? undefined : true }); renderCurrent(); const b = visible(`[data-dfin="${CSS.escape(d.dfin)}"]`); if (b) b.focus(); return; }
+  if (d.dexc){ const c = ovCell(d.dexc); if (c) setOverride(d.dexc, { cat: c.cat === 'excused' ? undefined : 'excused' }); renderCurrent(); const b = visible(`[data-dexc="${CSS.escape(d.dexc)}"]`); if (b) b.focus(); return; }
+  if (d.dnoteedit){ state.noteEdit = d.dnoteedit; renderCurrent(); return; }
+  if (d.rptwho){ state.rpt.who = d.rptwho; renderRpt(); const b = $(`#tab-rpt [data-rptwho="${d.rptwho}"]`); if (b) b.focus(); return; }
+  if (d.rptkind){ state.rpt.kind = d.rptkind; renderRpt(); const b = $(`#tab-rpt [data-rptkind="${d.rptkind}"]`); if (b) b.focus(); return; }
+  if (has('data-rptcsv')) return rptCSV();
   // Student reports: print, copy, export (from the intervention tracker)
   if (d.printreports){
     const { all } = studentList(state.lastAnalysis || analyze());
@@ -3027,7 +3517,8 @@ document.addEventListener('change', e => {
   if ('plantype' in d){ const m = t.closest('[data-planmenu]'), msg = m && m.querySelector('[data-planmsg]'); if (msg) msg.textContent = ''; }
   if (d.include){ state.include[d.include] = t.checked; document.querySelectorAll(`[data-include="${d.include}"]`).forEach(x => { x.checked = t.checked; }); return; }
   if (d.ovmsg){ setMsg(d.ovmsg, t.checked); renderOverview(); const c = $('#tab-overview [data-ovmsg]'); if (c) c.focus(); return; }
-  if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderOverview(); const c = $('#tab-overview [data-showdropped]'); if (c) c.focus(); return; }
+  if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
+  if (d.dnote){ setOverride(d.dnote, { note: t.value.trim().slice(0, 300) || undefined }); state.noteEdit = null; renderCurrent(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
   if ('rfrom' in d || 'rto' in d){
     const r = t.closest('.range');
@@ -3057,6 +3548,8 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   const t = e.target, d = t.dataset || {};
+  if (d.dnote !== undefined && (e.key === 'Enter' || e.key === 'Escape')){ e.preventDefault(); if (e.key === 'Enter') t.blur(); else { state.noteEdit = null; renderCurrent(); } return; }
+  if (t.matches && t.matches('svg.vline') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){ e.preventDefault(); vizLineAt(t, (+t.dataset.at || 0) + (e.key === 'ArrowRight' ? 1 : -1)); return; }
   if (e.key === 'Escape' && tagPopFrom){ e.preventDefault(); closeTagPop(true); return; }
   const hadMenu = !!document.querySelector('details.menu[open]');
   const typing = t.closest && t.closest('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable], .planform'), dlg = document.querySelector('dialog[open]');
@@ -3118,6 +3611,13 @@ function overviewKey(e, t){
 }
 document.addEventListener('toggle', e => {
   const el = e.target;
+  // A day on the Days tab draws its rows when it's opened.
+  if (el.matches && el.matches('details.day')){
+    const id = el.dataset.dayid; if (el.open) state.openDays.add(id); else state.openDays.delete(id);
+    const body = el.querySelector(':scope > .day-body'), A = state.lastAnalysis, g = A && A.classes.get(id);
+    if (el.open && body && g && !body.childElementCount) body.innerHTML = dayBody(A, g, normKey(state.query));
+    return;
+  }
   if (el.matches && el.matches('[data-familybox]')){ state.familyOpen = el.open; return; }
   if (!el.classList || !el.classList.contains('menu')) return;
   if ('rangemenu' in el.dataset) state.rangeMenu = el.open;
@@ -3134,6 +3634,32 @@ document.addEventListener('scroll', e => {
   if (!e.target.classList || !e.target.classList.contains('ovblock') || state.ovPrintAll) return;
   state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvPop(); placeOvDay();
 }, true);
+// Charts: the week-by-week crosshair follows the pointer (or the arrow keys); a bar or row shows its numbers on hover or focus.
+document.addEventListener('pointermove', e => {
+  const svg = e.target.closest && e.target.closest('svg.vline');
+  if (svg){ const D = vizData.get(svg.dataset.vizid), r = svg.getBoundingClientRect(); if (!D) return;
+    const vx = (e.clientX - r.left) / r.width * svg.viewBox.baseVal.width; let best = 0; D.x.forEach((x, i) => { if (Math.abs(x - vx) < Math.abs(D.x[best] - vx)) best = i; });
+    return vizLineAt(svg, best); }
+  const m = e.target.closest && e.target.closest('.vmark, .vrows li');
+  if (m) vizTip(m.dataset.tip.split('\n'), e.clientX, e.clientY);
+});
+document.addEventListener('pointerout', e => {
+  const svg = e.target.closest && e.target.closest('svg.vline'); if (svg && !svg.contains(e.relatedTarget)) vizLineOff(svg);
+  const m = e.target.closest && e.target.closest('.vmark, .vrows li'); if (m && !m.contains(e.relatedTarget)) vizTip(null);
+});
+function vizFocus(t){
+  if (t.matches('svg.vline')) return vizLineAt(t, t.dataset.at ? +t.dataset.at : vizData.get(t.dataset.vizid).W.length - 1);
+  if (t.matches('.vmark, .vrows li')){ const r = t.getBoundingClientRect(); vizTip(t.dataset.tip.split('\n'), r.left + r.width / 2, r.top); }
+}
+document.addEventListener('focusin', e => { if (e.target.matches) vizFocus(e.target); });
+// On scroll, a box for a chart part picked with the keyboard moves with it; one from the pointer closes (pointing again shows it).
+addEventListener('scroll', () => {
+  if ($('#vizTip').hidden) return;
+  const t = document.activeElement;
+  if (t && t.matches && t.matches(':focus-visible') && t.matches('svg.vline, .vmark, .vrows li')) return vizFocus(t);
+  document.querySelectorAll('svg.vline').forEach(vizLineOff); vizTip(null);
+}, { passive: true });
+document.addEventListener('focusout', e => { const t = e.target; if (t.matches && t.matches('svg.vline')) vizLineOff(t); else if (t.matches && t.matches('.vmark, .vrows li')) vizTip(null); });
 window.addEventListener('resize', () => { placeOvPop(); placeOvDay(); });
 document.querySelectorAll('dialog.dlg').forEach(dl => dl.addEventListener('click', e => {
   const r = dl.getBoundingClientRect();
