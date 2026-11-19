@@ -141,7 +141,7 @@ main.wrap{padding:22px 20px 60px}
 .menu.formmenu .pop{width:460px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}
 .formmenu label{display:grid;gap:3px;font-weight:600}
 .formmenu label input{font-weight:400}
-.menumsg{min-height:1.4em;color:var(--bad)}
+.menumsg{height:1.5em;line-height:1.5em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--bad)}
 
 /* Tables */
 .tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
@@ -480,6 +480,7 @@ const CAT = { present: 'Present', absent: 'Absent', excused: 'Excused' };
 const CELL = { present: 'Present', absent: 'Absent', excused: 'Excused', none: 'Not required', extra: 'Came, not required',
   missing: 'No Zoom report yet', later: 'Not yet' };
 const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
+const NEAR = 15;      // minutes before or after class time that still belong to that class in its own report
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -716,8 +717,8 @@ const onList = (s, dk) => (!s.added || s.added <= dk) && (!s.removed || dk < s.r
 const isCurrent = s => !s.removed || s.removed > todayDk();
 const shPeriods = key => state.data.studyHall[key] || [];
 const needsSH = (key, dk) => shPeriods(key).some(p => p.from <= dk && (!p.to || dk < p.to));
-// The study hall dates that are going on now or still to come (what the switch on the Study hall tab shows).
-const openPeriod = key => [...shPeriods(key)].reverse().find(p => !p.to || p.to > todayDk()) || null;
+// The study hall dates going on now, or else the next ones still to come (what the switch on the Study hall tab shows).
+const openPeriod = key => { const t = todayDk(), ps = shPeriods(key); return ps.find(p => p.from <= t && (!p.to || t < p.to)) || ps.find(p => p.from > t) || null; };
 
 /* Reads every Zoom report and sorts each person's time in it by the clock:
    - in the homeroom time on the homeroom day: homeroom that day;
@@ -735,12 +736,20 @@ function analyze(){
     const z = parsedFile(f);
     if (z.error){ fileErrors.push({ name: f.name, error: z.error }); continue; }
     nZoom++;
-    for (const r of z.rows){
+    const rows = z.rows.map(r => {
       const j = r.join, dk = dkOf(j), wd = j.getDay(), a = j.getTime(), b = r.leave.getTime();
       // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
       const at = m => new Date(j.getFullYear(), j.getMonth(), j.getDate(), 0, m).getTime();
       // A row in both times (homeroom and study hall back to back on the same day) counts for both.
-      const kinds = ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0]));
+      return { r, dk, wd, a, b, at, kinds: ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0])) };
+    });
+    // In a homeroom or study hall report, someone who drops off and rejoins just before or after the class time is
+    // part of that class, not in a 1-on-1 (within NEAR minutes of the class time, in the same report, the same day).
+    const classIn = new Set(rows.flatMap(x => x.kinds.map(k => `${x.dk}|${k}`)));
+    const nearClass = x => ['hr', 'sh'].some(k => classIn.has(`${x.dk}|${k}`) && x.a < x.at(W[k][1] + NEAR) && x.b > x.at(W[k][0] - NEAR));
+    for (const x of rows){
+      const { r, dk, a, b, at, kinds } = x;
+      if (!kinds.length && nearClass(x)) continue;
       const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
       for (const kind of kinds.length ? kinds : [null]){
         const id = kind ? `${dk}|${kind}` : `${f.name}|${dk}`, bag = kind ? classes : others;
@@ -1491,7 +1500,7 @@ function helpHTML(){
       <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
       <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
       <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
-      <li><b>1-on-1s</b>: a Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer. Each student who was in it at least ${plural(S.oneOnOneMin, 'minute')} had a 1-on-1 that day. A student is <b>due</b> once ${plural(S.oneOnOneDays, 'day')} pass without one.</li></ul>
+      <li><b>1-on-1s</b>: a Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer. Each student who was in it at least ${plural(S.oneOnOneMin, 'minute')} had a 1-on-1 that day. Time in a homeroom or study hall report within ${NEAR} minutes of class time counts as that class, not a 1-on-1. A student is <b>due</b> once ${plural(S.oneOnOneDays, 'day')} pass without one.</li></ul>
     <h3>Colors and marks</h3>
     <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
       <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
@@ -1897,6 +1906,7 @@ async function onClick(t){
   if (d.sturemove){
     const m = t.closest('details.menu'), v = m.querySelector('[data-sturmdate]').value, s = D.students.find(x => x.key === d.sturemove);
     if (!s || !isDk(v)){ m.querySelector('[data-sturmdate]').focus(); return; }
+    if (s.added && v <= s.added){ setStatus(`${s.name} is on your list starting ${shortDate(s.added)}. Choose a later day, or use “Delete” if they were added by mistake.`); m.querySelector('[data-sturmdate]').focus(); return; }
     s.removed = v; changed(); renderCurrent(); setStatus(`${s.name} isn’t in homeroom starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
   }
   if (d.stuback){ const s = D.students.find(x => x.key === d.stuback); if (!s) return; delete s.removed; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' }); return; }
