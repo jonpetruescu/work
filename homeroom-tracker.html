@@ -323,7 +323,7 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .c-extra .ovb::after{content:"";position:absolute;inset:3px;border:1.5px dashed var(--ov-ink);border-radius:2px;pointer-events:none}
 .c-missing .ovb,.c-later .ovb{color:inherit}
 .ovn,.dstrip .dn{position:absolute;top:0;right:0;width:0;height:0;border-top:7px solid var(--ov-ink);border-left:7px solid transparent}
-.ovt td.ov1c{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line);width:136px;min-width:136px}
+.ovt td.ov1c{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line);width:136px;min-width:136px;max-width:136px}
 .ov1c .ovb{justify-content:flex-start;padding:0 10px;color:var(--ink);font-weight:500;white-space:nowrap}
 .ov1c .ovb:hover{box-shadow:inset 0 0 0 2px var(--line)}
 .ov1c.due .ovb{color:var(--bad);font-weight:700}
@@ -362,6 +362,117 @@ table.ovt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
 .logmsg{height:1.5em;margin:6px 0 0;font-size:var(--fs-sm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .logmsg.bad{color:var(--bad)}
 
+/* Let go early, deleted days, dropped students */
+.ovgo{font-size:.625rem;font-weight:700;letter-spacing:0;line-height:1}
+.ovb .ovgo{margin-left:1px}
+.dstrip i .ovgo{margin-left:2px}
+.ovdh{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;border-radius:3px}
+.ovdh:hover{background:var(--paper)}
+.ovdh:focus-visible{outline:2px solid var(--focus);outline-offset:-1px}
+.ovt th.dsel .ovdh{box-shadow:inset 0 0 0 2px var(--focus)}
+.ovdpop{position:absolute;z-index:10;width:360px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;font-size:var(--fs-sm)}
+.ovdpop p{margin:6px 0}
+.ovdfacts{height:6em;overflow-y:auto}
+.ovdpop .actions{margin-top:8px}
+.ov1t{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ov1ns{flex:none;margin-left:auto;padding-left:4px;font-size:.5625rem;font-weight:700;color:var(--bad);letter-spacing:0}
+.ov1c.next .ovb{padding:0 6px 0 10px}
+.rname{display:flex;align-items:baseline;gap:16px}
+.dropbtns{margin-left:auto;display:inline-flex;align-items:baseline;gap:16px;font-size:var(--fs-sm)}
+.menu.dropmenu .pop{left:auto;right:0;width:480px;padding:12px 14px;gap:8px;font-size:var(--fs-sm)}
+.dropmenu .pop input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 7px;font-size:var(--fs-sm)}
+.dropnote{margin:4px 0 2px;font-size:var(--fs-sm);color:var(--late);font-weight:600}
+.dropnote .linkish{font-weight:400;margin-left:4px}
+
+/* 1-on-1s: a calendar of weeks. The teacher's colors: met = present, no-show = absent, canceled = not required. */
+.k-met{--mbg:var(--ov-present)} .k-noshow{--mbg:var(--ov-absent)} .k-canceled{--mbg:var(--ov-none)}
+.k-upcoming,.k-today{--mbg:var(--surface)}
+.msum{height:1.6em;line-height:1.6em;margin:0 0 8px;font-size:var(--fs-md);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkey{height:62px}
+.msw{display:inline-block;width:22px;height:14px;border-radius:4px;background:var(--mbg);flex:none;position:relative}
+.msw.k-upcoming{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.msw.k-today{box-shadow:inset 0 0 0 2.5px var(--ink)}
+.msw.k-canceled{box-shadow:inset 0 0 0 1px var(--line)}
+.msw.mvk::before,.mmv{content:"";position:absolute;top:0;left:0;width:0;height:0;border-top:7px solid var(--ov-ink);border-right:7px solid transparent}
+.mgwrap{position:relative}
+.mgblock{position:relative;width:fit-content;max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:14px}
+.mgblock::-webkit-scrollbar{height:10px}
+.mgblock::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+table.mgt{border-collapse:separate;border-spacing:0;font-size:var(--fs-xs)}
+.mgt th,.mgt td{padding:0;border-bottom:1px solid var(--grid)}
+.mgt tbody tr:last-child > *{border-bottom:0}
+.mgt thead th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--ink);font-weight:600;text-align:center;white-space:nowrap;padding:5px 2px;font-size:var(--fs-xs);line-height:1.25;border-bottom:1px solid var(--line);vertical-align:bottom}
+.mgwd{display:block}
+.mgwl{display:block;height:1.25em;font-weight:400;color:var(--muted)}
+.mgt th.now .mgwl{color:var(--focus);font-weight:700}
+.mgt .now{background:var(--paper)}
+.mgt thead th.now{background:var(--paper)}
+.mgt th.mgname{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px 0 8px;width:180px;min-width:180px;max-width:180px;border-right:1px solid var(--line);font-size:var(--fs-md);font-weight:600;height:44px}
+.mgt thead th.mgname{z-index:4;color:var(--muted);font-size:var(--fs-xs);height:auto}
+.mgsub{font-weight:400}
+.mgname .name-btn{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration-color:transparent;line-height:1.25}
+.mgname .name-btn:hover{text-decoration-color:var(--ink)}
+.msched{all:unset;box-sizing:border-box;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-size:var(--fs-xs);font-weight:500;color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px;line-height:1.35;border-radius:3px}
+.msched:hover{color:var(--ink)}
+.msched:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.msched.sel{color:var(--ink);box-shadow:0 0 0 2px var(--focus)}
+.mgdrop{display:block;font-size:var(--fs-xs);font-weight:500;color:var(--late)}
+.mgc{width:124px;min-width:124px;max-width:124px;border-left:1px solid var(--grid)}
+.mgcell{display:flex;align-items:center;justify-content:center;gap:3px;height:43px;padding:0 3px}
+.mchip{all:unset;box-sizing:border-box;position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:58px;height:26px;border-radius:5px;background:var(--mbg);color:var(--ov-ink);font-size:.6875rem;font-weight:600;white-space:nowrap;cursor:pointer;overflow:hidden}
+.mchip.cmp{width:37px}
+.mchip.k-upcoming,.mchip.k-today,.mchip.k-canceled{color:var(--ink)}
+.mchip.k-upcoming{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mchip.k-today{box-shadow:inset 0 0 0 2.5px var(--ink);font-weight:800}
+.mchip.k-canceled{text-decoration:line-through;text-decoration-thickness:1px}
+.mchip.k-canceled .mmv{border-top-color:var(--ink)}
+.mchip:hover{filter:brightness(.94)}
+.mchip:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.mchip.sel{outline:3px solid var(--focus);outline-offset:1px}
+.mchip .ovn{border-top-color:var(--ov-ink)}
+.mchip.k-upcoming .ovn,.mchip.k-today .ovn,.mchip.k-canceled .ovn{border-top-color:var(--ink)}
+.madd{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:30px;border-radius:5px;cursor:pointer;color:transparent;font-size:var(--fs-xs);font-weight:600}
+.madd:hover,.madd:focus-visible,.madd.sel{color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line)}
+.madd:focus-visible{outline:2px solid var(--focus);outline-offset:-1px}
+.madd.sel{box-shadow:inset 0 0 0 2px var(--focus);color:var(--ink)}
+.mgt td.mg1,.mgt th.mg1h{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line);width:160px;min-width:160px;max-width:160px;padding:0 10px;text-align:left;white-space:nowrap}
+.mgt thead th.mg1h{z-index:4;color:var(--muted)}
+.mg1a,.mg1b{display:block;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-xs);line-height:1.35}
+.mg1a{color:var(--ink);font-size:var(--fs-sm)}
+.mg1b{color:var(--muted)}
+.mg1.due .mg1b,.mg1.none .mg1a{color:var(--bad);font-weight:700}
+.mg1.left .mg1a{color:var(--muted)}
+.mfacts{height:6.2em;overflow-y:auto;margin:6px 0 8px;overscroll-behavior:contain}
+.mstats{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:4px}
+.mstats .ovchip{justify-content:center;white-space:nowrap;padding:0 4px;box-shadow:inset 0 0 0 1px var(--line)}
+.mstats .ovchip[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mmove,.maddrow{display:flex;align-items:center;gap:8px;margin-top:10px;white-space:nowrap}
+.maddrow{align-items:flex-end}
+.maddrow label{display:grid;gap:2px;font-size:var(--fs-xs);color:var(--muted)}
+.mmove input,.maddrow input{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:0 6px;height:28px;font-size:var(--fs-sm);color:var(--ink)}
+.maddrow input[type=number]{width:5em}
+.mmove .btn,.maddrow .btn{height:28px;flex:none}
+.mmsg{height:1.5em;margin:2px 0 0;color:var(--bad);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mpop .ovnoteb{margin:8px 0 2px}
+.mpop .ovpop-f{margin-top:4px}
+.mst{display:inline-block;min-width:4.8em;text-align:center;border-radius:4px;padding:0 5px;margin-right:4px;font-size:var(--fs-xs);font-weight:600;background:var(--mbg);color:var(--ov-ink)}
+.mst.k-upcoming,.mst.k-today,.mst.k-canceled{color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.mst.k-canceled{box-shadow:none}
+.mlist .tm{margin-left:5px;font-weight:400;color:var(--muted)}
+.mlist li{grid-template-columns:7.4em minmax(9em,max-content) minmax(0,1fr) auto}
+.schedform{display:flex;flex-direction:column;gap:6px}
+.schedform p{margin:0}
+.snow{height:2.8em;overflow:hidden;margin-top:6px !important}
+.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.sgrid label{display:grid;gap:2px;font-size:var(--fs-xs);color:var(--muted);font-weight:600}
+.sgrid input,.sgrid select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:0 6px;height:30px;font-size:var(--fs-sm);color:var(--ink);font-weight:400;min-width:0}
+.schedform .actions{margin-top:4px}
+.schedform .btn.na{visibility:hidden}
+.shist{list-style:none;margin:0;padding:6px 0 0;border-top:1px solid var(--grid);height:4.6em;overflow-y:auto;font-size:var(--fs-xs);color:var(--muted)}
+.shist li{padding:1px 0}
+.schedline{display:flex;align-items:baseline;gap:14px;margin:4px 0 6px}
+.menu.schedmenu .pop{width:470px;padding:12px 14px}
+
 /* Help (a native dialog: Esc closes it, and focus stays inside) */
 dialog.dlg{border:1px solid var(--line);border-radius:12px;padding:0;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);background:var(--surface);color:var(--ink);box-shadow:0 16px 48px rgba(0,0,0,.28)}
 dialog.dlg::backdrop{background:rgba(15,20,30,.45)}
@@ -394,7 +505,7 @@ main:focus{outline:none}
   @page{margin:.5in}
   body{background:#fff}
   main.wrap{padding:0}
-  header.top nav, .folder, .toolbar, .savebar, .helpbtn, .linkish, .noprint, .logform, .logmsg, .notice, #status, #banner, .skip, .ovpop{display:none !important}
+  header.top nav, .folder, .toolbar, .savebar, .helpbtn, .linkish, .noprint, .logform, .logmsg, .notice, #status, #banner, .skip, .ovpop, .ovdpop, .mpop, .madd, .mkey .ovkend{display:none !important}
   .printonly{display:block}
   span.printonly{display:inline}
   header.top{display:none}
@@ -404,7 +515,17 @@ main:focus{outline:none}
   table.sum{font-size:.8rem}
   table.sum th,table.sum td{padding:5px 8px}
   table.sum tr{break-inside:avoid}
-  .meter .track,.meter .fill,.chip,.tile,.dstrip i,.ovc,.ovsw{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .meter .track,.meter .fill,.chip,.tile,.dstrip i,.ovc,.ovsw,.mchip,.msw,.mst{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mgblock{border:0;overflow:visible}
+  .mgt thead th,.mgt th.mgname,.mgt td.mg1,.mgt th.mg1h{position:relative;top:auto;left:auto;right:auto}
+  .mgt tr{break-inside:avoid}
+  .mgc{width:80px;min-width:80px;max-width:80px}
+  .mgt th.mgname{width:150px;min-width:150px;max-width:150px;font-size:.75rem;height:32px}
+  .mgcell{height:30px}
+  .mchip{width:36px;height:20px;font-size:.55rem}
+  .msched{text-decoration:none}
+  .mkey{height:auto;padding:4px 8px}
+  .msum{font-size:.8rem}
   .name-btn{text-decoration:none}
   .rhead,.rsec{border:0;padding:0 0 6px;margin-bottom:12px;border-radius:0;break-inside:avoid}
   .rsec h3{break-after:avoid;border-bottom:1px solid #bbb;padding-bottom:2px}
@@ -468,7 +589,7 @@ main:focus{outline:none}
 /* ------------------------------------------------------------------
    Everything below runs on this computer. The Content-Security-Policy above blocks every network request.
    Data written: one file, homeroom-tracker-data.json, inside the folder you choose (students, study hall
-   dates, 1-on-1s logged by hand, marks and notes, settings, linked Zoom names). Zoom reports are only read.
+   dates, 1-on-1 schedules and meetings, marks and notes, deleted days, settings, linked Zoom names). Zoom reports are only read.
    ------------------------------------------------------------------ */
 const DATA_FILE = 'homeroom-tracker-data.json';
 const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
@@ -479,6 +600,11 @@ const CAT = { present: 'Present', absent: 'Absent', excused: 'Excused' };
 // What a day on the grid shows, in plain words.
 const CELL = { present: 'Present', absent: 'Absent', excused: 'Excused', none: 'Not required', extra: 'Came, not required',
   missing: 'No Zoom report yet', later: 'Not yet' };
+// A scheduled 1-on-1's status, in plain words. Met, No-show and Canceled can also be set by hand.
+const MCAT = { met: 'Met', noshow: 'No-show', canceled: 'Canceled' };
+const MSTAT = { ...MCAT, upcoming: 'Upcoming', today: 'Today' };
+const EVERY = { 1: 'every week', 2: 'every 2 weeks' };
+const MEET_NEAR = 15;  // minutes before or after a 1-on-1's time that a Zoom meeting still counts for it
 const MAX_GROUP = 3;   // a Zoom meeting with up to this many students can be a 1-on-1
 const NEAR = 15;      // minutes before or after class time that still belong to that class in its own report
 
@@ -534,10 +660,13 @@ function defaultData(){
   return { version: 1,
     settings: { homeroomDay: 1, homeroomStart: '08:30', homeroomEnd: '09:00', studyDays: [2, 4], studyStart: '14:00', studyEnd: '15:00',
       lateGrace: 5, leaveGrace: 5, oneOnOneDays: 14, oneOnOneMin: 5, teacherName: '' },
-    students: [],    // [{ key, name, added, removed }]: on the list from added, until the day before removed
+    students: [],    // [{ key, name, added, dropped }]: on the list from added, until the day before dropped
     studyHall: {},   // { studentKey: [{ from, to }] } needs study hall from `from`; `to` is the first day they don't ("done starting")
-    meetings: {},    // { studentKey: [{ id, date, note }] } 1-on-1s logged by hand
-    status: {},      // { 'YYYY-MM-DD|hr|studentKey': { cat, L, note } } a day set by hand (kind hr: homeroom, sh: study hall)
+    meetings: {},    // { studentKey: [{ id, date, note, start, len, plan }] } 1-on-1s logged by hand (plan: added for a day, its status worked out)
+    status: {},      // { 'YYYY-MM-DD|hr|studentKey': { cat, L, go, note } } a day set by hand (kind hr: homeroom, sh: study hall; go: let go early)
+    deletedDays: {}, // { 'YYYY-MM-DD|hr': { date } } a homeroom or study hall day taken off every tab (date: when it was deleted)
+    schedules: {},   // { studentKey: [{ from, wd, start, len, every }] } 1-on-1 schedule from `from` on ({ from, off: true }: none from then)
+    meetingStatus: {}, // { 'studentKey|YYYY-MM-DD': { cat, note, moveTo: { dk, start } } } a scheduled 1-on-1 set by hand (by its scheduled day)
     aliases: {},     // { zoomNameKey: studentKey }
     ignored: [] };   // Zoom names that aren't students
 }
@@ -562,14 +691,14 @@ function withDefaults(d){
   if (Array.isArray(set.studyDays)) S.studyDays = [...new Set(set.studyDays.map(Number).filter(w => WEEKDAYS.includes(w)))].sort();
   for (const [a, b] of [['homeroomStart', 'homeroomEnd'], ['studyStart', 'studyEnd']]) if (isHm(set[a]) && isHm(set[b]) && set[a] < set[b]){ S[a] = set[a]; S[b] = set[b]; }
   if (typeof set.teacherName === 'string') S.teacherName = set.teacherName.trim().slice(0, 120);
-  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, aliases: {}, ignored: [] }, seen = new Set();
+  const out = { version: 1, settings: S, students: [], studyHall: {}, meetings: {}, status: {}, deletedDays: {}, schedules: {}, meetingStatus: {}, aliases: {}, ignored: [] }, seen = new Set();
   for (const x of Array.isArray(d.students) ? d.students : []){
     const s = obj(x), name = typeof s.name === 'string' ? s.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '', key = normKey(typeof s.key === 'string' && s.key ? s.key : name);
     if (!name || !key || seen.has(key)) continue;
     seen.add(key);
     const st = { key, name };
     if (isDk(s.added)) st.added = s.added;
-    if (isDk(s.removed)) st.removed = s.removed;
+    if (isDk(s.dropped)) st.dropped = s.dropped; else if (isDk(s.removed)) st.dropped = s.removed;   // "removed" is what the first version called it
     out.students.push(st);
   }
   for (const [k, v] of Object.entries(obj(d.studyHall))) if (k && Array.isArray(v)){
@@ -577,14 +706,44 @@ function withDefaults(d){
     if (ps.length) out.studyHall[k] = ps;
   }
   for (const [k, v] of Object.entries(obj(d.meetings))) if (k && Array.isArray(v)){
-    const ms = v.map(obj).filter(m => isDk(m.date)).map(m => ({ id: String(m.id || uid()).slice(0, 40), date: m.date, note: String(m.note || '').slice(0, 300) }));
+    const ms = v.map(obj).filter(m => isDk(m.date)).map(m => { const o = { id: String(m.id || uid()).slice(0, 40), date: m.date, note: String(m.note || '').slice(0, 300) };
+      if (isHm(m.start)) o.start = m.start;
+      if (Number.isFinite(+m.len) && m.len !== null && m.len !== '') o.len = Math.min(180, Math.max(5, Math.round(+m.len)));
+      if (m.plan === true && o.start) o.plan = true;
+      return o; });
     if (ms.length) out.meetings[k] = ms;
+  }
+  for (const [k, v] of Object.entries(obj(d.schedules))) if (k && Array.isArray(v)){
+    const by = new Map();
+    for (const x of v.map(obj)){
+      if (!isDk(x.from)) continue;
+      if (x.off === true){ by.set(x.from, { from: x.from, off: true }); continue; }
+      const wd = Number(x.wd), len = Number(x.len);
+      if (!Number.isInteger(wd) || wd < 0 || wd > 6 || !isHm(x.start)) continue;
+      by.set(x.from, { from: x.from, wd, start: x.start, len: Number.isFinite(len) && x.len !== null && x.len !== '' ? Math.min(180, Math.max(5, Math.round(len))) : 15, every: Number(x.every) === 1 ? 1 : 2 });
+    }
+    const list = [...by.values()].sort((a, b) => a.from.localeCompare(b.from));
+    if (list.some(x => !x.off)) out.schedules[k] = list;
+  }
+  for (const [k, v] of Object.entries(obj(d.meetingStatus))){
+    const i = k.lastIndexOf('|'), key = k.slice(0, i), dk = k.slice(i + 1), x = obj(v), o = {};
+    if (i < 1 || !isDk(dk)) continue;
+    if (own(MCAT, x.cat)) o.cat = x.cat;
+    if (typeof x.note === 'string' && x.note.trim()) o.note = x.note.trim().slice(0, 300);
+    const mv = obj(x.moveTo);
+    if (isDk(mv.dk) && isHm(mv.start)) o.moveTo = { dk: mv.dk, start: mv.start };
+    if (Object.keys(o).length) out.meetingStatus[`${key}|${dk}`] = o;
+  }
+  for (const [k, v] of Object.entries(obj(d.deletedDays))){
+    const [dk, kind, ...rest] = k.split('|');
+    if (isDk(dk) && own(KIND, kind) && !rest.length) out.deletedDays[`${dk}|${kind}`] = { date: isDk(obj(v).date) ? v.date : '' };
   }
   for (const [k, v] of Object.entries(obj(d.status))){
     const [dk, kind, ...rest] = k.split('|'), key = rest.join('|'), x = obj(v), o = {};
     if (!isDk(dk) || !own(KIND, kind) || !key) continue;
     if (own(CAT, x.cat)) o.cat = x.cat;
     if (typeof x.L === 'boolean') o.L = x.L;
+    if (x.go === true) o.go = true;
     if (typeof x.note === 'string' && x.note.trim()) o.note = x.note.trim().slice(0, 300);
     if (Object.keys(o).length) out.status[`${dk}|${kind}|${key}`] = o;
   }
@@ -597,7 +756,8 @@ const state = {
   data: defaultData(), files: [], dirHandle: null, savedHandle: null, canWrite: false,
   folderName: '', loaded: false, dirty: false, saving: false, status: null,
   tab: 'overview', query: '', range: { preset: 'all', from: '', to: '' }, rangeMenu: false,
-  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovScroll: null, ovPrintAll: false,
+  sort: 'name', student: null, studentTab: null, ovShow: 'all', ovSel: null, ov1: null, ovDay: null, ovScroll: null, ovPrintAll: false, showDropped: false,
+  mShow: 'all', mSel: null, mScroll: null, mFocus: null, mMsg: '', dropEdit: null,
   logKey: '', logMsg: null, demo: false, undo: [], redo: [], snap: null, saveFailed: false, lastAnalysis: null
 };
 
@@ -712,9 +872,13 @@ const winOf = kind => { const S = settings(); return kind === 'hr' ? [hmMin(S.ho
 const winText = kind => fmtRange(...winOf(kind));
 const kindOn = (kind, wd) => kind === 'hr' ? wd === settings().homeroomDay : settings().studyDays.includes(wd);
 const roster = () => [...state.data.students].sort((a, b) => a.name.localeCompare(b.name));
-// A student is on the list from the day they were added until the day before they left.
-const onList = (s, dk) => (!s.added || s.added <= dk) && (!s.removed || dk < s.removed);
-const isCurrent = s => !s.removed || s.removed > todayDk();
+// A student is on the list from the day they were added until the day before they were dropped.
+const onList = (s, dk) => (!s.added || s.added <= dk) && (!s.dropped || dk < s.dropped);
+const isCurrent = s => !s.dropped || s.dropped > todayDk();
+const isDropped = s => !!s.dropped && s.dropped <= todayDk();
+// Dropped students are left off the lists unless "Show dropped" is checked.
+const shownStudent = s => state.showDropped || !isDropped(s);
+const isDeleted = (dk, kind) => own(state.data.deletedDays, `${dk}|${kind}`);
 const shPeriods = key => state.data.studyHall[key] || [];
 const needsSH = (key, dk) => shPeriods(key).some(p => p.from <= dk && (!p.to || dk < p.to));
 // The study hall dates going on now, or else the next ones still to come (what the switch on the Study hall tab shows).
@@ -730,7 +894,7 @@ function analyze(){
   const students = roster(), byKey = new Map(students.map(s => [s.key, s]));
   const match = buildMatcher(students, D.aliases), ignored = new Set(D.ignored), teacher = normKey(S.teacherName);
   const isTeacher = raw => !!teacher && [normKey(raw), ...zoomCandidates(raw).map(normKey)].includes(teacher);
-  const fileErrors = [], classes = new Map(), others = new Map();
+  const fileErrors = [], classes = new Map(), others = new Map(), reportDays = new Set(), deleted = D.deletedDays;
   let nZoom = 0;
   for (const f of state.files){
     const z = parsedFile(f);
@@ -741,15 +905,18 @@ function analyze(){
       // Built from calendar fields so a 23- or 25-hour daylight-saving day still puts 2 PM at 2 PM.
       const at = m => new Date(j.getFullYear(), j.getMonth(), j.getDate(), 0, m).getTime();
       // A row in both times (homeroom and study hall back to back on the same day) counts for both.
-      return { r, dk, wd, a, b, at, kinds: ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0])) };
+      const all = ['hr', 'sh'].filter(k => kindOn(k, wd) && a < at(W[k][1]) && b > at(W[k][0]));
+      reportDays.add(dk);
+      // A deleted day's report for that time is set aside: it isn't attendance, and it isn't a 1-on-1 either.
+      return { r, dk, wd, a, b, at, all, kinds: all.filter(k => !own(deleted, `${dk}|${k}`)) };
     });
     // In a homeroom or study hall report, someone who drops off and rejoins just before or after the class time is
     // part of that class, not in a 1-on-1 (within NEAR minutes of the class time, in the same report, the same day).
-    const classIn = new Set(rows.flatMap(x => x.kinds.map(k => `${x.dk}|${k}`)));
+    const classIn = new Set(rows.flatMap(x => x.all.map(k => `${x.dk}|${k}`)));
     const nearClass = x => ['hr', 'sh'].some(k => classIn.has(`${x.dk}|${k}`) && x.a < x.at(W[k][1] + NEAR) && x.b > x.at(W[k][0] - NEAR));
     for (const x of rows){
       const { r, dk, a, b, at, kinds } = x;
-      if (!kinds.length && nearClass(x)) continue;
+      if (!kinds.length && (x.all.length || nearClass(x))) continue;
       const skip = isTeacher(r.name) || ignored.has(normKey(r.name)), m = skip ? null : match(r.name, r.email), rk = normKey(r.name);
       for (const kind of kinds.length ? kinds : [null]){
         const id = kind ? `${dk}|${kind}` : `${f.name}|${dk}`, bag = kind ? classes : others;
@@ -784,8 +951,9 @@ function analyze(){
       if (m < S.oneOnOneMin) continue;
       const list = zoomMeet.get(e.key) || [], same = list.find(x => x.date === g.dk);
       const others2 = keys.filter(k => k !== e.key).map(k => (byKey.get(k) || {}).name || k);
-      if (same){ same.minutes = Math.max(same.minutes, m); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...others2])]; }
-      else list.push({ id: `z-${g.dk}`, date: g.dk, minutes: m, at: merged[0][0], files: [...g.files], with: others2, source: 'zoom' });
+      const end = merged[merged.length - 1][1];
+      if (same){ same.minutes = Math.max(same.minutes, m); same.at = Math.min(same.at, merged[0][0]); same.end = Math.max(same.end, end); same.files = [...new Set([...same.files, ...g.files])]; same.with = [...new Set([...same.with, ...others2])]; }
+      else list.push({ id: `z-${g.dk}`, date: g.dk, minutes: m, at: merged[0][0], end, files: [...g.files], with: others2, source: 'zoom' });
       zoomMeet.set(e.key, list);
     }
     // Names nobody knows, from a meeting small enough to be a 1-on-1 (a staff meeting's names aren't listed)
@@ -793,7 +961,7 @@ function analyze(){
   }
   for (const g of classes.values()) for (const u of g.unmatched.values()) unmatched.push({ ...u, dk: g.dk, when: `${shortDate(g.dk)}, ${KIND[g.kind].toLowerCase()}` });
   const dks = [...classes.values()].map(g => g.dk).concat(Object.keys(D.status).map(k => k.slice(0, 10))).sort();
-  return { students, byKey, classes, zoomMeet, unmatched, fileErrors, nZoom, oldest: dks[0] || null };
+  return { students, byKey, classes, zoomMeet, unmatched, fileErrors, nZoom, reportDays, oldest: dks[0] || null, mcache: new Map() };
 }
 
 /* ---------------- Date range (Overview, Students, 1-on-1s) ---------------- */
@@ -816,8 +984,8 @@ function classDays(period){
   const out = [], end = period.open ? addDays(weekKey(todayDk()), 6) : period.to;
   for (let dk = period.from, i = 0; dk <= end && i < 1500; dk = addDays(dk, 1), i++){
     const wd = parseDk(dk).getDay();
-    if (kindOn('hr', wd)) out.push({ dk, kind: 'hr' });
-    if (kindOn('sh', wd)) out.push({ dk, kind: 'sh' });
+    if (kindOn('hr', wd) && !isDeleted(dk, 'hr')) out.push({ dk, kind: 'hr' });
+    if (kindOn('sh', wd) && !isDeleted(dk, 'sh')) out.push({ dk, kind: 'sh' });
   }
   return out;
 }
@@ -841,11 +1009,13 @@ function cellState(A, s, dk, kind){
   const g = A.classes.get(`${dk}|${kind}`), rec = g ? g.res.get(key) || null : null, came = !!(rec && rec.present);
   const listed = onList(s, dk), req = listed && (kind === 'hr' || needsSH(key, dk));
   const base = !req ? (came ? 'extra' : 'none') : g ? (came ? 'present' : 'absent') : dk > today ? 'later' : 'missing';
-  const cat = req && own(CAT, ov.cat) ? ov.cat : base, autoL = !!(rec && rec.present && rec.L);
+  // Let go early: the day counts as present, and leaving early isn't marked (being late still is).
+  const go = req && ov.go === true && dk <= today;
+  const cat = go ? 'present' : req && own(CAT, ov.cat) ? ov.cat : base, autoL = !!(rec && rec.present && (go ? rec.late : rec.L));
   const L = cat === 'present' && (typeof ov.L === 'boolean' ? ov.L : autoL);
-  return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, note: ov.note || '', hand: req && (!!ov.cat || typeof ov.L === 'boolean') };
+  return { dk, kind, key, xk, s, g, rec, came, listed, req, base, cat, ov, autoL, L, go, note: ov.note || '', hand: req && (!!ov.cat || typeof ov.L === 'boolean' || go) };
 }
-const cellWords = c => [CELL[c.cat], c.L ? 'late or left early' : '', c.hand ? 'set by you' : '', c.note ? `note: ${c.note}` : ''].filter(Boolean).join(', ');
+const cellWords = c => [CELL[c.cat], c.L ? 'late or left early' : '', c.go ? 'let go early' : '', c.hand ? 'set by you' : '', c.note ? `note: ${c.note}` : ''].filter(Boolean).join(', ');
 // Days counted: present and absent days so far. Excused days and days with no report aren't counted.
 function statsOf(cells){
   const today = todayDk(); let n = 0, att = 0, exc = 0, L = 0, noRep = 0;
@@ -858,32 +1028,106 @@ function statsOf(cells){
   }
   return { n, att, exc, L, noRep, abs: n - att, pct: pct(att, n) };
 }
-// Every 1-on-1, from Zoom and logged by hand, newest first.
+// Every 1-on-1 found in Zoom or logged by hand, newest first.
 function meetingsOf(A, key){
-  const z = A.zoomMeet.get(key) || [], h = (state.data.meetings[key] || []).map(m => ({ ...m, source: 'hand' }));
+  const z = A.zoomMeet.get(key) || [], h = (state.data.meetings[key] || []).filter(m => !m.plan).map(m => ({ ...m, source: 'hand' }));
   return [...z, ...h].sort((a, b) => b.date.localeCompare(a.date) || (a.source === 'zoom' ? -1 : 1));
+}
+/* ---------------- Scheduled 1-on-1s ----------------
+   A student's schedule is a list of versions, each from a date on (a change applies from its date; earlier meetings keep
+   their old times). Each scheduled meeting is Met (in a Zoom meeting overlapping its time, give or take 15 minutes, or a
+   meeting logged by hand that day), a No-show once its time has passed, or else Today / Upcoming. The teacher can set
+   Met, No-show or Canceled by hand, and move one meeting to another day and time (it then counts there). */
+const schedList = key => state.data.schedules[key] || [];
+function schedOn(key, dk){ let v = null; for (const x of schedList(key)) if (x.from <= dk) v = x; return v && !v.off ? v : null; }
+const firstOnOrAfter = (dk, wd) => addDays(dk, (wd - parseDk(dk).getDay() + 7) % 7);
+const hm12 = hm => { const m = hmMin(hm); return `${Math.floor(m / 60) % 12 || 12}:${pad(m % 60)}`; };
+const hmOfMs = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const wdShort = dk => dtf({ weekday: 'short' }).format(parseDk(dk));
+const schedWords = v => `${cap(DAYS[v.wd])}s at ${fmtMin(hmMin(v.start))}, ${v.len} min, ${EVERY[v.every]}`;
+const schedShort = v => `${cap(DAYS[v.wd]).slice(0, 3)} ${hm12(v.start)} · ${v.every === 1 ? 'weekly' : 'every 2 wks'}`;
+const timeSpan = (hm, len) => fmtRange(hmMin(hm), hmMin(hm) + len);
+// Every 1-on-1 for one student, worked out once per analysis: the scheduled ones (and ones added by hand for a day), each
+// with its status, and the meetings that weren't scheduled (from Zoom or logged by hand), which count as met.
+function oneOnOnes(A, s){
+  if (A.mcache.has(s.key)) return A.mcache.get(s.key);
+  const key = s.key, D = state.data, today = todayDk(), now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+  const vs = schedList(key), limit = addDays(today, 70), stop = s.dropped ? addDays(s.dropped, -1) : limit, occ = [];
+  vs.forEach((v, i) => {
+    if (v.off) return;
+    const end = [vs[i + 1] ? addDays(vs[i + 1].from, -1) : limit, stop, limit].sort()[0];
+    for (let dk = firstOnOrAfter(v.from, v.wd), n = 0; dk <= end && n < 600; dk = addDays(dk, 7 * v.every), n++)
+      if (!s.added || dk >= s.added) occ.push({ dk, start: v.start, len: v.len, src: 'sched', v });
+  });
+  for (const m of D.meetings[key] || []) if (m.plan && m.date <= stop && !occ.some(o => o.dk === m.date)) occ.push({ dk: m.date, start: m.start, len: m.len || 15, src: 'plan', id: m.id });
+  const zoom = (A.zoomMeet.get(key) || []).map(z => ({ ...z, used: false })), hand = (D.meetings[key] || []).filter(m => !m.plan).map(m => ({ ...m, used: false }));
+  const minOf = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
+  for (const o of occ){
+    const ms = D.meetingStatus[`${key}|${o.dk}`] || {};
+    Object.assign(o, { key, mk: `${key}|${o.dk}`, ms, at: ms.moveTo ? ms.moveTo.dk : o.dk, atStart: ms.moveTo ? ms.moveTo.start : o.start, moved: !!ms.moveTo, note: ms.note || '' });
+  }
+  occ.sort((x, y) => x.at.localeCompare(y.at) || x.atStart.localeCompare(y.atStart));
+  for (const o of occ){
+    const a = hmMin(o.atStart) - MEET_NEAR, b = hmMin(o.atStart) + o.len + MEET_NEAR;
+    o.zoom = zoom.find(z => !z.used && z.date === o.at && minOf(z.at) < b && minOf(z.end) > a) || null;
+    o.hand = hand.find(m => !m.used && m.date === o.at) || null;
+    o.auto = o.zoom || o.hand ? 'met' : o.at < today || (o.at === today && nowMin > b) ? 'noshow' : o.at === today ? 'today' : 'upcoming';
+    o.cat = o.ms.cat || o.auto;
+    if (o.cat === 'met'){ if (o.zoom) o.zoom.used = true; if (o.hand) o.hand.used = true; }
+  }
+  const extra = [...zoom.filter(z => !z.used).map(z => ({ src: 'zoom', key, dk: z.date, at: z.date, atStart: hmOfMs(z.at), cat: 'met', z, mk: `${key}|zoom|${z.date}` })),
+    ...hand.filter(m => !m.used).map(m => ({ src: 'hand', key, dk: m.date, at: m.date, atStart: m.start || null, cat: 'met', id: m.id, note: m.note, mk: `${key}|hand|${m.id}` }))];
+  const all = [...occ, ...extra].sort((x, y) => x.at.localeCompare(y.at) || (x.atStart || '').localeCompare(y.atStart || ''));
+  const r = { occ, extra, all, met: all.filter(x => x.cat === 'met' && x.at <= today).map(x => x.at) };
+  A.mcache.set(key, r); return r;
+}
+// Met, no-shows and canceled in the dates shown (up to today).
+function meetCounts(A, s){
+  const today = todayDk(), out = { met: 0, noshow: 0, canceled: 0 };
+  for (const x of oneOnOnes(A, s).all) if (x.at <= today && inRange(x.at) && own(out, x.cat)) out[x.cat]++;
+  return out;
+}
+const nextMeeting = (A, s) => isCurrent(s) ? oneOnOnes(A, s).all.find(x => x.cat === 'upcoming' || x.cat === 'today') || null : null;
+const recentNoShow = (A, s) => { const t = todayDk(), from = addDays(t, -14); return oneOnOnes(A, s).occ.some(o => o.cat === 'noshow' && o.at <= t && o.at >= from); };
+// "Wed 3:30" in the coming week, "12/3" further on. Short, so the Overview's column stays one line at its width: next to
+// a "no-show" note there's room for the day only (the time is in the cell's label).
+function nextText(x, short){
+  const t = todayDk(), d = parseDk(x.at), tm = short ? '' : ` ${hm12(x.atStart)}`;
+  return x.at === t ? `today${tm}` : daysBetween(t, x.at) < 7 ? `${wdShort(x.at)}${tm}` : `${d.getMonth() + 1}/${d.getDate()}`;
+}
+const chipText = x => `${wdShort(x.at)}${x.atStart ? ' ' + hm12(x.atStart) : ''}`;
+const howText = x => x.src === 'zoom' ? `From Zoom, not scheduled (${x.z.minutes} min)` : x.src === 'hand' ? 'Logged by hand, not scheduled' : x.src === 'plan' ? 'Added by hand' : 'Scheduled';
+function meetWords(x, withName){
+  return [`${withName ? `${withName}, ` : ''}${longDate(x.at)}${x.atStart ? ` at ${fmtMin(hmMin(x.atStart))}` : ''}: ${MSTAT[x.cat]}`,
+    x.moved ? `moved from ${shortDate(x.dk)} at ${fmtMin(hmMin(x.start))}` : '', howText(x).toLowerCase(), x.ms && x.ms.cat ? 'set by you' : '', x.note ? `note: ${x.note}` : ''].filter(Boolean).join(', ');
 }
 // Days since the last 1-on-1, and whether the next one is due (the due days have passed).
 function oneOnOne(A, s){
-  const N = settings().oneOnOneDays, today = todayDk(), past = meetingsOf(A, s.key).filter(m => m.date <= today);
-  const last = past.length ? past[0].date : null, since = last ? daysBetween(last, today) : null;
+  const N = settings().oneOnOneDays, today = todayDk(), met = oneOnOnes(A, s).met;
+  const last = met.length ? met[met.length - 1] : null, since = last ? daysBetween(last, today) : null;
   if (!isCurrent(s)) return { status: 'left', last, since };
   if (!last) return { status: 'none', last, since };
   const dueIn = N - since;
   return { status: dueIn <= 0 ? 'due' : 'ok', last, since, dueIn, over: -dueIn };
 }
 const oneShort = o => o.status === 'none' ? 'None yet' : o.status === 'due' ? (o.over > 0 ? `Due, ${plural(o.over, 'day')} over` : 'Due today')
-  : o.status === 'left' ? 'Left homeroom' : cap(sinceText(o.since));
+  : o.status === 'left' ? 'Dropped' : cap(sinceText(o.since));
 const oneNext = o => o.status === 'none' ? 'None yet' : o.status === 'due' ? (o.over > 0 ? `Due now (${plural(o.over, 'day')} over)` : 'Due now') : o.status === 'left' ? '—' : `Due in ${plural(o.dueIn, 'day')}`;
 const isDue = r => r.cur && r.one.status !== 'ok';
 function rowFor(A, s, days){
   const cells = days.map(d => cellState(A, s, d.dk, d.kind));
-  return { ...s, cells, cur: isCurrent(s), hr: statsOf(cells.filter(c => c.kind === 'hr')), sh: statsOf(cells.filter(c => c.kind === 'sh')), one: oneOnOne(A, s),
-    nMeet: meetingsOf(A, s.key).filter(m => inRange(m.date) && m.date <= todayDk()).length };
+  const m = meetCounts(A, s);
+  return { ...s, cells, cur: isCurrent(s), hr: statsOf(cells.filter(c => c.kind === 'hr')), sh: statsOf(cells.filter(c => c.kind === 'sh')), one: oneOnOne(A, s), m, nMeet: m.met };
 }
-// The students in the dates shown: everyone on the list on any of those days (a student who left keeps their earlier days).
-function studentRows(A, days){
-  return A.students.map(s => rowFor(A, s, days)).filter(r => !days.length ? r.cur : r.cells.some(c => c.listed || c.cat === 'extra' || c.hand || c.note));
+// The students in the dates shown: everyone on the list on any of those days (a dropped student keeps their earlier days,
+// and is shown when "Show dropped" is checked).
+function studentRows(A, days, withDropped){
+  return A.students.filter(s => withDropped || shownStudent(s)).map(s => rowFor(A, s, days)).filter(r => !days.length ? r.cur || withDropped || state.showDropped : r.cells.some(c => c.listed || c.cat === 'extra' || c.hand || c.note));
+}
+// "Show dropped" appears only when someone has been dropped.
+function droppedToggle(A){
+  const n = A.students.filter(isDropped).length;
+  return n ? `<label class="sortby"><input type="checkbox" data-showdropped${state.showDropped ? ' checked' : ''}> Show dropped (${n})</label>` : '';
 }
 
 /* ---------------- Overview ---------------- */
@@ -899,11 +1143,13 @@ function renderOverview(){
   if (state.ovSel && !selCell) state.ovSel = null;   // a day no longer shown (search, dates) closes its editor
   const selRow = state.ov1 ? rows.find(r => r.key === state.ov1) : null;
   if (state.ov1 && !selRow) state.ov1 = null;
+  const selDay = state.ovDay && days.find(d => `${d.dk}|${d.kind}` === state.ovDay) ? state.ovDay : null;
+  state.ovDay = selDay;
   const shows = [['all', 'All', 'Every student'], ['sh', 'Needs study hall', 'Students who need study hall today'], ['due', '1-on-1 due', 'Students whose 1-on-1 is due, or who haven’t had one yet']];
   let h = `<div class="toolbar">${rangeBar()}
     <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">
     <div class="seg" role="group" aria-label="Show">${shows.map(([k, l, tip]) => `<button data-show="${k}" aria-pressed="${state.ovShow === k}" title="${esc(tip)}">${esc(l)}</button>`).join('')}</div>
-    <span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
+    ${droppedToggle(A)}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
   if (!A.nZoom) h += setupCard(A);
   if (A.fileErrors.length) h += `<div class="notice"><b>Some files weren’t used:</b><ul>${A.fileErrors.map(f => `<li>${esc(f.name)}: ${esc(f.error)}</li>`).join('')}</ul></div>`;
   h += unmatchedNotice(A, period);
@@ -930,7 +1176,7 @@ function renderOverview(){
     }
     blocks = blocks.filter(b => b.length);
   }
-  let first = !selCell && !selRow;
+  let first = !selCell && !selRow && !selDay;
   const table = idx => {
     let months = '', m0 = 0;
     while (m0 < idx.length){
@@ -940,21 +1186,22 @@ function renderOverview(){
       months += `<th colspan="${m1 - m0}" class="ovmo${wkStart[idx[m0]] ? ' wk' : ''}" title="${esc(long)}"><span>${esc(m1 - m0 >= 3 ? long : dtf({ month: 'short' }).format(d0))}</span></th>`;
       m0 = m1;
     }
-    const head = idx.map(n => { const d = days[n], g = A.classes.get(`${d.dk}|${d.kind}`);
-      const tip = `${KIND[d.kind]}, ${longDate(d.dk)}, ${winText(d.kind)}. ${g ? `Zoom report: ${[...g.files].join(', ')}` : d.dk > today ? 'Not yet.' : 'No Zoom report yet.'}`;
-      return `<th scope="col" data-dk="${d.dk}" class="${wkStart[n] ? 'wk' : ''}${d.dk === today ? ' today' : ''}" title="${esc(tip)}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(d.dk)).slice(0, 2))}</span>${parseDk(d.dk).getDate()}<span class="ovkind ${d.kind}">${d.kind.toUpperCase()}</span></th>`; }).join('');
+    // Each date at the top is a button: it opens a small box about that day, with "Delete this day".
+    const head = idx.map(n => { const d = days[n], g = A.classes.get(`${d.dk}|${d.kind}`), id = `${d.dk}|${d.kind}`;
+      const tip = `${KIND[d.kind]}, ${longDate(d.dk)}, ${winText(d.kind)}. ${g ? `Zoom report: ${[...g.files].join(', ')}` : d.dk > today ? 'Not yet.' : 'No Zoom report yet.'} Click to check or delete this day.`;
+      return `<th scope="col" data-dk="${d.dk}" data-day="${id}" class="${wkStart[n] ? 'wk' : ''}${d.dk === today ? ' today' : ''}${selDay === id ? ' dsel' : ''}" title="${esc(tip)}"><button class="ovdh" data-ovdh="${id}" data-r="-1" data-c="${n}" tabindex="${!selCell && !selRow && selDay === id ? 0 : -1}" aria-label="${esc(`${KIND[d.kind]}, ${longDate(d.dk)}: check or delete this day`)}" aria-expanded="${selDay === id}"><span class="ovwd">${esc(dtf({ weekday: 'short' }).format(parseDk(d.dk)).slice(0, 2))}</span>${parseDk(d.dk).getDate()}<span class="ovkind ${d.kind}">${d.kind.toUpperCase()}</span></button></th>`; }).join('');
     const body = rows.map((r, ri) => `<tr><th scope="row" class="ovname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${
-      r.removed ? `<span class="ovleft">left ${esc(monDay(r.removed))}</span>` : ''}</th>${idx.map(ci => {
+      r.dropped ? `<span class="ovleft">${r.dropped > today ? 'dropping' : 'dropped'} ${esc(monDay(r.dropped))}</span>` : ''}</th>${idx.map(ci => {
       const c = r.cells[ci], words = `${r.name}, ${KIND[c.kind]}, ${longDate(c.dk)}: ${cellWords(c)}`;
       const stop = selCell ? c.xk === state.ovSel : first && (first = false, true);
       return `<td class="ovc c-${c.cat}${wkStart[ci] ? ' wk' : ''}${c.xk === state.ovSel ? ' sel' : ''}"><button class="ovb" data-ovcell="${esc(c.xk)}" data-r="${ri}" data-c="${ci}" tabindex="${stop ? 0 : -1}" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${c.xk === state.ovSel}">${
-        c.cat === 'missing' ? '?' : ''}${c.L ? '<span class="ovl">L</span>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
-    }).join('')}${ov1Cell(r, ri, days.length, selRow)}</tr>`).join('');
+        c.cat === 'missing' ? '?' : ''}${c.L ? '<span class="ovl">L</span>' : ''}${c.go ? '<span class="ovgo">go</span>' : ''}${c.note ? '<i class="ovn"></i>' : ''}</button></td>`;
+    }).join('')}${ov1Cell(A, r, ri, days.length, selRow)}</tr>`).join('');
     const pw = state.ovPrintAll ? ` style="--pcw:${Math.max(22, Math.min(36, Math.floor(760 / idx.length)))}px"` : '';
     return `<div class="ovblock"><table class="ovt"${pw}><caption class="sr">Homeroom and study hall, ${esc(fmtPeriod({ from: days[idx[0]].dk, to: days[idx[idx.length - 1]].dk }))}: ${plural(rows.length, 'student')} by ${plural(idx.length, 'day')}, then each student’s last 1-on-1. Each day is a button; use the arrow keys to move and Enter to change a day.</caption>
       <thead><tr><th class="ovname ovcorner" rowspan="2">Student</th>${months}<th class="ov1h" rowspan="2" scope="col">1-on-1</th></tr><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  h += `<div class="ovwrap">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}</div>`;
+  h += `<div class="ovwrap">${blocks.map(table).join('')}${selCell ? ovEditor(A, selCell) : ''}${selRow ? ov1Pop(A, selRow) : ''}${selDay ? ovDayBox(A, selDay, rows) : ''}</div>`;
   el.innerHTML = h;
   // Back to where the grid was scrolled (the newest days the first time, or after the dates change).
   const sc = $('#tab-overview .ovblock');
@@ -963,13 +1210,38 @@ function renderOverview(){
     sc.scrollLeft = state.ovScroll ?? sc.scrollWidth;
     state.ovScroll = sc.scrollLeft; pinMonths(sc);
   }
-  placeOvPop();
+  placeOvPop(); placeOvDay();
 }
-function ov1Cell(r, ri, c, selRow){
-  const o = r.one, cls = o.status === 'due' ? ' due' : o.status === 'none' ? ' none' : o.status === 'left' ? ' left' : '';
-  const said = `${r.name}, last 1-on-1: ${o.last ? `${longDate(o.last)}, ${sinceText(o.since)}` : 'none'}${o.status === 'due' ? `. ${oneShort(o)}` : o.status === 'none' ? '. None yet' : ''}`;
+// The last column: the next scheduled 1-on-1 ("Next: Wed 3:30"), or else the days since the last one; and a small
+// "no-show" when a scheduled one in the past 14 days was missed. Always one line.
+function ov1Cell(A, r, ri, c, selRow){
+  const o = r.one, nx = nextMeeting(A, r), ns = recentNoShow(A, r), cls = o.status === 'due' ? ' due' : o.status === 'none' ? ' none' : o.status === 'left' ? ' left' : '';
+  const said = `${r.name}, last 1-on-1: ${o.last ? `${longDate(o.last)}, ${sinceText(o.since)}` : 'none'}${o.status === 'due' ? `. ${oneShort(o)}` : o.status === 'none' ? '. None yet' : ''}${
+    nx ? `. Next one scheduled: ${longDate(nx.at)} at ${fmtMin(hmMin(nx.atStart))}` : ''}${ns ? '. A no-show in the past 14 days' : ''}`;
   const on = selRow && selRow.key === r.key;
-  return `<td class="ov1c${cls}${on ? ' sel' : ''}"><button class="ovb" data-ov1="${esc(r.key)}" data-r="${ri}" data-c="${c}" tabindex="-1" aria-label="${esc(said)}" title="${esc(said)}" aria-expanded="${!!on}">${esc(oneShort(o))}</button></td>`;
+  return `<td class="ov1c${cls}${nx ? ' next' : ''}${on ? ' sel' : ''}"><button class="ovb" data-ov1="${esc(r.key)}" data-r="${ri}" data-c="${c}" tabindex="-1" aria-label="${esc(said)}" title="${esc(said)}" aria-expanded="${!!on}"><span class="ov1t">${esc(nx ? `Next: ${nextText(nx, ns)}` : oneShort(o))}</span>${ns ? '<span class="ov1ns">no-show</span>' : ''}</button></td>`;
+}
+// The box for one date at the top of the grid: what that day has, and "Delete this day".
+function ovDayBox(A, id, rows){
+  const [dk, kind] = id.split('|'), g = A.classes.get(id), today = todayDk();
+  const exp = A.students.filter(s => onList(s, dk) && (kind === 'hr' || needsSH(s.key, dk))).length;
+  const marks = Object.keys(state.data.status).filter(k => k.startsWith(id + '|')).length;
+  const facts = [`${KIND[kind]}, ${winText(kind)}.`, `${plural(exp, 'student')} expected${kind === 'sh' ? ' (the ones who need study hall that day)' : ''}.`,
+    g ? `Zoom report${g.files.size > 1 ? 's' : ''}: ${[...g.files].join(', ')}.` : dk > today ? 'This day hasn’t happened yet.' : 'No Zoom report for this time.',
+    marks ? `${plural(marks, 'mark or note', 'marks or notes')} you made.` : ''].filter(Boolean);
+  return `<div class="ovdpop" role="dialog" aria-label="${esc(KIND[kind])}, ${esc(longDate(dk))}" data-ovdpop="${esc(id)}">
+    <div class="ovpop-h"><b>${esc(longDate(dk))}</b><button class="linkish ovx" data-ovdayclose>Close</button></div>
+    <p class="small ovdfacts">${facts.map(esc).join('<br>')}</p>
+    <p class="small muted">Deleting this day takes its ${esc(KIND[kind].toLowerCase())} off every tab: it isn’t counted${g ? ', and its Zoom report for that time is set aside' : ''}. Marks and notes on it are kept, and you can bring it back on the Setup tab.</p>
+    <div class="actions"><button class="btn small" data-ovdelday="${esc(id)}">Delete this day</button><button class="btn small ghost" data-ovdayclose>Cancel</button></div></div>`;
+}
+function placeOvDay(){
+  const pop = $('#tab-overview .ovdpop'); if (!pop) return;
+  const th = $(`#tab-overview th[data-day="${CSS.escape(pop.dataset.ovdpop)}"]`), wrap = $('#tab-overview .ovwrap');
+  if (!th){ pop.remove(); return; }
+  const r = th.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  pop.style.left = Math.max(0, Math.min(r.left - w.left, w.width - pop.offsetWidth)) + 'px';
+  pop.style.top = (r.bottom - w.top + 6) + 'px';
 }
 // Zoom names that matched no one, from the days shown: link each to a student once, or ignore it.
 function unmatchedNotice(A, period){
@@ -987,46 +1259,57 @@ function ovKey(){
   const S = settings();
   return `<div class="ovkey" aria-hidden="true">
     <div class="ovkrow"><span class="ovkh">Colors</span>${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<span><i class="ovsw c-${k}"></i>${esc(CELL[k])}</span>`).join('')}</div>
-    <div class="ovkrow"><span class="ovkh">Marks</span><span><b>L</b> Late or left early</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a day to change it.</span></div>
-    <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> Days since the last one; due every ${plural(S.oneOnOneDays, 'day')}</span></div></div>`;
+    <div class="ovkrow"><span class="ovkh">Marks</span><span><b>L</b> Late or left early</span><span><b class="ovgo">go</b> Let go early</span><span><i class="ovsw c-missing">?</i>No Zoom report yet</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a day to change it, or a date to delete it.</span></div>
+    <div class="ovkrow"><span class="ovkh">Columns</span><span><b>HR</b> Homeroom, ${esc(daysText([S.homeroomDay]))} ${esc(winText('hr'))}</span><span><b>SH</b> Study hall, ${esc(daysText(S.studyDays))}${S.studyDays.length ? ' ' + esc(winText('sh')) : ''}</span><span><b>1-on-1</b> Next one scheduled, or days since the last; due every ${plural(S.oneOnOneDays, 'day')}</span></div></div>`;
 }
 // What's known about one day, in plain words.
 function cellFacts(c){
   const out = [], r = c.rec, g = c.g, today = todayDk(), first = firstName(c.s.name);
-  if (!c.listed) out.push(c.s.added && c.dk < c.s.added ? `Not on your list yet this day (on it from ${monDay(c.s.added)}).` : `Not on your list this day (left ${monDay(c.s.removed)}).`);
+  if (!c.listed) out.push(c.s.added && c.dk < c.s.added ? `Not on your list yet this day (on it from ${monDay(c.s.added)}).` : `Not on your list this day (dropped from homeroom starting ${monDay(c.s.dropped)}).`);
   else if (c.kind === 'sh' && !c.req) out.push(`${first} doesn’t need study hall this day, so it isn’t counted.`);
   if (!g) out.push(c.dk > today ? 'This day hasn’t happened yet.' : c.dk === today ? 'No Zoom report yet today.' : 'No Zoom report in the folder for this day.');
   else if (!r) out.push('Zoom: not in the report.');
   else if (!r.present) out.push(`Zoom: in the meeting less than a minute during ${KIND[c.kind].toLowerCase()}.`);
   else {
     out.push(`Zoom: joined ${fmt(r.first)}, left ${fmt(r.last)} (${r.min} min during ${KIND[c.kind].toLowerCase()}).`);
-    const ex = [r.late ? `joined ${r.lateMin} min late` : '', r.early ? `left ${r.earlyMin} min early` : ''].filter(Boolean).join(', ');
+    const ex = [r.late ? `joined ${r.lateMin} min late` : '', r.early ? `left ${r.earlyMin} min early${c.go ? ' (let go, so not marked)' : ''}` : ''].filter(Boolean).join(', ');
     if (ex) out.push(cap(ex) + '.');
   }
+  if (c.go) out.push(`You let ${first} go early this day.`);
   if (r && r.names.some(n => normKey(n) !== c.key)) out.push(`Zoom name: ${r.names.map(n => `“${n}”`).join(', ')}.`);
   if (g) out.push(`Report: ${[...g.files].join(', ')}`);
   return out;
 }
 // The editor for one day, next to its cell. The same size on every day.
 function ovEditor(A, c){
-  const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean';
+  const name = c.s.name, dis = c.req ? '' : ' disabled', canL = c.cat === 'present', setL = typeof c.ov.L === 'boolean', canGo = c.req && c.dk <= todayDk();
   const cats = Object.entries(CAT).map(([k, v]) => `<button class="ovchip" data-ovcat="${k}" aria-pressed="${c.req && c.ov.cat === k}"${dis}><i class="ovsw c-${k}"></i>${esc(v)}</button>`).join('');
   const hint = !c.req ? 'Not required this day, so it isn’t counted. You can still add a note.'
+    : c.go ? 'Let go early: counted as present. Leaving early isn’t marked; being late still is.'
     : c.cat === 'excused' ? 'Excused days aren’t counted.' : c.cat === 'missing' ? 'Days with no Zoom report aren’t counted until there is one, or until you mark them.' : 'Counted in this student’s attendance.';
   return `<div class="ovpop" role="dialog" aria-label="${esc(name)}, ${esc(KIND[c.kind])}, ${esc(longDate(c.dk))}" data-ovpop="${esc(c.xk)}">
     <div class="ovpop-h"><b>${esc(name)}</b><span class="muted">${esc(KIND[c.kind])} · ${esc(longDate(c.dk))} · ${esc(winText(c.kind))}</span><button class="linkish ovx" data-ovclose>Close</button></div>
     <p class="small ovfacts">${cellFacts(c).map(esc).join('<br>')}</p>
     <div class="ovcols"><div class="ovgrp" role="group" aria-label="Mark"><span class="small muted">Mark</span><button class="ovchip" data-ovcat="" aria-pressed="${!c.req || !c.ov.cat}"${dis}>Automatic: ${esc(CELL[c.base])}</button>${cats}</div>
       <div class="ovgrp"><span class="small muted">Letter</span><button class="ovlet" data-ovlet="L" aria-pressed="${c.L}"${canL ? '' : ' disabled'} title="Late or left early${setL ? ' (set by you)' : ''}"><span class="tbox" aria-hidden="true"></span><b>L</b> Late or left early<i class="ovset${setL ? ' on' : ''}" aria-hidden="true"></i></button>
+        <button class="ovlet" data-ovgo aria-pressed="${c.go}"${canGo ? '' : ' disabled'} title="Let go early: counts as present, and leaving early isn’t marked"><span class="tbox" aria-hidden="true"></span>Let go early</button>
         <p class="small muted ovhint">${esc(hint)}</p></div></div>
     <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-ovnote="${esc(c.xk)}" value="${esc(c.note)}" maxlength="300"></label>
-    <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button></div></div>`;
+    <div class="ovpop-f"><button class="linkish" data-ovreset${c.ov.cat || setL || c.ov.go ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-ovopen="${esc(c.key)}">Open ${esc(firstName(name))}’s page</button></div></div>`;
 }
-function meetingLi(m, key){
-  const how = m.source === 'zoom' ? `Zoom, ${m.minutes} min${m.with.length ? `, with ${listJoin(m.with)}` : ''}` : 'Logged by hand';
-  return `<li><span class="when">${esc(monDay(m.date))}</span><span class="how">${esc(how)}</span><span class="txt">${esc(m.note || '')}</span>${
-    m.source === 'hand' ? `<button class="linkish" data-mdel="${esc(key)}|${esc(m.id)}" aria-label="Delete the ${esc(monDay(m.date))} meeting">Delete</button>` : '<span></span>'}</li>`;
+// One 1-on-1 in a list: when, its status, how it's known, the note, and Delete for one logged or added by hand.
+function meetingLi(x){
+  const zoomHow = z => `Zoom, ${z.minutes} min${z.with.length ? `, with ${listJoin(z.with)}` : ''}`;
+  const how = x.src === 'zoom' ? zoomHow(x.z) : x.src === 'hand' ? 'Logged by hand'
+    : [x.src === 'plan' ? 'Added by hand' : 'Scheduled', x.moved ? `moved from ${monDay(x.dk)}` : '', x.cat === 'met' && x.zoom ? zoomHow(x.zoom) : x.cat === 'met' && x.hand ? 'logged by hand' : ''].filter(Boolean).join(' · ');
+  const del = x.src === 'hand' ? { id: x.id, what: 'meeting' } : x.src === 'plan' ? { id: x.id, what: 'meeting' } : x.hand && x.cat === 'met' ? { id: x.hand.id, what: 'logged meeting' } : null;
+  const note = [x.note, x.hand && x.hand.note && x.hand.note !== x.note ? x.hand.note : ''].filter(Boolean).join(' · ');
+  return `<li><span class="when">${esc(monDay(x.at))}${x.atStart ? `<span class="tm">${esc(hm12(x.atStart))}</span>` : ''}</span><span class="how"><span class="mst k-${x.cat}">${esc(MSTAT[x.cat])}</span> ${esc(how)}</span><span class="txt">${esc(note)}</span>${
+    del ? `<button class="linkish" data-mdel="${esc(x.key)}|${esc(del.id)}" aria-label="Delete the ${esc(monDay(x.at))} ${del.what}">Delete</button>` : '<span></span>'}</li>`;
 }
+// A student's 1-on-1s for a list, newest first: everything up to today, and the ones scheduled in the next 2 weeks.
+const meetingItems = (A, s, rangeOnly) => { const t = todayDk(), soon = addDays(t, 14);
+  return oneOnOnes(A, s).all.filter(x => x.at <= t ? !rangeOnly || inRange(x.at) : x.at <= soon && isCurrent(s)).reverse(); };
 // "Log a meeting": a student (unless it's for one student), a date and a note. Always the same size.
 function logForm(key, hidden){
   const today = todayDk();
@@ -1038,14 +1321,14 @@ function logForm(key, hidden){
 const logMsgHTML = where => { const m = state.logMsg && state.logMsg.where === where ? state.logMsg : null; return `<p class="logmsg${m && m.bad ? ' bad' : ''}" role="status">${m ? esc(m.text) : ''}</p>`; };
 // One student's 1-on-1s, from the last column of the grid.
 function ov1Pop(A, r){
-  const ms = meetingsOf(A, r.key), o = r.one, N = settings().oneOnOneDays;
+  const ms = meetingItems(A, r), o = r.one, N = settings().oneOnOneDays, v = schedOn(r.key, todayDk());
   const head = o.last ? `Last 1-on-1: ${longDate(o.last)} (${sinceText(o.since)}).` : 'No 1-on-1s yet.';
-  const next = o.status === 'left' ? `Left homeroom ${monDay(r.removed)}.` : o.status === 'due' ? `${o.over > 0 ? `Due now: ${plural(o.over, 'day')} over` : 'Due today'} (one every ${plural(N, 'day')}).`
+  const next = o.status === 'left' ? `Dropped from homeroom ${monDay(r.dropped)}.` : v ? `Scheduled ${schedWords(v)}.` : o.status === 'due' ? `${o.over > 0 ? `Due now: ${plural(o.over, 'day')} over` : 'Due today'} (one every ${plural(N, 'day')}).`
     : o.status === 'ok' ? `Next one due in ${plural(o.dueIn, 'day')}.` : `Due every ${plural(N, 'day')}.`;
   return `<div class="ovpop ov1pop" role="dialog" aria-label="${esc(r.name)}, 1-on-1s" data-ov1pop="${esc(r.key)}">
     <div class="ovpop-h"><b>${esc(r.name)}</b><span class="muted">1-on-1s</span><button class="linkish ovx" data-ovclose>Close</button></div>
     <p class="small ov1facts">${esc(head)} ${esc(next)}</p>
-    <ul class="mlist ov1list" aria-label="Meetings">${ms.length ? ms.map(m => meetingLi(m, r.key)).join('') : '<li class="none">None yet.</li>'}</ul>
+    <ul class="mlist ov1list" aria-label="Meetings">${ms.length ? ms.map(meetingLi).join('') : '<li class="none">None yet.</li>'}</ul>
     ${logForm(r.key, !r.cur)}${logMsgHTML('pop')}
     <div class="ovpop-f"><button class="linkish" data-ovopen="${esc(r.key)}">Open ${esc(firstName(r.name))}’s page</button></div></div>`;
 }
@@ -1093,8 +1376,8 @@ function sortRows(rows){
   if (state.sort === 'since') out.sort((a, b) => since(b) - since(a) || nm(a, b));
   return out;
 }
-function studentList(A){
-  const period = periodOf(A), days = classDays(period), q = normKey(state.query), all = sortRows(studentRows(A, days));
+function studentList(A, withDropped){
+  const period = periodOf(A), days = classDays(period), q = normKey(state.query), all = sortRows(studentRows(A, days, withDropped));
   return { period, days, all, list: all.filter(r => !q || normKey(r.name).includes(q)) };
 }
 const attText = (st, what) => st.n ? `${st.att} of ${plural(st.n, what)}${st.exc ? ` · ${st.exc} excused` : ''}` : st.exc ? `${plural(st.exc, what)}, all excused` : '';
@@ -1109,34 +1392,37 @@ function renderStudents(){
   state.student = null;
   const { period, days, all, list } = studentList(A), today = todayDk();
   let h = `<div class="toolbar">${rangeBar()}
-    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student"><span class="grow"></span>
+    <input class="search" data-search type="search" placeholder="Find a student" value="${esc(state.query)}" aria-label="Find a student">${droppedToggle(A)}<span class="grow"></span>
     <span class="tbend"><label class="sortby">Sort by <select data-sortby>${SORTS.map(([k, l]) => `<option value="${k}"${state.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <button class="btn small ghost" data-exportcsv>Download CSV</button><button class="btn small ghost" data-printlist>Print</button></span></div>`;
   const nHr = days.filter(d => d.kind === 'hr' && d.dk <= today).length, nSh = days.filter(d => d.kind === 'sh' && d.dk <= today).length;
   h += `<h2 class="printonly ptitle">Homeroom attendance: students</h2><p class="listinfo">${esc(fmtPeriod({ from: period.from, to: period.to }))} · ${plural(nHr, 'homeroom day')} and ${plural(nSh, 'study hall day')} so far · ${plural(all.length, 'student')}<span class="printonly">${state.query ? ` · Search: “${esc(state.query)}”` : ''} · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}</span></p>`;
-  h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Homeroom</th><th>Study hall</th><th>Last 1-on-1</th><th class="num">1-on-1s</th></tr></thead><tbody>`;
+  h += `<div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Homeroom</th><th>Study hall</th><th>Last 1-on-1</th><th class="num">1-on-1s met</th></tr></thead><tbody>`;
   if (!list.length) h += `<tr><td colspan="5" class="muted">No students match that search. <button class="linkish" data-clearsearch>Clear search</button></td></tr>`;
   for (const r of list){
     const need = needsSH(r.key, today) ? openPeriod(r.key) : null;
-    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${r.removed && !r.cur ? `<span class="chip left">Left ${esc(monDay(r.removed))}</span>` : ''}</span></td>
+    h += `<tr><td><span class="nmline"><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button>${r.dropped ? `<span class="chip left">${r.cur ? 'Dropping' : 'Dropped'} ${esc(monDay(r.dropped))}</span>` : ''}</span></td>
       <td>${meter(r.hr.pct)}<span class="sub">${esc(attText(r.hr, 'day') || 'No days counted yet')}</span></td>
       <td>${r.sh.n || r.sh.exc ? `${meter(r.sh.pct)}<span class="sub">${esc(attText(r.sh, 'required day'))}</span>` : '<span class="zero">—</span>'}${need ? `<span class="sub">Needs study hall since ${esc(monDay(need.from))}</span>` : ''}</td>
       <td>${r.cur ? `${esc(lastText(r.one))} ${dueChip(r.one)}` : `<span class="muted">${esc(r.one.last ? lastText(r.one) : '—')}</span>`}</td>
-      <td class="num">${r.nMeet ? r.nMeet : '<span class="zero">0</span>'}</td></tr>`;
+      <td class="num">${r.nMeet ? r.nMeet : '<span class="zero">0</span>'}${r.m.noshow || r.m.canceled ? `<span class="sub">${esc([r.m.noshow ? plural(r.m.noshow, 'no-show') : '', r.m.canceled ? `${r.m.canceled} canceled` : ''].filter(Boolean).join(' · '))}</span>` : ''}</td></tr>`;
   }
   h += `</tbody></table></div>
-    <p class="small muted" style="margin-top:10px">Homeroom: days present out of the homeroom days counted. Study hall: days present out of the days each student needed study hall. Excused days and days with no Zoom report aren’t counted. 1-on-1s: meetings in these dates.</p>`;
+    <p class="small muted" style="margin-top:10px">Homeroom: days present out of the homeroom days counted. Study hall: days present out of the days each student needed study hall. Excused days and days with no Zoom report aren’t counted. 1-on-1s: meetings met in these dates, and scheduled ones missed (no-shows) or canceled.</p>`;
   el.innerHTML = h;
 }
 function exportCSV(){
-  const A = state.lastAnalysis || analyze(), { period, all } = studentList(A), today = todayDk();
+  // Every student in the dates shown, dropped ones too (with the day they were dropped).
+  const A = state.lastAnalysis || analyze(), { period, all } = studentList(A, true), today = todayDk();
   const rows = [['Student', 'Homeroom days present', 'Homeroom days counted', 'Homeroom %', 'Homeroom excused', 'Homeroom late or left early',
     'Study hall days present', 'Study hall days required', 'Study hall %', 'Study hall excused', 'Needs study hall now', 'Needs study hall since',
-    'Last 1-on-1', 'Days since last 1-on-1', 'Next 1-on-1', '1-on-1s in these dates', 'On the list since', 'Left', 'Dates']];
+    'Last 1-on-1', 'Days since last 1-on-1', 'Next 1-on-1', '1-on-1s in these dates', '1-on-1 no-shows', '1-on-1s canceled', '1-on-1 schedule', 'Next scheduled 1-on-1',
+    'On the list since', 'Dropped', 'Dates']];
   for (const r of [...all].sort((a, b) => a.name.localeCompare(b.name))){
     const p = needsSH(r.key, today) ? openPeriod(r.key) : null;
     rows.push([r.name, r.hr.att, r.hr.n, r.hr.pct ?? '', r.hr.exc, r.hr.L, r.sh.att, r.sh.n, r.sh.pct ?? '', r.sh.exc, p ? 'Yes' : 'No', p ? p.from : '',
-      r.one.last || '', r.one.since ?? '', oneNext(r.one), r.nMeet, r.added || '', r.removed || '', fmtPeriod(period)]);
+      r.one.last || '', r.one.since ?? '', oneNext(r.one), r.nMeet, r.m.noshow, r.m.canceled, (v => v ? schedWords(v) : '')(schedOn(r.key, today)),
+      (x => x ? `${x.at} ${x.atStart}` : '')(nextMeeting(A, r)), r.added || '', r.dropped || '', fmtPeriod(period)]);
   }
   downloadFile(`homeroom-summary_${stamp()}.csv`, toCSV(rows), 'text/csv');
 }
@@ -1150,29 +1436,42 @@ function renderStudentPage(A, el){
     ${i >= 0 && list.length > 1 ? `<nav class="pn" aria-label="Other students">${prev ? `<button class="btn small ghost" data-stepstudent="${esc(prev.key)}" title="Previous: ${esc(prev.name)}">‹ ${esc(prev.name)}</button>` : none}
       <span>${i + 1} of ${list.length}</span>${next ? `<button class="btn small ghost" data-stepstudent="${esc(next.key)}" title="Next: ${esc(next.name)}">${esc(next.name)} ›</button>` : none}</nav>` : ''}
     ${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>`;
-  const o = r.one, need = needsSH(r.key, today) ? openPeriod(r.key) : null;
-  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', s.removed ? `${s.removed > today ? 'Leaving' : 'Left'} homeroom ${monDay(s.removed)}` : '', need ? `Needs study hall since ${monDay(need.from)}` : ''].filter(Boolean);
+  const o = r.one, need = needsSH(r.key, today) ? openPeriod(r.key) : null, first = firstName(r.name);
+  const facts = [s.added ? `On your list since ${monDay(s.added)}` : '', need ? `Needs study hall since ${monDay(need.from)}` : ''].filter(Boolean);
+  // Dropped from homeroom: a line under the name saying so (with Undo). Until then, two quiet links at the right end of the
+  // name row: "Dropped from homeroom?" opens a small menu over the page for the date, and "Delete student" asks first.
+  const links = `<span class="noprint dropbtns">${s.dropped ? '' : `<details class="menu dropmenu" data-dropmenu="${esc(s.key)}"${state.dropEdit === s.key ? ' open' : ''}>
+      <summary class="linkish">Dropped from homeroom?</summary><div class="pop" role="group" aria-label="Dropped from homeroom">
+        <div class="dropline"><span>First day not in homeroom</span><input type="date" data-dropdate value="${today}" aria-label="First day not in homeroom">
+          <button class="btn small" data-dropsave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
+        <p class="muted">From that day ${esc(first)} isn’t expected at homeroom or study hall and isn’t counted, and is left off the lists. Earlier days stay as they are.</p></div></details>`}
+      <button class="linkish" data-studelete="${esc(s.key)}">Delete student</button></span>`;
+  const dropLine = s.dropped ? `<p class="dropnote">Dropped from homeroom starting ${esc(shortDate(s.dropped))}${s.dropped > today ? '' : '. Later days aren’t counted'}. <button class="linkish noprint" data-undrop="${esc(s.key)}">Undo</button></p>` : '';
   const tile = (label, value, sub, cls = '') => `<div class="tile${cls}"><div class="l">${esc(label)}</div><div class="n">${esc(value)}</div><div class="s">${esc(sub)}</div></div>`;
   h += `<article class="sreport" data-student="${esc(r.key)}"><header class="rhead"><div class="eyebrow printonly">Homeroom attendance</div>
-    <h2 tabindex="-1">${esc(r.name)}</h2>
+    <div class="rname"><h2 tabindex="-1">${esc(r.name)}</h2>${links}</div>${dropLine}
     <p class="small muted">${esc(fmtPeriod(period))}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}<span class="printonly"> · Printed ${esc(monDay(today))}, ${new Date().getFullYear()}${settings().teacherName ? ` · ${esc(settings().teacherName)}` : ''}</span></p>
     <div class="rtiles">${tile('Homeroom', r.hr.pct === null ? '—' : `${r.hr.pct}%`, attText(r.hr, 'day') || 'No days counted yet')}
       ${tile('Study hall', r.sh.pct === null ? '—' : `${r.sh.pct}%`, attText(r.sh, 'required day') || 'Not required in these dates')}
       ${tile('Last 1-on-1', o.last ? cap(sinceText(o.since)) : 'None yet', o.status === 'left' ? (o.last ? monDay(o.last) : '') : o.last ? `${monDay(o.last)} · ${oneNext(o)}` : `Due every ${plural(N, 'day')}`, o.status === 'due' || o.status === 'none' ? ' due' : '')}
-      ${tile('1-on-1s', String(r.nMeet), 'in these dates')}</div></header>`;
+      ${tile('1-on-1s met', String(r.nMeet), `in these dates${r.m.noshow ? ` · ${plural(r.m.noshow, 'no-show')}` : ''}${r.m.canceled ? ` · ${r.m.canceled} canceled` : ''}`)}</div></header>`;
   const hrCells = r.cells.filter(c => c.kind === 'hr' && (c.listed || c.cat === 'extra' || c.note));
   const shCells = r.cells.filter(c => c.kind === 'sh' && (c.req || c.cat === 'extra' || c.note));
   h += `<section class="rsec"><h3>Homeroom days <span class="small muted">${esc(daysText([settings().homeroomDay]))}, ${esc(winText('hr'))}</span></h3>${dayStrip(hrCells, 'Homeroom days')}</section>`;
   h += `<section class="rsec"><h3>Study hall <span class="small muted">${esc(daysText(settings().studyDays))}${settings().studyDays.length ? ', ' + esc(winText('sh')) : ''}</span></h3>
     ${dayStrip(shCells, 'Study hall days', 'No study hall days required in these dates.')}
     <h3 class="psub">Dates ${esc(firstName(r.name))} needs study hall</h3>${periodsEditor(r)}</section>`;
-  const ms = meetingsOf(A, r.key);
-  h += `<section class="rsec"><h3>1-on-1s</h3><p class="small">${esc(o.last ? `Last one ${longDate(o.last)} (${sinceText(o.since)}). ${oneNext(o)}.` : `None yet. Due every ${plural(N, 'day')}.`)}</p>
-    <ul class="mlist">${ms.length ? ms.map(m => meetingLi(m, r.key)).join('') : '<li class="none">None yet.</li>'}</ul>
+  const ms = meetingItems(A, r, true), v = schedOn(r.key, today), nx = nextMeeting(A, r);
+  h += `<section class="rsec"><h3>1-on-1s</h3><p class="small">${esc(o.last ? `Last one ${longDate(o.last)} (${sinceText(o.since)}). ${oneNext(o)}.` : `None yet. Due every ${plural(N, 'day')}.`)}${
+      nx ? ` Next one scheduled: ${esc(longDate(nx.at))} at ${esc(fmtMin(hmMin(nx.atStart)))}.` : ''}</p>
+    <div class="schedline"><span class="small"><b>Schedule:</b> ${esc(v ? schedWords(v) : 'none')}</span>${r.cur ? `<details class="menu schedmenu noprint" data-schedmenu="${esc(r.key)}">
+      <summary class="linkish">${v ? 'Change the schedule' : 'Set a schedule'}</summary><div class="pop">${schedForm(r)}</div></details>` : ''}</div>
+    <p class="small muted">In these dates: ${esc(`${r.m.met} met · ${plural(r.m.noshow, 'no-show')} · ${r.m.canceled} canceled`)}. To change one, click it on the <button class="linkish" data-goto="meetings">1-on-1s</button> tab.</p>
+    <ul class="mlist">${ms.length ? ms.map(meetingLi).join('') : '<li class="none">None in these dates.</li>'}</ul>
     <div style="margin-top:12px">${logForm(r.key, !r.cur)}${logMsgHTML('page')}</div></section>`;
   const notes = Object.entries(state.data.status).filter(([k, v]) => v.note && k.split('|').slice(2).join('|') === r.key).map(([k, v]) => ({ dk: k.slice(0, 10), kind: k.split('|')[1], note: v.note }))
     .sort((a, b) => b.dk.localeCompare(a.dk));
-  h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
+  h += `<section class="rsec"><h3>Notes</h3>${notes.length ? `<ul class="notes">${notes.map(n => `<li><span class="when">${esc(shortDate(n.dk))} · ${esc(KIND[n.kind])}${isDeleted(n.dk, n.kind) ? ' (deleted day)' : ''}</span><span>${esc(n.note)}</span></li>`).join('')}</ul>`
     : '<p class="small muted">No notes yet. To add one, click a day on the Overview.</p>'}</section></article>`;
   el.innerHTML = h;
 }
@@ -1180,8 +1479,8 @@ function dayStrip(cells, label, empty = 'No days in these dates.'){
   if (!cells.length) return `<p class="small muted">${esc(empty)}</p>`;
   const kinds = new Set(cells.map(c => c.cat));
   return `<ul class="dstrip" aria-label="${esc(label)}">${cells.map(c => { const words = `${shortDate(c.dk)}: ${cellWords(c)}`;
-    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : c.L ? 'L' : ''}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
-    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${cells.some(c => c.L) ? '<span><b>L</b> Late or left early</span>' : ''}</div>`;
+    return `<li title="${esc(words)}"><span class="wd" aria-hidden="true">${esc(dtf({ weekday: 'short' }).format(parseDk(c.dk)))}</span><i class="c-${c.cat}" aria-hidden="true">${c.cat === 'missing' ? '?' : c.L ? 'L' : ''}${c.go ? '<span class="ovgo">go</span>' : ''}${c.note ? '<b class="dn"></b>' : ''}</i><span aria-hidden="true">${parseDk(c.dk).getMonth() + 1}/${parseDk(c.dk).getDate()}</span><span class="sr">${esc(words)}</span></li>`; }).join('')}</ul>
+    <div class="legend-line" aria-hidden="true">${Object.keys(CELL).filter(k => kinds.has(k)).map(k => `<span><i class="ovsw c-${k}">${k === 'missing' ? '?' : ''}</i>${esc(CELL[k])}</span>`).join('')}${cells.some(c => c.L) ? '<span><b>L</b> Late or left early</span>' : ''}${cells.some(c => c.go) ? '<span><b class="ovgo">go</b> Let go early</span>' : ''}</div>`;
 }
 // The dates a student needs study hall: each one can be changed or deleted here, and new dates added.
 function periodsEditor(r){
@@ -1194,36 +1493,205 @@ function periodsEditor(r){
     <div class="paddrow"><label>Needs study hall starting <input type="date" data-shnew value="${today}"></label><button class="btn small" data-shadd="${esc(r.key)}">Add</button></div>${logMsgHTML('sh')}</div>`;
 }
 
-/* ---------------- 1-on-1s tab ---------------- */
+/* ---------------- 1-on-1s tab ----------------
+   A calendar of weeks: one row per student, one column per week. Each 1-on-1 is a small chip in its week ("Wed 3:30"),
+   colored by its status; a click opens a small editor. An empty week has an "Add a meeting" button. */
+// The weeks shown, Monday to Sunday: the dates shown, and two weeks ahead (the scheduled ones to come).
+function meetWeeks(A){
+  const P = periodOf(A), today = todayDk(), end = P.open ? addDays(weekKey(today), 14) : P.to, out = [];
+  for (let w = weekKey(P.from), i = 0; w <= end && i < 300; w = addDays(w, 7), i++) out.push(w);
+  return out;
+}
+function weekLabel(w){
+  const e = addDays(w, 6), a = parseDk(w), b = parseDk(e);
+  return a.getMonth() === b.getMonth() ? `${monDay(w)}–${b.getDate()}` : `${monDay(w)} – ${monDay(e)}`;
+}
+const M_SHOWS = [['all', 'All', 'Every student'], ['noshow', 'No-shows', 'Students with a no-show in these dates'],
+  ['due', 'Due', 'Students whose 1-on-1 is due, or who haven’t had one yet'], ['nosched', 'No schedule', 'Students with no 1-on-1 schedule now']];
+// The key above the calendar: always two rows, so the calendar never moves.
+function meetKey(){
+  const sw = (k, t) => `<span><i class="msw k-${k}"></i>${esc(t)}</span>`;
+  return `<div class="ovkey mkey" aria-hidden="true">
+    <div class="ovkrow"><span class="ovkh">Colors</span>${sw('met', 'Met')}${sw('noshow', 'No-show')}${sw('canceled', 'Canceled')}${sw('upcoming', 'Upcoming')}<span><i class="msw k-today"></i><b>Today</b></span>
+      <span><i class="msw k-met mvk"></i>Moved</span><span><i class="ovsw ovnote-k"></i>Has a note</span><span class="ovkend noprint">Click a meeting to change it, or an empty week to add one.</span></div>
+    <div class="ovkrow"><span class="ovkh">Columns</span><span>One week each, Monday to Sunday; this week is shaded</span><span><b>Since the last one</b> due every ${plural(settings().oneOnOneDays, 'day')}</span></div></div>`;
+}
 function renderMeetings(){
   const el = $('#tab-meetings');
   if (!state.loaded){ el.innerHTML = startScreen(); return; }
   const A = analyze(); state.lastAnalysis = A;
   if (!A.students.length){ el.innerHTML = setupCard(A); return; }
-  const N = settings().oneOnOneDays;
-  const cur = A.students.filter(isCurrent).map(s => ({ ...s, one: oneOnOne(A, s) }));
-  const rank = o => o.status === 'none' ? Infinity : o.since;
-  cur.sort((a, b) => rank(b.one) - rank(a.one) || a.name.localeCompare(b.name));
-  let h = `<div class="toolbar">${rangeBar()}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>
-    <h2 class="printonly ptitle">1-on-1s · printed ${esc(monDay(todayDk()))}, ${new Date().getFullYear()}</h2>
+  const today = todayDk(), wk0 = weekKey(today), weeks = meetWeeks(A);
+  const base = A.students.filter(s => shownStudent(s) && (isCurrent(s) || state.showDropped)).map(s => ({ ...s, cur: isCurrent(s), one: oneOnOne(A, s), M: oneOnOnes(A, s) }));
+  const rows = base.filter(r => state.mShow === 'all' || (state.mShow === 'noshow' ? r.M.occ.some(o => o.cat === 'noshow' && inRange(o.at) && o.at <= today)
+    : state.mShow === 'due' ? isDue(r) : !schedOn(r.key, today)));
+  // This week, for everyone on the list.
+  const wkEnd = addDays(wk0, 6), wkItems = base.filter(r => r.cur).flatMap(r => r.M.all.filter(x => x.at >= wk0 && x.at <= wkEnd));
+  const cnt = k => wkItems.filter(x => x.cat === k).length, nCan = cnt('canceled');
+  const summary = `This week (${weekLabel(wk0)}): ${plural(wkItems.length - nCan, 'meeting')}, ${cnt('met')} met, ${plural(cnt('noshow'), 'no-show')}, ${cnt('upcoming') + cnt('today')} to come${nCan ? `, ${nCan} canceled` : ''}.`;
+  // The open box, if what it's for is still shown.
+  const sel = state.mSel, row = sel ? rows.find(r => r.key === sel.key) : null;
+  const item = sel && row && sel.kind === 'm' ? row.M.all.find(x => x.mk === sel.id) : null;
+  if (sel && (!row || (sel.kind === 'm' && !item) || (sel.kind === 'add' && !weeks.includes(sel.week)) || (sel.kind === 'sched' && !row.cur))) state.mSel = null;
+  const on = state.mSel;
+  let h = `<div class="toolbar">${rangeBar()}<div class="seg" role="group" aria-label="Show">${M_SHOWS.map(([k, l, tip]) => `<button data-mshow="${k}" aria-pressed="${state.mShow === k}" title="${esc(tip)}">${esc(l)}</button>`).join('')}</div>
+    ${droppedToggle(A)}<span class="grow"></span><button class="btn small ghost" data-printlist>Print</button></div>
+    <h2 class="printonly ptitle">1-on-1s · printed ${esc(monDay(today))}, ${new Date().getFullYear()}</h2>
     <div class="panel logpanel noprint"><h2>Log a meeting</h2><p class="small muted">For a 1-on-1 that wasn’t on Zoom, like a phone call or a talk after class. Zoom meetings are found by themselves.</p>
       ${logForm('')}${logMsgHTML('tab')}</div>
-    <h2 class="subhead">Who’s due <span class="small muted" style="font-family:var(--sans);font-weight:400">· a 1-on-1 every ${plural(N, 'day')}, most days since the last one first</span></h2>
-    <div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Last 1-on-1</th><th class="num">Days since</th><th>Next one</th></tr></thead><tbody>
-    ${cur.map(r => `<tr><td><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></td><td>${r.one.last ? esc(shortDate(r.one.last)) : '<span class="zero">—</span>'}</td>
-      <td class="num">${r.one.since ?? '<span class="zero">—</span>'}</td><td>${r.one.status === 'due' ? `<span class="chip due">${esc(oneNext(r.one))}</span>` : r.one.status === 'none' ? '<b>None yet</b>' : esc(oneNext(r.one))}</td></tr>`).join('')}
-    </tbody></table></div>`;
-  const all = A.students.flatMap(s => meetingsOf(A, s.key).filter(m => inRange(m.date)).map(m => ({ ...m, key: s.key, name: s.name })))
+    <p class="msum">${esc(summary)}</p>${meetKey()}`;
+  if (!rows.length) h += `<p class="muted">No students match what’s chosen. <button class="linkish" data-mshow="all">Show everyone</button></p>`;
+  else {
+    const chip = (x, r, ri, ci, cmp) => { const id = x.mk, isOn = !!on && on.kind === 'm' && on.id === id, words = meetWords(x, r.name);
+      return `<button class="mchip mgi k-${x.cat}${cmp ? ' cmp' : ''}${isOn ? ' sel' : ''}" data-mchip="${esc(id)}" data-r="${ri}" data-c="${ci}" tabindex="-1" aria-label="${esc(words)}" title="${esc(words)}" aria-expanded="${isOn}">${
+        esc(cmp ? wdShort(x.at) : chipText(x))}${x.moved ? '<i class="mmv" aria-hidden="true"></i>' : ''}${x.note ? '<i class="ovn" aria-hidden="true"></i>' : ''}</button>`; };
+    const head = weeks.map(w => `<th scope="col" class="mgw${w === wk0 ? ' now' : ''}" data-wk="${w}"><span class="mgwd">${esc(weekLabel(w))}</span><span class="mgwl">${w === wk0 ? 'This week' : w > wk0 ? 'To come' : ''}</span></th>`).join('');
+    const body = rows.map((r, ri) => {
+      const v = schedOn(r.key, today), sOn = !!on && on.kind === 'sched' && on.key === r.key, o = r.one;
+      const name = `<th scope="row" class="mgname"><button class="name-btn" data-openstudent="${esc(r.key)}" title="${esc(r.name)}" tabindex="-1">${esc(r.name)}</button>${r.cur
+        ? `<button class="msched mgi${sOn ? ' sel' : ''}" data-msched="${esc(r.key)}" data-r="${ri}" data-c="-1" tabindex="-1" aria-expanded="${sOn}" aria-label="${esc(`${r.name}’s 1-on-1 schedule: ${v ? schedWords(v) : 'none'}. Change it`)}" title="${esc(v ? schedWords(v) : 'No schedule. Click to set one')}">${esc(v ? schedShort(v) : 'No schedule · set one')}</button>`
+        : `<span class="mgdrop">dropped ${esc(monDay(r.dropped))}</span>`}</th>`;
+      const cells = weeks.map((w, ci) => {
+        const end = addDays(w, 6), items = r.M.all.filter(x => x.at >= w && x.at <= end), listed = (!r.added || end >= r.added) && (!r.dropped || w < r.dropped);
+        const aOn = !!on && on.kind === 'add' && on.key === r.key && on.week === w;
+        const inner = items.length ? items.map(x => chip(x, r, ri, ci, items.length > 2)).join('')
+          : listed && r.cur ? `<button class="madd mgi${aOn ? ' sel' : ''}" data-madd="${esc(r.key)}|${w}" data-r="${ri}" data-c="${ci}" tabindex="-1" aria-expanded="${aOn}" aria-label="${esc(`${r.name}, week of ${monDay(w)}: no meetings. Add a meeting`)}" title="Add a meeting this week"><span aria-hidden="true">+ Add</span></button>` : '';
+        return `<td class="mgc${w === wk0 ? ' now' : ''}"><div class="mgcell">${inner}</div></td>`;
+      }).join('');
+      const cls = o.status === 'due' ? ' due' : o.status === 'none' ? ' none' : o.status === 'left' ? ' left' : '';
+      const a = o.last ? `${monDay(o.last)} · ${sinceText(o.since)}` : 'None yet', b = o.status === 'left' || o.status === 'none' ? '' : oneNext(o);
+      return `<tr data-mrow="${esc(r.key)}">${name}${cells}<td class="mg1${cls}" data-since="${o.since ?? ''}" data-next="${esc(b)}"><span class="mg1a">${esc(a)}</span><span class="mg1b">${esc(b)}</span></td></tr>`;
+    }).join('');
+    let pop = '';
+    if (on && on.kind === 'm') pop = mEditor(A, item, row);
+    if (on && on.kind === 'add') pop = addBox(row, on.week);
+    if (on && on.kind === 'sched') pop = schedPop(row);
+    h += `<div class="mgwrap"><div class="mgblock"><table class="mgt"><caption class="sr">1-on-1s by week: ${plural(rows.length, 'student')} by ${plural(weeks.length, 'week')}, then the days since each student’s last 1-on-1. Use the arrow keys to move, and Enter to open a meeting or add one.</caption>
+      <thead><tr><th class="mgname" scope="col">Student <span class="mgsub">and schedule</span></th>${head}<th class="mg1h" scope="col">Since the last one</th></tr></thead><tbody>${body}</tbody></table></div>${pop}</div>`;
+  }
+  const all = base.flatMap(s => meetingsOf(A, s.key).filter(m => inRange(m.date)).map(m => ({ ...m, key: s.key, name: s.name })))
     .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
-  h += `<h2 class="subhead">Meetings in these dates <span class="small muted" style="font-family:var(--sans);font-weight:400">· ${plural(all.length, 'meeting')}</span></h2>`;
+  h += `<h2 class="subhead">Meetings in Zoom or logged by hand <span class="small muted" style="font-family:var(--sans);font-weight:400">· ${plural(all.length, 'meeting')} in these dates</span></h2>`;
   h += all.length ? `<div class="tablewrap"><table class="sum"><thead><tr><th>Date</th><th>Student</th><th>How</th><th class="num">Minutes</th><th>Note</th><th class="noprint"><span class="sr">Delete</span></th></tr></thead><tbody>
     ${all.map(m => `<tr><td>${esc(shortDate(m.date))}</td><td><button class="name-btn" data-openstudent="${esc(m.key)}">${esc(m.name)}</button></td>
       <td>${m.source === 'zoom' ? `From Zoom${m.with.length ? `<span class="sub">with ${esc(listJoin(m.with))}</span>` : ''}` : 'By hand'}</td>
       <td class="num">${m.source === 'zoom' ? m.minutes : '<span class="zero">—</span>'}</td><td>${esc(m.note || '')}</td>
       <td class="noprint">${m.source === 'hand' ? `<button class="linkish" data-mdel="${esc(m.key)}|${esc(m.id)}" aria-label="Delete ${esc(m.name)}’s ${esc(monDay(m.date))} meeting">Delete</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
-    : `<p class="muted">No 1-on-1s in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</p>`;
-  h += `<p class="small muted" style="margin-top:10px">From Zoom: a meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer, where the student was in it at least ${plural(settings().oneOnOneMin, 'minute')}. You can change these on the Setup tab.</p>`;
+    : `<p class="muted">No 1-on-1s in Zoom or logged by hand in these dates.${state.range.preset !== 'all' ? ' <button class="linkish" data-range="all">Show all dates</button>' : ''}</p>`;
+  h += `<p class="small muted" style="margin-top:10px">A scheduled 1-on-1 is <b>met</b> when the student is in a Zoom meeting within ${MEET_NEAR} minutes of its time, or a meeting is logged by hand that day, and a <b>no-show</b> once its time has passed. From Zoom: a meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer, where the student was in it at least ${plural(settings().oneOnOneMin, 'minute')}. You can change these on the Setup tab.</p>`;
   el.innerHTML = h;
+  const sc = $('#tab-meetings .mgblock');
+  if (sc){ sc.scrollLeft = state.mScroll ?? sc.scrollWidth; state.mScroll = sc.scrollLeft; }
+  // One Tab stop for the whole calendar: the open meeting's chip, the one last used, or the first.
+  const items = [...el.querySelectorAll('.mgi')], keep = (state.mFocus && el.querySelector(state.mFocus)) || el.querySelector('.mgi.sel') || items[0];
+  if (keep) keep.tabIndex = 0;
+  placeMPop();
+}
+// The editor for one 1-on-1, next to its chip. The same size for every meeting.
+function mEditor(A, x, r){
+  const today = todayDk(), first = firstName(r.name), occ = x.src === 'sched' || x.src === 'plan', ms = x.ms || {}, future = x.at > today, facts = [];
+  const zoomSaid = z => `${fmt(z.at)}–${fmt(z.end)} (${z.minutes} min)${z.with.length ? `, with ${listJoin(z.with)}` : ''}`;
+  if (x.src === 'sched') facts.push(`Scheduled: ${schedWords(x.v)}.`);
+  if (x.src === 'plan') facts.push('Added by hand for this day.');
+  if (x.moved) facts.push(`Moved from ${shortDate(x.dk)} at ${fmtMin(hmMin(x.start))}.`);
+  if (x.src === 'zoom') facts.push(`Not scheduled. Zoom: in a meeting ${zoomSaid(x.z)}.`, `Report: ${x.z.files.join(', ')}`);
+  if (x.src === 'hand') facts.push(`Not scheduled. Logged by hand${x.note ? `: ${x.note}` : ''}.`);
+  if (occ){
+    if (x.zoom) facts.push(`Zoom: in a meeting ${zoomSaid(x.zoom)}.`);
+    else if (x.hand) facts.push(`Logged by hand that day${x.hand.note ? `: ${x.hand.note}` : ''}.`);
+    else if (future) facts.push('This meeting hasn’t happened yet.');
+    else if (x.auto === 'today') facts.push(`Today. ${first} hasn’t been in a Zoom meeting at that time so far.`);
+    else facts.push(A.reportDays.has(x.at) ? `There are Zoom reports in the folder for that day, and ${first} isn’t in a meeting at that time.` : 'No Zoom report in the folder for that day, and the time has passed.');
+    facts.push(`Worked out automatically: ${MSTAT[x.auto]}.`);
+  }
+  const len = x.len || (x.z ? x.z.minutes : 0), when = `${longDate(x.at)}${x.atStart ? ` · ${len ? timeSpan(x.atStart, len) : fmtMin(hmMin(x.atStart))}` : ''}`;
+  const cats = Object.entries(MCAT).map(([k, v]) => `<button class="ovchip" data-mcat="${k}" aria-pressed="${occ && ms.cat === k}"${!occ || (future && k !== 'canceled') ? ' disabled' : ''}><i class="msw k-${k}"></i>${esc(v)}</button>`).join('');
+  const canDel = x.src === 'plan' || x.src === 'hand';
+  return `<div class="ovpop mpop" role="dialog" aria-label="${esc(`${r.name}, 1-on-1, ${longDate(x.at)}`)}" data-mpop="${esc(x.mk)}" data-anchor="${esc(`[data-mchip="${CSS.escape(x.mk)}"]`)}">
+    <div class="ovpop-h"><b>${esc(r.name)}</b><span class="muted">${esc(when)}</span><button class="linkish ovx" data-mclose>Close</button></div>
+    <p class="small mfacts">${facts.map(esc).join('<br>')}</p>
+    <div class="mstats" role="group" aria-label="Status"><button class="ovchip" data-mcat="" aria-pressed="${occ && !ms.cat}"${occ ? '' : ' disabled'}>Automatic: ${esc(MSTAT[occ ? x.auto : 'met'])}</button>${cats}</div>
+    <div class="mmove"><span class="small muted">Move to</span><input type="date" data-mmovedk value="${esc(x.at)}" aria-label="Move to: date"${occ ? '' : ' disabled'}><input type="time" data-mmovet value="${esc(x.atStart || '')}" aria-label="Move to: time"${occ ? '' : ' disabled'}><button class="btn small" data-mmovego${occ ? '' : ' disabled'}>Move</button></div>
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-mnote="${esc(x.mk)}" value="${esc(x.note || '')}" maxlength="300"${x.src === 'zoom' ? ' disabled' : ''}></label>
+    <p class="small mmsg" role="status">${esc(state.mMsg)}</p>
+    <div class="ovpop-f"><button class="linkish" data-mreset${occ && (ms.cat || ms.moveTo) ? '' : ' disabled'}>Back to automatic</button><button class="linkish" data-mdel="${esc(r.key)}|${esc(canDel ? x.id : '')}"${canDel ? '' : ' disabled'}>Delete this meeting</button><button class="linkish" data-ovopen="${esc(r.key)}">Open ${esc(first)}’s page</button></div></div>`;
+}
+// "Add a meeting" for an empty week. Always the same size.
+function addBox(r, w){
+  const today = todayDk(), v = schedOn(r.key, w) || schedOn(r.key, today), end = addDays(w, 6), first = firstName(r.name);
+  const dk = today >= w && today <= end ? today : v ? firstOnOrAfter(w, v.wd) : firstOnOrAfter(w, 3);
+  return `<div class="ovpop mpop" role="dialog" aria-label="${esc(`${r.name}: add a meeting, week of ${monDay(w)}`)}" data-mpop="add|${esc(r.key)}|${w}" data-anchor="${esc(`[data-madd="${CSS.escape(`${r.key}|${w}`)}"]`)}">
+    <div class="ovpop-h"><b>${esc(r.name)}</b><span class="muted">Add a meeting · week of ${esc(monDay(w))}</span><button class="linkish ovx" data-mclose>Close</button></div>
+    <p class="small mfacts">No 1-on-1s this week. One you add is worked out like a scheduled one: met if ${esc(first)} is in a Zoom meeting at that time (or you log one that day), and a no-show once the time passes. After adding it, you can set it by hand.</p>
+    <div class="maddrow" data-maddform="${esc(r.key)}|${w}"><label>Date <input type="date" data-madddk value="${dk}" min="${w}" max="${end}"></label>
+      <label>Time <input type="time" data-maddt value="${esc(v ? v.start : '15:30')}"></label><label>Minutes <input type="number" data-maddlen min="5" max="180" value="${v ? v.len : 15}"></label>
+      <button class="btn small" data-maddgo>Add meeting</button></div>
+    <label class="ovnoteb"><span class="small muted">Note</span><input type="text" data-maddnote maxlength="300" placeholder="Optional"></label>
+    <p class="small mmsg" role="status">${esc(state.mMsg)}</p>
+    <div class="ovpop-f"><button class="linkish" data-ovopen="${esc(r.key)}">Open ${esc(first)}’s page</button></div></div>`;
+}
+function schedPop(r){
+  return `<div class="ovpop mpop spop" role="dialog" aria-label="${esc(`${r.name}: 1-on-1 schedule`)}" data-mpop="sched|${esc(r.key)}" data-anchor="${esc(`[data-msched="${CSS.escape(r.key)}"]`)}">
+    <div class="ovpop-h"><b>${esc(r.name)}</b><span class="muted">1-on-1 schedule</span><button class="linkish ovx" data-mclose>Close</button></div>${schedForm(r)}</div>`;
+}
+// A student's 1-on-1 schedule: weekday, time, length, how often, and the day it starts. Used on the 1-on-1s tab and the
+// student's page. A change applies from its starting day; earlier meetings keep their times.
+function schedForm(r){
+  const today = todayDk(), v = schedOn(r.key, today), vs = schedList(r.key), d = v || { wd: 3, start: '15:30', len: 15, every: 2 };
+  return `<div class="schedform" data-schedform="${esc(r.key)}">
+    <p class="small snow">${esc(v ? `Now: ${schedWords(v)}.` : 'No schedule now. Without one, only the days since the last 1-on-1 are shown.')}</p>
+    <div class="sgrid"><label>Day <select data-swd>${WEEKDAYS.map(w => `<option value="${w}"${d.wd === w ? ' selected' : ''}>${cap(DAYS[w])}</option>`).join('')}</select></label>
+      <label>Time <input type="time" data-sstart value="${esc(d.start)}"></label>
+      <label>Minutes <input type="number" data-slen min="5" max="180" value="${d.len}"></label>
+      <label>How often <select data-severy><option value="2"${d.every === 2 ? ' selected' : ''}>Every 2 weeks</option><option value="1"${d.every === 1 ? ' selected' : ''}>Every week</option></select></label>
+      <label>Starting <input type="date" data-sfrom value="${today}"></label></div>
+    <div class="actions"><button class="btn small" data-schedsave="${esc(r.key)}">Save</button><button class="btn small ghost${v ? '' : ' na'}" data-schedstop="${esc(r.key)}"${v ? '' : ' disabled tabindex="-1"'}>No schedule from that day</button><button class="btn small ghost" data-schedcancel>Cancel</button></div>
+    <p class="small mmsg" role="status"></p>
+    <p class="small muted snote">A change applies from “Starting” on. Earlier meetings keep their days and times.</p>
+    <ul class="shist" aria-label="Schedule history">${vs.length ? [...vs].reverse().map(x => `<li>From ${esc(shortDate(x.from))}: ${esc(x.off ? 'no schedule' : schedWords(x))}</li>`).join('') : '<li class="muted">No schedule yet.</li>'}</ul></div>`;
+}
+// The open box sits beside what opened it, inside the window.
+function placeMPop(){
+  const pop = $('#tab-meetings .mpop'); if (!pop) return;
+  const a = $(`#tab-meetings .mgblock ${pop.dataset.anchor}`), wrap = $('#tab-meetings .mgwrap');
+  if (!a){ pop.remove(); return; }
+  const r = a.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  let left = r.left - w.left + r.width + 8;
+  if (left + pop.offsetWidth > w.width) left = Math.max(0, r.left - w.left - pop.offsetWidth - 8);
+  pop.style.left = left + 'px';
+  let top = r.top - 20;
+  if (top + pop.offsetHeight > innerHeight - 8) top = innerHeight - 8 - pop.offsetHeight;
+  pop.style.top = (Math.max(8, top) - w.top) + 'px';
+}
+function setMStatus(mk, patch){
+  const o = { ...(state.data.meetingStatus[mk] || {}), ...patch };
+  for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
+  if (Object.keys(o).length) state.data.meetingStatus[mk] = o; else delete state.data.meetingStatus[mk];
+  changed();
+}
+// A new version of a student's schedule from v.from on. Versions from that day on are replaced. When only the time or
+// length changes, the every-2-weeks rhythm is kept (the change starts at the next meeting on the old rhythm).
+function saveSchedule(key, v){
+  const list = schedList(key).filter(x => x.from < v.from), prev = list[list.length - 1];
+  if (!v.off && prev && !prev.off && prev.wd === v.wd && prev.every === v.every){
+    let dk = firstOnOrAfter(prev.from, prev.wd); while (dk < v.from) dk = addDays(dk, 7 * prev.every); v.from = dk;
+  }
+  list.push(v);
+  if (list.some(x => !x.off)) state.data.schedules[key] = list; else delete state.data.schedules[key];
+}
+// The schedule form's Save or "No schedule from that day". Returns the new version, or null (with a message) when it can't.
+function schedFromForm(form, off){
+  const key = form.dataset.schedform, say = t => { form.querySelector('.mmsg').textContent = t; return null; };
+  const from = form.querySelector('[data-sfrom]').value;
+  if (!isDk(from) || from < '1990' || from > '2200') return say('Choose the day it starts.');
+  const cur = schedOn(key, from);
+  if (off){ if (!cur) return say('There’s no schedule on that day to stop.'); saveSchedule(key, { from, off: true }); changed(); return { from, off: true }; }
+  const wd = +form.querySelector('[data-swd]').value, start = form.querySelector('[data-sstart]').value.slice(0, 5), len = Math.round(+form.querySelector('[data-slen]').value);
+  const every = +form.querySelector('[data-severy]').value === 1 ? 1 : 2;
+  if (!isHm(start)) return say('Choose a time.');
+  if (!(len >= 5 && len <= 180)) return say('Minutes: from 5 to 180.');
+  if (cur && cur.wd === wd && cur.start === start && cur.len === len && cur.every === every) return say('That’s the schedule already.');
+  const v = { from, wd, start, len, every }; saveSchedule(key, v); changed(); return v;
 }
 
 /* ---------------- Study hall tab ---------------- */
@@ -1241,10 +1709,10 @@ function renderStudy(){
   const A = analyze(); state.lastAnalysis = A;
   if (!A.students.length){ el.innerHTML = setupCard(A); return; }
   const S = settings(), today = todayDk(), from = A.oldest && A.oldest < today ? A.oldest : weekKey(today), days = classDays({ from, to: today, open: false }).filter(d => d.kind === 'sh');
-  const rows = A.students.filter(isCurrent).map(s => ({ ...s, st: statsOf(days.map(d => cellState(A, s, d.dk, 'sh'))) }));
+  const rows = A.students.filter(s => isCurrent(s) || state.showDropped).map(s => ({ ...s, st: statsOf(days.map(d => cellState(A, s, d.dk, 'sh'))) })), drop = droppedToggle(A);
   const said = p => p.to ? `${monDay(p.from)} – ${monDay(addDays(p.to, -1))}` : p.from > today ? `starting ${monDay(p.from)}` : `since ${monDay(p.from)}`;
   const n = rows.filter(r => needsSH(r.key, today)).length;
-  let h = `<div class="panel" style="margin-bottom:16px"><h2>Study hall: ${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}</h2>
+  let h = `${drop ? `<div class="toolbar"><span class="grow"></span>${drop}</div>` : ''}<div class="panel" style="margin-bottom:16px"><h2>Study hall: ${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}</h2>
     <p class="small" style="margin:0">Students who need study hall are expected there; everyone else isn’t. Turn it on when a student has a grade under 60%, and off when they don’t. ${plural(n, 'student needs', 'students need')} study hall today.</p></div>
     <div class="tablewrap"><table class="sum"><thead><tr><th>Student</th><th>Needs study hall</th><th>Dates needed</th><th>Attendance while required</th></tr></thead><tbody>
     ${rows.map(r => `<tr><td><button class="name-btn" data-openstudent="${esc(r.key)}">${esc(r.name)}</button></td><td>${shSwitch(r)}</td>
@@ -1275,15 +1743,15 @@ function renderSetup(){
   const S = settings(), today = todayDk(), cur = A.students.filter(isCurrent), gone = A.students.filter(s => !isCurrent(s));
   const firstFrom = A.students.length ? today : A.oldest && A.oldest < today ? A.oldest : today;
   const wdOpt = w => `<option value="${w}"${S.homeroomDay === w ? ' selected' : ''}>${cap(DAYS[w])}</option>`;
-  const stuLi = s => `<li><span>${esc(s.name)}${s.added ? `<span class="when">since ${esc(monDay(s.added))}</span>` : ''}${s.removed ? `<span class="when">leaving ${esc(monDay(s.removed))}</span>` : ''}</span>
+  const stuLi = s => `<li><span>${esc(s.name)}${s.added ? `<span class="when">since ${esc(monDay(s.added))}</span>` : ''}${s.dropped ? `<span class="when">dropping ${esc(monDay(s.dropped))}</span>` : ''}</span>
     <details class="menu formmenu" data-stumenu><summary class="linkish">Edit</summary><div class="pop" role="group" aria-label="Edit ${esc(s.name)}">
       <label>Name <input type="text" data-stuname value="${esc(s.name)}" maxlength="120"></label>
       <label>On your list starting <input type="date" data-stuadded value="${esc(s.added || '')}"></label>
       <p class="muted">A new spelling keeps ${esc(firstName(s.name))}’s marks, notes, study hall dates and meetings, and Zoom names that matched the old one still match.</p>
       <div class="actions" style="margin-top:2px"><button class="btn small" data-stusave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div><p class="menumsg" role="status"></p></div></details>
-    <details class="menu formmenu" data-stumenu><summary class="linkish">Remove…</summary><div class="pop" role="group" aria-label="Remove ${esc(s.name)}">
-      <div class="dropline"><span>Not in homeroom starting</span><input type="date" data-sturmdate value="${today}" aria-label="First day not in homeroom"><button class="btn small" data-sturemove="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
-      <p class="muted">Earlier days stay as they are, and later days aren’t expected.</p>
+    <details class="menu formmenu" data-stumenu><summary class="linkish">Drop…</summary><div class="pop" role="group" aria-label="Drop ${esc(s.name)} from homeroom">
+      <div class="dropline"><span>First day not in homeroom</span><input type="date" data-dropdate value="${today}" aria-label="First day not in homeroom"><button class="btn small" data-dropsave="${esc(s.key)}">Save</button><button class="btn small ghost" data-menucancel>Cancel</button></div>
+      <p class="muted">From that day ${esc(firstName(s.name))} isn’t expected or counted, and is left off the lists. Earlier days stay as they are.</p>
       <p><button class="linkish" data-studelete="${esc(s.key)}">Added by mistake? Delete ${esc(s.name)}</button></p></div></details></li>`;
   const msg = state.logMsg && state.logMsg.where === 'stu' ? state.logMsg : null;
   el.innerHTML = `<div class="stack" style="max-width:980px">
@@ -1294,7 +1762,7 @@ function renderSetup(){
         <p class="formmsg${msg && msg.bad ? ' bad' : ''}" role="status">${msg ? esc(msg.text) : ''}</p>
         <p class="small muted" style="margin:4px 0 0">You can copy a column of names from a spreadsheet. Names already on your list are skipped.</p></div>
       <div><h3 class="psub">On your list (${cur.length})</h3>${cur.length ? `<ul class="list">${cur.map(stuLi).join('')}</ul>` : '<p class="small muted">No students yet.</p>'}
-        ${gone.length ? `<h3 class="psub">Left homeroom</h3><ul class="list">${gone.map(s => `<li><span>${esc(s.name)}<span class="when">left ${esc(monDay(s.removed))}</span></span><button class="btn small ghost" data-stuback="${esc(s.key)}">Bring back</button></li>`).join('')}</ul>` : ''}</div></div></div>
+        ${gone.length ? `<h3 class="psub">Dropped from homeroom</h3><ul class="list">${gone.map(s => `<li><span>${esc(s.name)}<span class="when">starting ${esc(monDay(s.dropped))}</span></span><button class="btn small ghost" data-undrop="${esc(s.key)}" aria-label="Undo dropping ${esc(s.name)}">Undo</button></li>`).join('')}</ul>` : ''}</div></div></div>
     <div class="two">
       <div class="panel"><h2>Homeroom</h2><div class="setgrid">
         <label for="s-hrday">Day</label><select id="s-hrday" data-setday>${WEEKDAYS.map(wdOpt).join('')}</select>
@@ -1304,6 +1772,9 @@ function renderSetup(){
         <span>Days</span><fieldset class="wdays"><legend class="sr">Study hall days</legend>${WEEKDAYS.map(w => `<label><input type="checkbox" data-studyday="${w}"${S.studyDays.includes(w) ? ' checked' : ''}> ${cap(DAYS[w]).slice(0, 3)}</label>`).join('')}</fieldset>
         <label for="s-shs">Starts</label><input type="time" id="s-shs" data-settime="studyStart" value="${esc(S.studyStart)}">
         <label for="s-she">Ends</label><input type="time" id="s-she" data-settime="studyEnd" value="${esc(S.studyEnd)}"></div></div></div>
+    ${(() => { const ds = Object.keys(state.data.deletedDays).sort().reverse(); if (!ds.length) return '';
+      return `<div class="panel"><h2>Deleted days</h2><p class="small muted">Not on any tab, and their Zoom reports for that time are set aside. Marks and notes on them are kept.</p><ul class="list">${ds.map(id => { const [dk, kind] = id.split('|');
+        return `<li><span>${esc(KIND[kind])}, ${esc(longDate(dk))}, ${parseDk(dk).getFullYear()}</span><button class="btn small ghost" data-undelday="${esc(id)}" aria-label="Bring back ${esc(KIND[kind].toLowerCase())}, ${esc(longDate(dk))}">Undo</button></li>`; }).join('')}</ul></div>`; })()}
     <div class="two">
       <div class="panel"><h2>Late and leaving early</h2><div class="set">
         ${setRow('s-late', 'lateGrace', 'Late if they join more than', 'min after the start')}
@@ -1322,7 +1793,7 @@ function renderSetup(){
     <div class="panel"><h2>Your data</h2>${state.demo ? `
       <p class="small"><b>This is the sample class.</b> The students are made up, and nothing you change here is saved. When you open your own folder, the sample goes away.</p>
       <div class="actions"><button class="btn" data-pick>Open your folder</button></div>` : `
-      <p class="small">Everything you enter here (students, study hall dates, meetings you log, marks, notes, settings and linked Zoom names) is saved in <b>${DATA_FILE}</b> in your folder. Zoom reports are only read, never changed.</p>
+      <p class="small">Everything you enter here (students and who was dropped, study hall dates, 1-on-1 schedules, meetings you log or change, marks, notes, deleted days, settings and linked Zoom names) is saved in <b>${DATA_FILE}</b> in your folder. Zoom reports are only read, never changed.</p>
       ${state.canWrite ? '<p class="small">Changes save automatically.</p>'
         : state.dirHandle ? '<p class="small"><b>Saving into the folder is turned off.</b> Allow it, or download the data file and put it in your folder.</p>'
         : `<p class="small"><b>This browser can’t save into the folder by itself.</b> After making changes, download the data file and put it in your folder, replacing the old one.${state.dirty ? ' <b>You have changes that aren’t saved.</b>' : ''}</p>`}
@@ -1338,7 +1809,7 @@ function addStudents(text, from){
     const key = normKey(name);
     if (!key || /^(student( full)?( name)?|names?|full name)$/.test(key)) continue;
     const s = have.get(key);
-    if (s){ if (!isCurrent(s)){ delete s.removed; back.push(s.name); } else if (!added.includes(s.name)) skipped.push(s.name); continue; }
+    if (s){ if (!isCurrent(s)){ delete s.dropped; back.push(s.name); } else if (!added.includes(s.name)) skipped.push(s.name); continue; }
     const st = { key, name, added: from };
     D.students.push(st); have.set(key, st); added.push(name);
   }
@@ -1353,6 +1824,8 @@ function renameKey(oldK, newK){
   for (const k of Object.keys(D.status)){ const [dk, kind, ...rest] = k.split('|'); if (rest.join('|') === oldK){ const nk = `${dk}|${kind}|${newK}`; if (!D.status[nk]) D.status[nk] = D.status[k]; delete D.status[k]; } }
   if (D.studyHall[oldK]){ D.studyHall[newK] = normPeriods([...(D.studyHall[newK] || []), ...D.studyHall[oldK]]); delete D.studyHall[oldK]; }
   if (D.meetings[oldK]){ D.meetings[newK] = [...(D.meetings[newK] || []), ...D.meetings[oldK]]; delete D.meetings[oldK]; }
+  if (D.schedules[oldK]){ if (!D.schedules[newK]) D.schedules[newK] = D.schedules[oldK]; delete D.schedules[oldK]; }
+  for (const k of Object.keys(D.meetingStatus)){ const i = k.lastIndexOf('|'); if (k.slice(0, i) === oldK){ const nk = `${newK}|${k.slice(i + 1)}`; if (!D.meetingStatus[nk]) D.meetingStatus[nk] = D.meetingStatus[k]; delete D.meetingStatus[k]; } }
   for (const z of Object.keys(D.aliases)) if (D.aliases[z] === oldK) D.aliases[z] = newK;
 }
 
@@ -1396,14 +1869,15 @@ function setupCard(A){
 }
 /* The sample class: made-up students, kept in memory only and never saved. Four weeks of homeroom Mondays and study hall
    Tuesdays and Thursdays up to yesterday, and Zoom 1-on-1s: some students are due, one has never had one, a meeting
-   with five students (a club) and one only 3 minutes long don't count, and one meeting was logged by hand. */
+   with five students (a club) and one only 3 minutes long don't count, and one meeting was logged by hand. Most students
+   have a 1-on-1 schedule (two of them weekly): a few missed one, one was canceled and one was moved. */
 function sampleFolder(){
   let seed = 2026;   // the same sample every time
   const rnd = () => (seed = seed * 48271 % 2147483647) / 2147483647, int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const today = todayDk(), wk = weekKey(today), mon0 = addDays(wk, wk < today ? -21 : -28), mons = [0, 1, 2, 3].map(i => addDays(mon0, 7 * i));
   const teacher = 'Jordan Rivera';
   const names = ['Amara Okafor', 'Ben Whitfield', 'Carmen Reyes', 'Dev Patel', 'Elif Demir', 'Felix Wagner', 'Grace Lin', 'Hugo Martins', 'Isabel Cruz', 'Jonah Brooks'];
-  const students = names.map(n => ({ key: normKey(n), name: n, added: n === 'Jonah Brooks' ? mons[1] : mon0, ...(n === 'Felix Wagner' ? { removed: mons[3] } : {}) }));
+  const students = names.map(n => ({ key: normKey(n), name: n, added: n === 'Jonah Brooks' ? mons[1] : mon0, ...(n === 'Felix Wagner' ? { dropped: mons[3] } : {}) }));
   const studyHall = { 'carmen reyes': [{ from: mon0 }], 'dev patel': [{ from: mon0, to: mons[2] }], 'isabel cruz': [{ from: mons[2] }], 'hugo martins': [{ from: mons[3] }] };
   const zt = (dk, m) => { const [y, mo, d] = dk.split('-'), h = Math.floor(m / 60); return `${mo}/${d}/${y} ${pad(h % 12 || 12)}:${pad(m % 60)}:00 ${h >= 12 ? 'PM' : 'AM'}`; };
   const mdY = dk => { const [y, m, d] = dk.split('-'); return `${m}-${d}-${y}`; };
@@ -1462,7 +1936,16 @@ function sampleFolder(){
   meet(15, ['Felix Wagner'], 10 * 60, 15, '1on1-felix');
   meet(12, ['Hugo Martins'], 15 * 60 + 30, 20, '1on1-hugo');
   meet(2, ['Amara Okafor', 'Ben Whitfield', 'Dev Patel', 'Elif Demir', 'Hugo Martins'], 15 * 60 + 30, 45, 'chess-club');   // five students: not a 1-on-1
-  const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [],
+  // Schedules line up with the meetings above. Ben, Dev and Jonah missed their latest one; Carmen's was canceled;
+  // Hugo's was moved to the day he met; Elif's moved from afternoons to mornings; Isabel has none.
+  const sch = (dk, start, len = 15, every = 2) => ({ from: dk, wd: parseDk(dk).getDay(), start, len, every });
+  const hugoDay = (() => { const b = back(12), w = parseDk(b).getDay(); return addDays(b, w < 5 ? 1 : -1); })();
+  const schedules = { 'amara okafor': [sch(back(3), '15:30')], 'ben whitfield': [sch(back(16), '15:30')], 'carmen reyes': [sch(back(9), '15:30', 20, 1)],
+    'dev patel': [sch(back(20), '15:30')], 'elif demir': [sch(back(19), '15:30'), sch(back(6), '10:00', 20)], 'felix wagner': [sch(back(15), '10:00')],
+    'grace lin': [sch(back(8), '15:30')], 'hugo martins': [sch(hugoDay, '16:00')], 'jonah brooks': [sch(back(4), '15:45', 15, 1)] };
+  const meetingStatus = { [`carmen reyes|${addDays(back(9), 7)}`]: { cat: 'canceled', note: 'Field trip' },
+    [`hugo martins|${hugoDay}`]: { moveTo: { dk: back(12), start: '15:30' }, note: 'Moved: dentist appointment' } };
+  const data = { version: 1, settings: { ...defaultData().settings, teacherName: teacher }, students, studyHall, aliases: {}, ignored: [], schedules, meetingStatus,
     meetings: { 'grace lin': [{ id: 'sample1', date: back(8), note: 'Phone call (her Zoom wasn’t working)' }] },
     status: { [`${mons[3]}|hr|dev patel`]: { cat: 'excused', note: 'Doctor’s appointment' }, [`${mons[1]}|hr|ben whitfield`]: { note: 'Wi‑Fi trouble at home' } } };
   return { files, dataText: JSON.stringify(data) };
@@ -1474,7 +1957,7 @@ function loadSample(){
 }
 function leaveSample(){
   Object.assign(state, { demo: false, loaded: false, data: defaultData(), files: [], folderName: '', dirty: false, undo: [], redo: [], snap: null,
-    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ov1: null, logMsg: null });
+    tab: 'overview', student: null, query: '', ovScroll: null, ovSel: null, ov1: null, ovDay: null, mSel: null, mScroll: null, mFocus: null, logMsg: null, showDropped: false });
   setStatus(null); render(); navReplace();
 }
 
@@ -1489,28 +1972,36 @@ function helpHTML(){
     ${zoomHelp()}
     ${state.loaded ? '' : '<div class="actions"><button class="btn small" data-demo>Try a sample class</button></div>'}
     <h3>What each tab is for</h3>
-    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand or add a note. The last column shows how long it’s been since each student’s last 1-on-1; click it to see their meetings or log one.</li>
-      <li><b>Students</b>: each student’s homeroom and study hall attendance and their last 1-on-1. Click a name for the student’s page, where you can change the dates they need study hall, see their meetings and notes, and print it.</li>
-      <li><b>1-on-1s</b>: who’s due for a 1-on-1, most days since the last one first, and every meeting. Log a meeting that wasn’t on Zoom, like a phone call.</li>
+    <ul><li><b>Overview</b>: every student and every homeroom (HR) and study hall (SH) day on one grid. Click a day to see what Zoom shows, change it by hand, mark that you let the student go early, or add a note. Click a date at the top to delete that day (a day with no homeroom, say). The last column shows each student’s next scheduled 1-on-1 (or how long it’s been since the last one), and a small red <b>no-show</b> when they missed one in the past 14 days; click it to see their meetings or log one.</li>
+      <li><b>Students</b>: each student’s homeroom and study hall attendance and their 1-on-1s. Click a name for the student’s page, where you can change the dates they need study hall, set their 1-on-1 schedule, see their meetings and notes, print it, or record that they were dropped from homeroom.</li>
+      <li><b>1-on-1s</b>: a calendar with one row per student and one column per week. Each meeting is a small chip with its day and time, colored by what happened. Click a meeting to mark it met, a no-show or canceled, move it, or add a note; click an empty week to add a meeting. Click the line under a name to set that student’s schedule. Log a meeting that wasn’t on Zoom, like a phone call, at the top.</li>
       <li><b>Study hall</b>: turn <b>Needs study hall</b> on when a student has a grade under 60%, and off when they don’t. It asks for the date each time.</li>
-      <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and 1-on-1 rules, and your data.</li></ul>
+      <li><b>Setup</b>: your students, the homeroom and study hall days and times, the late and 1-on-1 rules, deleted days, and your data.</li></ul>
     <h3>How attendance is worked out</h3>
     <ul><li>A Zoom report counts for homeroom when it has someone in it during homeroom time (${esc(daysText([S.homeroomDay]))}, ${esc(winText('hr'))}), and for study hall the same way (${esc(daysText(S.studyDays))}${S.studyDays.length ? `, ${esc(winText('sh'))}` : ''}).</li>
       <li><b>Present</b>: in Zoom during that time. <b>L</b>: joined more than ${plural(S.lateGrace, 'minute')} after the start, or left more than ${plural(S.leaveGrace, 'minute')} before the end.</li>
       <li><b>Absent</b>: not in that day’s report. <b>?</b>: no Zoom report for that day yet.</li>
       <li>Homeroom counts for everyone on your list that day. Study hall counts only for students who need it that day; a student who came anyway shows as <b>came, not required</b>, and it doesn’t count either way.</li>
       <li>Excused days, and days with no report, aren’t counted in the percentages.</li>
-      <li><b>1-on-1s</b>: a Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer. Each student who was in it at least ${plural(S.oneOnOneMin, 'minute')} had a 1-on-1 that day. Time in a homeroom or study hall report within ${NEAR} minutes of class time counts as that class, not a 1-on-1. A student is <b>due</b> once ${plural(S.oneOnOneDays, 'day')} pass without one.</li></ul>
+      <li><b>Let go early</b> (in a day’s box): the day counts as present, and leaving early isn’t marked with an L. Being late still is.</li>
+      <li>A <b>deleted day</b> isn’t a homeroom or study hall day on any tab, and its Zoom report for that time is set aside (not counted, and not a 1-on-1). Marks and notes on it are kept; bring it back on the Setup tab.</li>
+      <li>A student <b>dropped from homeroom</b> isn’t expected or counted from that day on, and is left off the lists unless you check <b>Show dropped</b>. Their earlier days stay.</li>
+      <li><b>1-on-1s</b>: a Zoom meeting outside homeroom and study hall times with ${MAX_GROUP} students or fewer. Each student who was in it at least ${plural(S.oneOnOneMin, 'minute')} had a 1-on-1 that day. Time in a homeroom or study hall report within ${NEAR} minutes of class time counts as that class, not a 1-on-1. A student is <b>due</b> once ${plural(S.oneOnOneDays, 'day')} pass without one.</li>
+      <li><b>Scheduled 1-on-1s</b>: each one is <b>met</b> when the student was in a Zoom meeting within ${MEET_NEAR} minutes of its time, or you logged a meeting that day; a <b>no-show</b> once its time has passed without that (the box says whether there was a Zoom report that day); otherwise <b>today</b> or <b>upcoming</b>. You can set met, no-show or canceled by hand, or move one meeting to another day and time. Changing a schedule applies from the day you choose; earlier meetings keep their times.</li></ul>
     <h3>Colors and marks</h3>
     <ul class="helpkey">${['present', 'excused', 'absent', 'none', 'extra'].map(k => `<li><i class="ovsw c-${k}"></i>${esc(CELL[k])}</li>`).join('')}
-      <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
+      <li><i class="ovsw c-missing">?</i>No Zoom report yet</li><li><b>L</b> Late or left early</li><li><b class="ovgo">go</b> Let go early</li><li><i class="ovsw ovnote-k"></i>Has a note</li></ul>
+    <h3>1-on-1 colors</h3>
+    <ul class="helpkey">${Object.entries(MSTAT).map(([k, v]) => `<li><i class="msw k-${k}"></i>${k === 'today' ? `<b>${esc(v)}</b>` : esc(v)}</li>`).join('')}<li><i class="msw k-met mvk"></i>Moved</li></ul>
     <h3>Keyboard</h3>
-    <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid')}${kb(['Enter'], 'Open the day (or the 1-on-1s) you’re on')}${kb(['Esc'], 'Close it')}
+    <div class="keyrow">${kb(['←', '→', '↑', '↓'], 'Move around the Overview grid or the 1-on-1s calendar')}${kb(['Enter'], 'Open the day, date, meeting or week you’re on')}${kb(['Esc'], 'Close it')}
       ${kb([MOD, 'Z'], 'Undo')}${kb([MOD, 'Y'], 'Redo')}${kb(['/'], 'Find a student')}${kb(['?'], 'This help')}</div>
     <h3>Common questions</h3>
     <dl class="faq"><dt>A student shows as absent, but they were there.</dt><dd>Zoom may know them by another name, like a parent’s name or “iPad.” Look for <b>Zoom names that don’t match a student</b> on the Overview and link the name. You only do this once.</dd>
       <dt>A file I just saved doesn’t show up.</dt><dd>Click <b>Refresh</b> at the top of the page.</dd>
-      <dt>A student left, or joined late in the year.</dt><dd>On the Setup tab, use <b>Remove…</b> with the date they left, or set the date they joined with <b>Edit</b>. Their other days stay as they are.</dd>
+      <dt>A student left, or joined late in the year.</dt><dd>On the student’s page, click <b>Dropped from homeroom?</b> and choose their first day not in homeroom (or use <b>Drop…</b> on the Setup tab). Set the date they joined with <b>Edit</b> on the Setup tab. Their other days stay as they are. <b>Delete student</b> is for a name added by mistake.</dd>
+      <dt>There was no homeroom one day.</dt><dd>On the Overview, click that date at the top and choose <b>Delete this day</b>. Bring it back on the Setup tab.</dd>
+      <dt>A student missed a 1-on-1, or it was moved.</dt><dd>On the 1-on-1s tab, click the meeting. Mark it, or choose a new day and time and click <b>Move</b>.</dd>
       <dt>My changes aren’t being saved.</dt><dd>Chrome and Edge save into your folder by themselves. In other browsers, click <b>Download my data</b> after making changes and put the file in your folder.</dd>
       <dt>I clicked something by mistake.</dt><dd>Click <b>Undo</b> at the top right, or press <kbd>${MOD}</kbd> <kbd>Z</kbd>.</dd></dl>
   </div>`;
@@ -1686,7 +2177,7 @@ function undo(redo){
   const from = redo ? state.redo : state.undo, to = redo ? state.undo : state.redo;
   if (!state.loaded || !from.length) return;
   to.push(state.snap); state.data = withDefaults(JSON.parse(from.pop())); state.snap = JSON.stringify(state.data);
-  Object.assign(state, { ovSel: null, ov1: null, logMsg: null });
+  Object.assign(state, { ovSel: null, ov1: null, ovDay: null, mSel: null, mMsg: '', logMsg: null });
   if (state.student && !state.data.students.some(s => s.key === state.student)) state.student = null;
   state.dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300);
   render();
@@ -1727,7 +2218,7 @@ function navPush(){ navSeq++; try { history.pushState(navSnap(), ''); } catch (e
 const navCanGoBack = () => !!(history.state && history.state.seq > 0 && history.state.load === NAV_LOAD);
 function openStudent(key){
   navReplace();
-  state.studentTab = state.tab === 'students' ? null : state.tab; state.tab = 'students'; state.student = key; state.ovSel = null; state.ov1 = null; state.logMsg = null;
+  state.studentTab = state.tab === 'students' ? null : state.tab; state.tab = 'students'; state.student = key; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.mSel = null; state.logMsg = null;
   navPush(); render(); window.scrollTo(0, 0);
   const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true });
 }
@@ -1742,8 +2233,8 @@ function focusStudentLink(key){
   if (b){ b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); }
 }
 function focusOvCell(sel){
-  const b = sel && $(`#tab-overview .ovb${sel}`); if (!b) return;
-  document.querySelectorAll('#tab-overview .ovb').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
+  const b = sel && $(`#tab-overview :is(.ovb,.ovdh)${sel}`); if (!b) return;
+  document.querySelectorAll('#tab-overview .ovb, #tab-overview .ovdh').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
   b.focus({ preventScroll: true }); revealOvCell(b);
 }
 const cellSel = xk => `[data-ovcell="${CSS.escape(xk)}"]`, oneSel = key => `[data-ov1="${CSS.escape(key)}"]`;
@@ -1758,10 +2249,33 @@ function focusSelector(t){
 }
 // Close the Overview's open box in place (no redraw), so whatever was clicked keeps its focus.
 function closeOvPop(){
-  state.ovSel = null; state.ov1 = null;
-  const pop = $('#tab-overview .ovpop');
-  if (pop){ if (pop.contains(document.activeElement)) document.activeElement.blur(); pop.remove(); }   // blur saves a note being typed
+  state.ovSel = null; state.ov1 = null; state.ovDay = null;
+  for (const pop of document.querySelectorAll('#tab-overview .ovpop, #tab-overview .ovdpop')){ if (pop.contains(document.activeElement)) document.activeElement.blur(); pop.remove(); }   // blur saves a note being typed
   document.querySelectorAll('#tab-overview .sel').forEach(td => { td.classList.remove('sel'); const b = td.querySelector('.ovb'); if (b) b.setAttribute('aria-expanded', 'false'); });
+  document.querySelectorAll('#tab-overview th.dsel').forEach(th => { th.classList.remove('dsel'); th.querySelector('.ovdh').setAttribute('aria-expanded', 'false'); });
+}
+// The same for the 1-on-1s calendar's open box.
+function closeMPop(){
+  state.mSel = null; state.mMsg = '';
+  const pop = $('#tab-meetings .mpop');
+  if (pop){ if (pop.contains(document.activeElement)) document.activeElement.blur(); pop.remove(); }
+  document.querySelectorAll('#tab-meetings .mgi.sel').forEach(b => { b.classList.remove('sel'); b.setAttribute('aria-expanded', 'false'); });
+}
+// Close the open box on the 1-on-1s tab and put focus back on what opened it.
+function closeMPopTo(){
+  const a = state.mSel && $('#tab-meetings .mpop'), sel = a ? a.dataset.anchor : null;
+  state.mSel = null; state.mMsg = ''; renderMeetings(); focusMgi(sel);
+}
+function focusMgi(sel){
+  const b = sel && $(`#tab-meetings .mgblock ${sel}`); if (!b) return;
+  document.querySelectorAll('#tab-meetings .mgi').forEach(x => { x.tabIndex = x === b ? 0 : -1; });
+  state.mFocus = sel; b.focus({ preventScroll: true }); revealMgi(b);
+}
+function revealMgi(b){
+  const sc = b.closest('.mgblock'), nm = sc && sc.querySelector('thead th.mgname'), right = sc && sc.querySelector('thead th.mg1h'); if (!nm) return;
+  if (b.closest('th.mgname')) return;
+  const r = b.getBoundingClientRect(), left = nm.getBoundingClientRect().right, end = right.getBoundingClientRect().left;
+  if (r.left < left) sc.scrollLeft -= left - r.left + 4; else if (r.right > end) sc.scrollLeft += r.right - end + 4;
 }
 
 /* ---------------- Actions ---------------- */
@@ -1786,16 +2300,17 @@ function addPeriodFromRow(li){
 }
 
 /* ---------------- Events ---------------- */
-const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; };
+const closeMenu = m => { m.open = false; if ('rangemenu' in m.dataset) state.rangeMenu = false; if ('dropmenu' in m.dataset) state.dropEdit = null; };
 // Pressing anywhere outside the Overview's open box closes it in place. A press that starts in the box never closes it.
 document.addEventListener('pointerdown', e => {
-  if (!(state.ovSel || state.ov1) || state.tab !== 'overview' || e.target.closest('.ovpop, .ovb')) return;
+  if (state.mSel && state.tab === 'meetings' && !e.target.closest('.mpop, .mgi')) closeMPop();
+  if (!(state.ovSel || state.ov1 || state.ovDay) || state.tab !== 'overview' || e.target.closest('.ovpop, .ovdpop, .ovb, .ovdh')) return;
   closeOvPop();
 }, true);
 document.addEventListener('click', async e => {
   document.querySelectorAll('details.menu[open]').forEach(m => { if (!m.contains(e.target)) closeMenu(m); });
   const t = e.target.closest('button'); if (!t) return;
-  if (e.detail > 1 && ['ovcell', 'ov1', 'logadd', 'addstudents'].some(k => t.dataset[k] !== undefined)) return;   // a double-click acts once
+  if (e.detail > 1 && ['ovcell', 'ov1', 'ovdh', 'logadd', 'addstudents', 'mchip', 'madd', 'msched', 'maddgo', 'ovdelday'].some(k => t.dataset[k] !== undefined)) return;   // a double-click acts once
   const sel = focusSelector(t);
   await onClick(t);
   // After a redraw, put keyboard focus back on the control that was clicked (or its replacement).
@@ -1822,8 +2337,8 @@ async function onClick(t){
     return;
   }
   if (has('data-closestatus')){ setStatus(null); const b = $(`nav.tabs [data-tab="${state.tab}"]`); if (b) b.focus({ preventScroll: true }); return; }
-  if (d.tab){ state.tab = d.tab; state.student = null; state.ovSel = null; state.ov1 = null; state.logMsg = null; render(); navReplace(); return; }
-  if (d.goto){ state.tab = d.goto; state.student = null; render(); navReplace(); return; }
+  if (d.tab){ state.tab = d.tab; state.student = null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.mSel = null; state.logMsg = null; render(); navReplace(); return; }
+  if (d.goto){ state.tab = d.goto; state.student = null; state.mSel = null; render(); navReplace(); return; }
   if (t.id === 'pick' || has('data-pick')) return pickFolder();
   if (t.id === 'reopen' || has('data-reopen')) return reopen();
   if (t.id === 'refresh' || has('data-refresh')) return HAS_FSA && state.dirHandle ? reopen() : pickFolder();
@@ -1831,8 +2346,8 @@ async function onClick(t){
   if (t.id === 'grantSave') return grantSave();
   if (has('data-menucancel')){ const m = t.closest('details.menu'); closeMenu(m); m.querySelector('summary').focus(); return; }
   if (has('data-clearsearch')){ state.query = ''; renderCurrent(); const s0 = visible(`#tab-${state.tab} [data-search]`); if (s0) s0.focus(); return; }
-  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovScroll = null; renderCurrent(); return; }
-  if (d.show){ state.ovShow = d.show; state.ovSel = null; state.ov1 = null; renderOverview(); return; }
+  if (d.range){ state.range = { preset: d.range, from: '', to: '' }; state.rangeMenu = false; state.ovScroll = null; state.mScroll = null; renderCurrent(); return; }
+  if (d.show){ state.ovShow = d.show; state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); return; }
   if (has('data-printlist')) return window.print();
   if (has('data-exportcsv')) return exportCSV();
   // Unmatched Zoom names
@@ -1843,23 +2358,112 @@ async function onClick(t){
   if (d.unlink){ delete D.aliases[d.unlink]; changed(); renderSetup(); return; }
   if (d.unignore){ D.ignored = D.ignored.filter(z => z !== d.unignore); changed(); renderSetup(); return; }
   // The Overview's day editor and 1-on-1 box
-  if (d.ovcell !== undefined){ state.ov1 = null; state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(cellSel(d.ovcell)); return; }
-  if (d.ov1 !== undefined){ state.ovSel = null; state.logMsg = null; state.ov1 = state.ov1 === d.ov1 ? null : d.ov1; renderOverview(); focusOvCell(oneSel(d.ov1)); return; }
+  if (d.ovcell !== undefined){ state.ov1 = null; state.ovDay = null; state.ovSel = state.ovSel === d.ovcell ? null : d.ovcell; renderOverview(); focusOvCell(cellSel(d.ovcell)); return; }
+  if (d.ov1 !== undefined){ state.ovSel = null; state.ovDay = null; state.logMsg = null; state.ov1 = state.ov1 === d.ov1 ? null : d.ov1; renderOverview(); focusOvCell(oneSel(d.ov1)); return; }
   if (has('data-ovclose')){ const was = state.ovSel ? cellSel(state.ovSel) : state.ov1 ? oneSel(state.ov1) : null; state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return; }
-  if (d.ovcat !== undefined && state.ovSel){ setOverride(state.ovSel, { cat: d.ovcat || undefined }); renderOverview(); return; }
+  // A date at the top of the grid: its box, and Delete this day
+  if (d.ovdh){ state.ovSel = null; state.ov1 = null; state.ovDay = state.ovDay === d.ovdh ? null : d.ovdh; renderOverview();
+    const b = state.ovDay ? $('#tab-overview [data-ovdelday]') : null; if (b) b.focus({ preventScroll: true }); else focusOvCell(`[data-ovdh="${CSS.escape(d.ovdh)}"]`); return; }
+  if (has('data-ovdayclose')){ const was = state.ovDay; state.ovDay = null; renderOverview(); if (was) focusOvCell(`[data-ovdh="${CSS.escape(was)}"]`); return; }
+  if (d.ovdelday){
+    const id = d.ovdelday, [dk, kind] = id.split('|'), heads = [...document.querySelectorAll('#tab-overview [data-ovdh]')].map(b => b.dataset.ovdh), i = heads.indexOf(id);
+    D.deletedDays[id] = { date: todayDk() }; state.ovDay = null; changed(); renderOverview();
+    setStatus(`Deleted ${KIND[kind].toLowerCase()} on ${longDate(dk)}. Bring it back on the Setup tab.`, 'info', { label: 'Undo', act: 'undo' });
+    const next = heads[i + 1] || heads[i - 1];
+    if (next && $(`#tab-overview [data-ovdh="${CSS.escape(next)}"]`)) focusOvCell(`[data-ovdh="${CSS.escape(next)}"]`); else { const b = $('#tab-overview .ovb[tabindex="0"]'); if (b) b.focus({ preventScroll: true }); }
+    return;
+  }
+  if (d.undelday){
+    const all = [...document.querySelectorAll('[data-undelday]')], i = all.indexOf(t), [dk, kind] = d.undelday.split('|');
+    delete D.deletedDays[d.undelday]; changed(); renderCurrent(); setStatus(`Brought back ${KIND[kind].toLowerCase()} on ${longDate(dk)}.`, 'info', { label: 'Undo', act: 'undo' });
+    const left = [...document.querySelectorAll('[data-undelday]')], f = left[Math.min(Math.max(i, 0), left.length - 1)] || $('#s-hrday'); if (f) f.focus(); return;
+  }
+  // Picking a mark other than Present takes back "let go early" (an absent or excused day wasn't let go).
+  if (d.ovcat !== undefined && state.ovSel){ const c = ovCell(state.ovSel); setOverride(state.ovSel, { cat: d.ovcat || undefined, go: d.ovcat === 'present' && c && c.ov.go ? true : undefined }); renderOverview();
+    const b = $(`#tab-overview .ovpop [data-ovcat="${d.ovcat}"]`); if (b) b.focus({ preventScroll: true }); return; }
+  if (has('data-ovgo') && state.ovSel){
+    const c = ovCell(state.ovSel); if (!c) return;
+    setOverride(state.ovSel, c.go ? { go: undefined } : { go: true, cat: c.ov.cat === 'present' ? 'present' : undefined }); renderOverview();
+    const b = $('#tab-overview .ovpop [data-ovgo]'); if (b) b.focus({ preventScroll: true }); return;
+  }
   if (d.ovlet && state.ovSel){
     const c = ovCell(state.ovSel); if (!c) return;
-    const now = !c.L; setOverride(state.ovSel, { L: now === c.autoL ? undefined : now }); renderOverview(); return;
+    const now = !c.L; setOverride(state.ovSel, { L: now === c.autoL ? undefined : now }); renderOverview();
+    const b = $('#tab-overview .ovpop [data-ovlet]'); if (b && !b.disabled) b.focus({ preventScroll: true }); return;
   }
-  if (has('data-ovreset') && state.ovSel){ setOverride(state.ovSel, { cat: undefined, L: undefined }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
+  if (has('data-ovreset') && state.ovSel){ setOverride(state.ovSel, { cat: undefined, L: undefined, go: undefined }); renderOverview(); const b = $('#tab-overview .ovpop [data-ovcat=""]'); if (b) b.focus(); return; }
   if (d.ovopen) return openStudent(d.ovopen);
   // 1-on-1s
   if (has('data-logadd')){ const f = t.closest('[data-logform]'); return logMeeting(f, f.closest('.ovpop') ? 'pop' : state.tab === 'meetings' ? 'tab' : 'page'); }
   if (d.mdel){
-    const [key, id] = d.mdel.split('|'), list = (D.meetings[key] || []).filter(m => m.id !== id);
+    const [key, id] = d.mdel.split('|'), gone = (D.meetings[key] || []).find(m => m.id === id), list = (D.meetings[key] || []).filter(m => m.id !== id);
+    if (!gone) return;
     if (list.length) D.meetings[key] = list; else delete D.meetings[key];
-    state.logMsg = null; changed(); renderCurrent(); setStatus('Deleted the meeting.', 'info', { label: 'Undo', act: 'undo' }); return;
+    if (gone.plan) delete D.meetingStatus[`${key}|${gone.date}`];
+    const inPop = !!t.closest('.mpop'); if (inPop) state.mSel = null;
+    state.logMsg = null; changed(); renderCurrent(); setStatus('Deleted the meeting.', 'info', { label: 'Undo', act: 'undo' });
+    if (inPop){ const b = $(`#tab-meetings [data-madd^="${CSS.escape(key + '|')}"]`); if (b) b.focus(); }
+    return;
   }
+  // The 1-on-1s calendar
+  if (d.mshow){ state.mShow = d.mshow; state.mSel = null; renderMeetings(); return; }
+  if (d.mchip || d.madd || d.msched){
+    const [kind, id] = d.mchip ? ['m', d.mchip] : d.madd ? ['add', d.madd] : ['sched', d.msched];
+    const key = kind === 'm' ? id.slice(0, id.indexOf('|')) : kind === 'add' ? id.split('|')[0] : id, sel = focusSelector(t);
+    const same = state.mSel && state.mSel.kind === kind && (state.mSel.id || state.mSel.key) === id;
+    state.mSel = same ? null : { kind, key, id, week: kind === 'add' ? id.split('|')[1] : null }; state.mMsg = ''; state.mFocus = sel;
+    renderMeetings();
+    const f = state.mSel && kind !== 'm' ? $('#tab-meetings .mpop input, #tab-meetings .mpop select') : null;
+    if (f) f.focus(); else focusMgi(sel);
+    return;
+  }
+  if (has('data-mclose')) return closeMPopTo();
+  if (d.mcat !== undefined && state.mSel && state.mSel.kind === 'm'){
+    setMStatus(state.mSel.id, { cat: d.mcat || undefined }); state.mMsg = ''; renderMeetings();
+    const b = $(`#tab-meetings .mpop [data-mcat="${d.mcat}"]`); if (b) b.focus(); return;
+  }
+  if (has('data-mreset') && state.mSel && state.mSel.kind === 'm'){
+    setMStatus(state.mSel.id, { cat: undefined, moveTo: undefined }); state.mMsg = ''; renderMeetings();
+    const b = $('#tab-meetings .mpop [data-mcat=""]'); if (b) b.focus(); return;
+  }
+  if (has('data-mmovego') && state.mSel && state.mSel.kind === 'm'){
+    const pop = t.closest('.mpop'), dk = pop.querySelector('[data-mmovedk]').value, start = pop.querySelector('[data-mmovet]').value.slice(0, 5), mk = state.mSel.id;
+    const say = text => { state.mMsg = text; pop.querySelector('.mmsg').textContent = text; };
+    if (!isDk(dk) || dk < '1990' || dk > '2200') return say('Choose the day to move it to.');
+    if (!isHm(start)) return say('Choose the time to move it to.');
+    const s = state.lastAnalysis.byKey.get(state.mSel.key), M = oneOnOnes(state.lastAnalysis, s), x = M.occ.find(o => o.mk === mk); if (!x) return;
+    if (M.occ.some(o => o !== x && o.at === dk && o.cat !== 'canceled')) return say(`There’s already a 1-on-1 on ${shortDate(dk)}.`);
+    setMStatus(mk, { moveTo: dk === x.dk && start === x.start ? undefined : { dk, start } }); state.mMsg = ''; renderMeetings();
+    setStatus(dk === x.dk && start === x.start ? `${s.name}’s 1-on-1 is back on ${shortDate(dk)}.` : `Moved ${s.name}’s 1-on-1 to ${shortDate(dk)} at ${fmtMin(hmMin(start))}.`, 'info', { label: 'Undo', act: 'undo' });
+    const b = $('#tab-meetings .mpop [data-mmovego]'); if (b) b.focus(); return;
+  }
+  if (has('data-maddgo')){
+    const box = t.closest('[data-maddform]'), [key, w] = box.dataset.maddform.split('|'), pop = t.closest('.mpop');
+    const dk = box.querySelector('[data-madddk]').value, start = box.querySelector('[data-maddt]').value.slice(0, 5), len = Math.round(+box.querySelector('[data-maddlen]').value);
+    const note = pop.querySelector('[data-maddnote]').value.trim().slice(0, 300), s = D.students.find(x => x.key === key);
+    const say = (text, sel) => { state.mMsg = text; pop.querySelector('.mmsg').textContent = text; const f = sel && pop.querySelector(sel); if (f) f.focus(); };
+    if (!s) return;
+    if (!isDk(dk) || dk < w || dk > addDays(w, 6)) return say(`Choose a day in the week of ${monDay(w)}.`, '[data-madddk]');
+    if (!isHm(start)) return say('Choose a time.', '[data-maddt]');
+    if (!(len >= 5 && len <= 180)) return say('Minutes: from 5 to 180.', '[data-maddlen]');
+    if (oneOnOnes(state.lastAnalysis, state.lastAnalysis.byKey.get(key)).occ.some(o => o.at === dk || o.dk === dk)) return say(`There’s already a 1-on-1 on ${shortDate(dk)}.`, '[data-madddk]');
+    D.meetings[key] = [...(D.meetings[key] || []), { id: uid(), date: dk, note: '', start, len, plan: true }];
+    if (note) D.meetingStatus[`${key}|${dk}`] = { note };
+    state.mSel = { kind: 'm', key, id: `${key}|${dk}` }; state.mMsg = ''; changed(); renderMeetings();
+    setStatus(`Added a 1-on-1 with ${s.name} on ${shortDate(dk)} at ${fmtMin(hmMin(start))}.`, 'info', { label: 'Undo', act: 'undo' });
+    focusMgi(`[data-mchip="${CSS.escape(`${key}|${dk}`)}"]`); return;
+  }
+  if (d.schedsave || d.schedstop){
+    const form = t.closest('[data-schedform]'), key = form.dataset.schedform, s = D.students.find(x => x.key === key), v = schedFromForm(form, !!d.schedstop);
+    if (!v || !s) return;
+    const menu = t.closest('details.menu');
+    if (menu) closeMenu(menu); else state.mSel = null;
+    renderCurrent();
+    setStatus(v.off ? `${s.name} has no 1-on-1 schedule starting ${shortDate(v.from)}.` : `${s.name}’s 1-on-1s: ${schedWords(v)}, starting ${shortDate(firstOnOrAfter(v.from, v.wd))}.`, 'info', { label: 'Undo', act: 'undo' });
+    if (menu){ const b = $(`#tab-students [data-schedmenu="${CSS.escape(key)}"] > summary`); if (b) b.focus(); } else focusMgi(`[data-msched="${CSS.escape(key)}"]`);
+    return;
+  }
+  if (has('data-schedcancel')){ const menu = t.closest('details.menu'); if (menu){ closeMenu(menu); menu.querySelector('summary').focus(); } else closeMPopTo(); return; }
   // Students
   if (d.openstudent) return openStudent(d.openstudent);
   if (has('data-studentback')) return studentBack();
@@ -1903,17 +2507,26 @@ async function onClick(t){
     s.name = name; if (added) s.added = added; else delete s.added;
     changed(); renderCurrent(); setStatus(`Saved ${name}.`, 'info', { label: 'Undo', act: 'undo' }); return;
   }
-  if (d.sturemove){
-    const m = t.closest('details.menu'), v = m.querySelector('[data-sturmdate]').value, s = D.students.find(x => x.key === d.sturemove);
-    if (!s || !isDk(v)){ m.querySelector('[data-sturmdate]').focus(); return; }
-    if (s.added && v <= s.added){ setStatus(`${s.name} is on your list starting ${shortDate(s.added)}. Choose a later day, or use “Delete” if they were added by mistake.`); m.querySelector('[data-sturmdate]').focus(); return; }
-    s.removed = v; changed(); renderCurrent(); setStatus(`${s.name} isn’t in homeroom starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' }); return;
+  // Dropped from homeroom (the student's page, or Drop… on Setup), and Undo
+  if (d.dropsave){
+    const m = t.closest('details.menu'), i = m.querySelector('[data-dropdate]'), v = i.value, s = D.students.find(x => x.key === d.dropsave);
+    if (!s || !isDk(v) || v < '1990' || v > '2200'){ i.focus(); return; }
+    if (s.added && v <= s.added){ setStatus(`${s.name} is on your list starting ${shortDate(s.added)}. Choose a later day, or use “Delete” if they were added by mistake.`); i.focus(); return; }
+    s.dropped = v; state.dropEdit = null; changed(); renderCurrent();
+    setStatus(`${s.name} is dropped from homeroom starting ${shortDate(v)}.`, 'info', { label: 'Undo', act: 'undo' });
+    const b = $(`#tab-${state.tab} [data-undrop="${CSS.escape(s.key)}"]`); if (b) b.focus(); return;
   }
-  if (d.stuback){ const s = D.students.find(x => x.key === d.stuback); if (!s) return; delete s.removed; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' }); return; }
+  if (d.undrop){
+    const s = D.students.find(x => x.key === d.undrop); if (!s) return;
+    delete s.dropped; changed(); renderCurrent(); setStatus(`${s.name} is back on your list.`, 'info', { label: 'Undo', act: 'undo' });
+    const b = $(`#tab-${state.tab} [data-dropmenu="${CSS.escape(s.key)}"] > summary`) || $('#stuPaste'); if (b) b.focus(); return;
+  }
   if (d.studelete){
     const k = d.studelete, s = D.students.find(x => x.key === k); if (!s) return;
-    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates and meetings you logged. To keep their earlier days instead, use “Not in homeroom starting”.`)) return;
-    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k];
+    if (!confirm(`Delete ${s.name}?\n\nThey’ll be taken off every tab, with their marks, notes, study hall dates, 1-on-1 schedule and meetings you logged. To keep their earlier days instead, use “Dropped from homeroom”.`)) return;
+    D.students = D.students.filter(x => x.key !== k); delete D.studyHall[k]; delete D.meetings[k]; delete D.schedules[k];
+    for (const x of Object.keys(D.meetingStatus)) if (x.slice(0, x.lastIndexOf('|')) === k) delete D.meetingStatus[x];
+    if (state.student === k){ state.student = null; navReplace(); }
     for (const x of Object.keys(D.status)) if (x.split('|').slice(2).join('|') === k) delete D.status[x];
     for (const z of Object.keys(D.aliases)) if (D.aliases[z] === k) delete D.aliases[z];
     changed(); renderCurrent(); setStatus(`Deleted ${s.name}.`, 'info', { label: 'Undo', act: 'undo' }); return;
@@ -1943,6 +2556,19 @@ document.addEventListener('change', e => {
   if (d.studyday){ const w = +d.studyday; S.studyDays = t.checked ? [...new Set([...S.studyDays, w])].sort() : S.studyDays.filter(x => x !== w); changed(); return; }
   if (d.settext){ S[d.settext] = t.value.trim().slice(0, 120); changed(); return; }
   if ('sortby' in d){ state.sort = t.value; renderStudents(); const s = $('#tab-students [data-sortby]'); if (s) s.focus(); return; }
+  if ('showdropped' in d){ state.showDropped = t.checked; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.mSel = null; renderCurrent(); const c = $(`#tab-${state.tab} [data-showdropped]`); if (c) c.focus(); return; }
+  if (d.mnote){
+    // A 1-on-1's note: saved when you leave the box, and its mark changes in place (nothing redraws while you type).
+    const mk = d.mnote, v = t.value.trim().slice(0, 300), A = state.lastAnalysis, key = state.mSel && state.mSel.key, s0 = key && A.byKey.get(key);
+    const x = s0 && oneOnOnes(A, s0).all.find(y => y.mk === mk); if (!x) return;
+    if (x.src === 'hand'){ const m = (state.data.meetings[key] || []).find(y => y.id === x.id); if (!m) return; m.note = v; changed(); }
+    else if (x.src !== 'zoom') setMStatus(mk, { note: v || undefined });
+    x.note = v;
+    const b = $(`#tab-meetings [data-mchip="${CSS.escape(mk)}"]`);
+    if (b){ const has = !!b.querySelector('.ovn'); if (v && !has) b.insertAdjacentHTML('beforeend', '<i class="ovn" aria-hidden="true"></i>'); if (!v && has) b.querySelector('.ovn').remove();
+      const words = meetWords(x, s0.name); b.setAttribute('aria-label', words); b.title = words; }
+    return;
+  }
   if ('rfrom' in d || 'rto' in d){
     const r = t.closest('.range');
     let f = r.querySelector('[data-rfrom]').value, to = r.querySelector('[data-rto]').value;
@@ -1982,15 +2608,19 @@ document.addEventListener('keydown', e => {
     const to = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
     e.preventDefault(); to.click(); to.focus(); return;
   }
-  if (t.classList && t.classList.contains('ovb') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
+  if (t.classList && (t.classList.contains('ovb') || t.classList.contains('ovdh')) && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return overviewKey(e, t);
+  if (t.classList && t.classList.contains('mgi') && !e.altKey && !e.metaKey && !(e.key === 'Escape' && hadMenu)) return meetGridKey(e, t);
   if (e.key === 'Escape' && (state.ovSel || state.ov1) && t.closest && t.closest('.ovpop')){
     if (d.ovnote !== undefined) t.blur();   // saves the note first, so the redrawn day shows its note mark
     const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); return;
   }
+  if (e.key === 'Escape' && state.ovDay && t.closest && t.closest('.ovdpop')){ const was = state.ovDay; state.ovDay = null; renderOverview(); focusOvCell(`[data-ovdh="${CSS.escape(was)}"]`); return; }
+  if (e.key === 'Escape' && state.mSel && t.closest && t.closest('.mpop')){ if (d.mnote !== undefined) t.blur(); closeMPopTo(); return; }
+  if (e.key === 'Enter' && d.mnote !== undefined){ e.preventDefault(); t.blur(); return; }
   if (e.key === 'Enter' && d.ovnote !== undefined){ e.preventDefault(); const was = cellSel(state.ovSel); t.blur(); focusOvCell(was); return; }
   if (e.key === 'Enter' && t.tagName === 'INPUT'){
     // Enter in a small form presses its button.
-    const f = t.closest('[data-logform], details.menu, .paddrow, [data-period]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-sturemove],[data-shadd]');
+    const f = t.closest('[data-logform], [data-schedform], [data-maddform], .mmove, details.menu, .paddrow, [data-period]'); const b = f && !t.matches('[data-shfrom],[data-shto]') && f.querySelector('[data-logadd],[data-shon],[data-shoff],[data-stusave],[data-dropsave],[data-shadd],[data-schedsave],[data-maddgo],[data-mmovego]');
     if (b){ e.preventDefault(); b.click(); return; }
   }
   if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(m => {
@@ -1999,10 +2629,12 @@ document.addEventListener('keydown', e => {
 });
 // Arrow keys move around the Overview grid (one Tab stop for the whole grid); Enter opens a day, Escape closes it.
 function overviewKey(e, t){
-  const r = +t.dataset.r, c = +t.dataset.c, at = (rr, cc) => $(`#tab-overview .ovb[data-r="${rr}"][data-c="${cc}"]`);
-  const all = [...document.querySelectorAll('#tab-overview .ovb')];
+  const r = +t.dataset.r, c = +t.dataset.c, at = (rr, cc) => $(`#tab-overview :is(.ovb,.ovdh)[data-r="${rr}"][data-c="${cc}"]`);
+  const all = [...document.querySelectorAll('#tab-overview .ovb, #tab-overview .ovdh')];
   let to = null;
-  if (e.key === 'Escape' && (state.ovSel || state.ov1)){ const was = state.ovSel ? cellSel(state.ovSel) : oneSel(state.ov1); state.ovSel = null; state.ov1 = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
+  if (e.key === 'Escape' && (state.ovSel || state.ov1 || state.ovDay)){
+    const was = state.ovSel ? cellSel(state.ovSel) : state.ov1 ? oneSel(state.ov1) : `[data-ovdh="${CSS.escape(state.ovDay)}"]`;
+    state.ovSel = null; state.ov1 = null; state.ovDay = null; renderOverview(); focusOvCell(was); e.preventDefault(); return; }
   if (e.key === 'ArrowRight') to = at(r, c + 1);
   else if (e.key === 'ArrowLeft') to = at(r, c - 1);
   else if (e.key === 'ArrowDown') to = at(r + 1, c);
@@ -2017,22 +2649,44 @@ function overviewKey(e, t){
   all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
   to.focus({ preventScroll: true }); to.scrollIntoView({ block: 'nearest', inline: 'nearest' }); revealOvCell(to);
 }
+// Arrow keys move around the 1-on-1s calendar (one Tab stop for all of it): left and right through a row's schedule line,
+// meetings and empty weeks; up and down to the same week in the next row. Enter opens one, Escape closes it.
+function meetGridKey(e, t){
+  if (e.key === 'Escape' && state.mSel){ e.preventDefault(); closeMPopTo(); return; }
+  const all = [...document.querySelectorAll('#tab-meetings .mgi')], r = +t.dataset.r, c = +t.dataset.c, row = all.filter(b => +b.dataset.r === r), i = row.indexOf(t);
+  let to = null;
+  if (e.key === 'ArrowRight') to = row[i + 1];
+  else if (e.key === 'ArrowLeft') to = row[i - 1];
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    const next = all.filter(b => +b.dataset.r === r + (e.key === 'ArrowDown' ? 1 : -1));
+    to = next.find(b => +b.dataset.c === c) || next.reduce((best, b) => !best || Math.abs(+b.dataset.c - c) < Math.abs(+best.dataset.c - c) ? b : best, null);
+  } else if (e.key === 'Home' || e.key === 'End'){ const pool = e.ctrlKey ? all : row; to = e.key === 'Home' ? pool[0] : pool[pool.length - 1]; }
+  else return;
+  e.preventDefault();
+  if (!to) return;
+  all.forEach(b => { b.tabIndex = b === to ? 0 : -1; });
+  state.mFocus = focusSelector(to);
+  to.focus({ preventScroll: true }); to.scrollIntoView({ block: 'nearest', inline: 'nearest' }); revealMgi(to);
+}
 document.addEventListener('toggle', e => {
   const el = e.target;
   if (!el.classList || !el.classList.contains('menu')) return;
   if ('rangemenu' in el.dataset) state.rangeMenu = el.open;
+  if ('dropmenu' in el.dataset) state.dropEdit = el.open ? el.dataset.dropmenu : null;
   if (!el.open) return;
   // A menu opens rightward unless that would run off the window; its first box gets focus.
   const pop = el.querySelector('.pop'); pop.style.left = '0'; pop.style.right = 'auto';
-  if (pop.getBoundingClientRect().right > Math.min(innerWidth, (document.querySelector('main') || document.body).getBoundingClientRect().right) - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
+  if ('dropmenu' in el.dataset){ pop.style.left = 'auto'; pop.style.right = '0'; }   // opens leftward, inside the student's card
+  else if (pop.getBoundingClientRect().right > Math.min(innerWidth, (document.querySelector('main') || document.body).getBoundingClientRect().right) - 8){ pop.style.left = 'auto'; pop.style.right = '0'; }
   if (!('rangemenu' in el.dataset)){ const i = pop.querySelector('input'); if (i) i.focus(); }
 }, true);
 // Scrolling the grid sideways: remember where it is, and keep an open box beside its day.
 document.addEventListener('scroll', e => {
+  if (e.target.classList && e.target.classList.contains('mgblock')){ state.mScroll = e.target.scrollLeft; placeMPop(); return; }
   if (!e.target.classList || !e.target.classList.contains('ovblock') || state.ovPrintAll) return;
-  state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvPop();
+  state.ovScroll = e.target.scrollLeft; pinMonths(e.target); placeOvPop(); placeOvDay();
 }, true);
-window.addEventListener('resize', () => placeOvPop());
+window.addEventListener('resize', () => { placeOvPop(); placeOvDay(); placeMPop(); });
 document.querySelectorAll('dialog.dlg').forEach(dl => dl.addEventListener('click', e => {
   const r = dl.getBoundingClientRect();
   if (e.target === dl && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dl.close();
@@ -2041,7 +2695,7 @@ $('.skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus
 window.addEventListener('popstate', e => {
   const s = e.state || {}, leaving = state.student;
   navSeq = s.seq || 0;
-  state.tab = s.tab || 'overview'; state.student = s.student || null; state.studentTab = s.via || null; state.ovSel = null; state.ov1 = null; state.logMsg = null;
+  state.tab = s.tab || 'overview'; state.student = s.student || null; state.studentTab = s.via || null; state.ovSel = null; state.ov1 = null; state.ovDay = null; state.mSel = null; state.logMsg = null;
   render();
   if (state.student){ const h = $('#tab-students h2[tabindex]'); if (h) h.focus({ preventScroll: true }); }
   else if (leaving) focusStudentLink(leaving);
